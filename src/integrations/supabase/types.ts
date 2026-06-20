@@ -14,16 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customer_packages: {
+        Row: {
+          customer_id: string
+          id: string
+          package_id: string
+          purchase_date: string
+          sessions_remaining: number
+          total_sessions: number
+        }
+        Insert: {
+          customer_id: string
+          id?: string
+          package_id: string
+          purchase_date?: string
+          sessions_remaining: number
+          total_sessions: number
+        }
+        Update: {
+          customer_id?: string
+          id?: string
+          package_id?: string
+          purchase_date?: string
+          sessions_remaining?: number
+          total_sessions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          points_awarded: number
+          price: number
+          total_sessions: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          points_awarded?: number
+          price?: number
+          total_sessions?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          points_awarded?: number
+          price?: number
+          total_sessions?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          must_change_password: boolean
+          phone: string | null
+          points: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          must_change_password?: boolean
+          phone?: string | null
+          points?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          must_change_password?: boolean
+          phone?: string | null
+          points?: number
+        }
+        Relationships: []
+      }
+      usage_logs: {
+        Row: {
+          admin_id: string
+          customer_package_id: string
+          id: string
+          used_at: string
+        }
+        Insert: {
+          admin_id: string
+          customer_package_id: string
+          id?: string
+          used_at?: string
+        }
+        Update: {
+          admin_id?: string
+          customer_package_id?: string
+          id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_logs_customer_package_id_fkey"
+            columns: ["customer_package_id"]
+            isOneToOne: false
+            referencedRelation: "customer_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +306,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "customer"],
+    },
   },
 } as const
