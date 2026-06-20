@@ -28,6 +28,11 @@ export const Route = createFileRoute("/api/public/seed-admin")({
           if (error) return Response.json({ error: error.message }, { status: 500 });
           userId = data.user!.id;
           created = true;
+        } else {
+          await supabaseAdmin.auth.admin.updateUserById(userId!, {
+            password,
+            email_confirm: true,
+          });
         }
 
         await supabaseAdmin.from("user_roles").delete().eq("user_id", userId!);
