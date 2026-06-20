@@ -103,3 +103,32 @@ export const useSession = createServerFn({ method: "POST" })
       .insert({ customer_package_id: data.customerPackageId, admin_id: context.userId });
     return { ok: true, remaining: cp.sessions_remaining - 1 };
   });
+
+export const adminCreateAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; password: string }) =>
+    z
+      .object({
+        email: z.string().trim().email().max(255),
+        password: z.string().min(8).max(72),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+    });
+    if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
+    const userId = created.user.id;
+    // handle_new_user trigger inserts a 'customer' role; remove it and set admin
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+    const { error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: userId, role: "admin" });
+    if (rErr) throw new Error(rErr.message);
+    return { ok: true, email: data.email };
+  });
