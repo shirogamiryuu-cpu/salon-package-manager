@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/seed-admin")({
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const email = "admin@salon.com";
-        const password = "Admin123!";
+        const password = "SalonAdmin!2026";
 
         const { data: existing } = await supabaseAdmin
           .from("profiles")
@@ -28,6 +28,11 @@ export const Route = createFileRoute("/api/public/seed-admin")({
           if (error) return Response.json({ error: error.message }, { status: 500 });
           userId = data.user!.id;
           created = true;
+        } else {
+          await supabaseAdmin.auth.admin.updateUserById(userId!, {
+            password,
+            email_confirm: true,
+          });
         }
 
         await supabaseAdmin.from("user_roles").delete().eq("user_id", userId!);
