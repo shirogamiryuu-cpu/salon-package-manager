@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/seed-admin")({
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const email = "admin@salon.com";
-        const password = "Admin123!";
+        const password = "SalonAdmin!2026";
 
         const { data: existing } = await supabaseAdmin
           .from("profiles")
