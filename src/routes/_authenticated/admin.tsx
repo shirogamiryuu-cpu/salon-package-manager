@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
+import { LayoutDashboard, Package, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
@@ -31,9 +32,9 @@ function AdminLayout() {
     <AppShell
       title="Salon Admin"
       nav={[
-        { to: "/admin", label: "Dashboard" },
-        { to: "/admin/packages", label: "Packages" },
-        { to: "/admin/customers", label: "Customers" },
+        { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+        { to: "/admin/packages", label: "Packages", icon: Package },
+        { to: "/admin/customers", label: "Customers", icon: Users },
       ]}
     >
       <Outlet />
