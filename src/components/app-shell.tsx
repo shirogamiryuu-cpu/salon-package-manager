@@ -1,8 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Scissors, LogOut } from "lucide-react";
+import { Scissors, LogOut, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+
+export type NavItem = { to: string; label: string; icon: LucideIcon };
 
 export function AppShell({
   title,
@@ -10,7 +12,7 @@ export function AppShell({
   children,
 }: {
   title: string;
-  nav: { to: string; label: string }[];
+  nav: NavItem[];
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -21,43 +23,63 @@ export function AppShell({
     navigate({ to: "/auth", replace: true });
   };
 
+  const isActive = (to: string) =>
+    pathname === to ||
+    (to !== "/admin" && to !== "/app" && pathname.startsWith(to));
+
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-6">
+    <div className="min-h-svh bg-muted/40 flex justify-center">
+      <div className="relative w-full max-w-md min-h-svh bg-background shadow-xl flex flex-col">
+        {/* Top app bar */}
+        <header className="sticky top-0 z-20 bg-background/85 backdrop-blur border-b">
+          <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2 font-semibold">
-              <Scissors className="h-4 w-4" />
-              {title}
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Scissors className="h-4 w-4" />
+              </span>
+              <span className="truncate">{title}</span>
             </div>
-            <nav className="hidden md:flex gap-1">
-              {nav.map((n) => {
-                const active = pathname === n.to || (n.to !== "/admin" && n.to !== "/app" && pathname.startsWith(n.to));
-                return (
-                  <Link
-                    key={n.to}
-                    to={n.to}
-                    className={`px-3 py-1.5 rounded-md text-sm ${active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    {n.label}
-                  </Link>
-                );
-              })}
-            </nav>
+            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" /> Sign out
-          </Button>
-        </div>
-        <nav className="md:hidden border-t flex gap-1 px-2 py-2 overflow-x-auto">
-          {nav.map((n) => (
-            <Link key={n.to} to={n.to} className="px-3 py-1.5 rounded-md text-sm whitespace-nowrap hover:bg-accent">
-              {n.label}
-            </Link>
-          ))}
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 px-4 pt-4 pb-28">{children}</main>
+
+        {/* Bottom tab bar */}
+        <nav
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t bg-background/95 backdrop-blur z-30"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <ul className="grid" style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0,1fr))` }}>
+            {nav.map((n) => {
+              const active = isActive(n.to);
+              const Icon = n.icon;
+              return (
+                <li key={n.to}>
+                  <Link
+                    to={n.to}
+                    className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                      active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span
+                      className={`grid h-9 w-12 place-items-center rounded-full transition-colors ${
+                        active ? "bg-primary/10" : ""
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="truncate max-w-[80px]">{n.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
-      </header>
-      <main className="container mx-auto px-4 py-6">{children}</main>
+      </div>
     </div>
   );
 }
