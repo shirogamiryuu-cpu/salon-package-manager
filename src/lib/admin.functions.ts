@@ -124,11 +124,57 @@ export const adminCreateAdmin = createServerFn({ method: "POST" })
     });
     if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
     const userId = created.user.id;
-    // handle_new_user trigger inserts a 'customer' role; remove it and set admin
     await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
     const { error: rErr } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: userId, role: "admin" });
     if (rErr) throw new Error(rErr.message);
     return { ok: true, email: data.email };
+  });
+
+export const adminListAdmins = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roles, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+    if (error) throw new Error(error.message);
+    const ids = (roles ?? []).map((r) => r.user_id);
+    if (!ids.length) return [];
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id,email,created_at")
+      .in("id", ids)
+      .order("created_at", { ascending: false });
+    return profiles ?? [];
+  });
+
+export const adminResetPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; password: string }) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        password: z.string().min(8).max(72),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Only allow resetting password of other admins
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId);
+    const isAdmin = (roles ?? []).some((r) => r.role === "admin");
+    if (!isAdmin) throw new Error("Target user is not an admin");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
