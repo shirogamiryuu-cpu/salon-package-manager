@@ -320,3 +320,186 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ===== Session History =====
+
+type HistoryRow = {
+  id: string;
+  used_at: string;
+  customer_id: string;
+  customer_email: string;
+  package_id: string;
+  package_name: string;
+  customer_package_id: string;
+  sessions_deducted: number;
+  admin_id: string | null;
+  admin_email: string;
+  staff: { id: string; email: string }[];
+};
+
+export const adminListHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    customerId?: string;
+    staffId?: string;
+    packageId?: string;
+    from?: string;
+    to?: string;
+  }) =>
+    z
+      .object({
+        customerId: z.string().uuid().optional(),
+        staffId: z.string().uuid().optional(),
+        packageId: z.string().uuid().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let logIdsFilter: string[] | null = null;
+    if (data.staffId) {
+      const { data: links } = await supabaseAdmin
+        .from("session_staff")
+        .select("usage_log_id")
+        .eq("staff_user_id", data.staffId);
+      logIdsFilter = (links ?? []).map((l) => l.usage_log_id);
+      if (!logIdsFilter.length) return [] as HistoryRow[];
+    }
+
+    let q = supabaseAdmin
+      .from("usage_logs")
+      .select(
+        "id, used_at, admin_id, customer_package_id, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email))",
+      )
+      .order("used_at", { ascending: false })
+      .limit(500);
+
+    if (data.from) q = q.gte("used_at", data.from);
+    if (data.to) q = q.lte("used_at", data.to);
+    if (data.customerId) q = q.eq("customer_packages.customer_id", data.customerId);
+    if (data.packageId) q = q.eq("customer_packages.package_id", data.packageId);
+    if (logIdsFilter) q = q.in("id", logIdsFilter);
+
+    const { data: logs, error } = await q;
+    if (error) throw new Error(error.message);
+    const ids = (logs ?? []).map((l: any) => l.id);
+    const adminIds = Array.from(
+      new Set((logs ?? []).map((l: any) => l.admin_id).filter(Boolean) as string[]),
+    );
+
+    const [{ data: staffLinks }, { data: adminProfiles }] = await Promise.all([
+      ids.length
+        ? supabaseAdmin
+            .from("session_staff")
+            .select("usage_log_id, staff_user_id, profiles:staff_user_id(id,email)")
+            .in("usage_log_id", ids)
+        : Promise.resolve({ data: [] as any[] }),
+      adminIds.length
+        ? supabaseAdmin.from("profiles").select("id,email").in("id", adminIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const staffByLog = new Map<string, { id: string; email: string }[]>();
+    for (const sl of (staffLinks ?? []) as any[]) {
+      const arr = staffByLog.get(sl.usage_log_id) ?? [];
+      arr.push({ id: sl.staff_user_id, email: sl.profiles?.email ?? sl.staff_user_id });
+      staffByLog.set(sl.usage_log_id, arr);
+    }
+    const adminEmail = new Map(((adminProfiles ?? []) as any[]).map((p) => [p.id, p.email]));
+
+    return (logs ?? []).map((l: any): HistoryRow => {
+      const cp = l.customer_packages;
+      return {
+        id: l.id,
+        used_at: l.used_at,
+        customer_id: cp?.customer_id ?? "",
+        customer_email: cp?.profiles?.email ?? "",
+        package_id: cp?.package_id ?? "",
+        package_name: cp?.packages?.name ?? "Package",
+        customer_package_id: l.customer_package_id,
+        sessions_deducted: 1,
+        admin_id: l.admin_id,
+        admin_email: l.admin_id ? (adminEmail.get(l.admin_id) ?? "") : "",
+        staff: staffByLog.get(l.id) ?? [],
+      };
+    });
+  });
+
+export const customerListMyHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // Use user-scoped client; RLS allows reading own usage_logs + session_staff
+    const { data: cps } = await context.supabase
+      .from("customer_packages")
+      .select("id, package_id, packages(name)")
+      .eq("customer_id", context.userId);
+    const cpIds = (cps ?? []).map((c: any) => c.id);
+    if (!cpIds.length) return [];
+    const pkgByCp = new Map<string, string>(
+      (cps ?? []).map((c: any) => [c.id, c.packages?.name ?? "Package"]),
+    );
+    const { data: logs, error } = await context.supabase
+      .from("usage_logs")
+      .select("id, used_at, customer_package_id")
+      .in("customer_package_id", cpIds)
+      .order("used_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    const ids = (logs ?? []).map((l: any) => l.id);
+    let staffByLog = new Map<string, string[]>();
+    if (ids.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: links } = await supabaseAdmin
+        .from("session_staff")
+        .select("usage_log_id, profiles:staff_user_id(email)")
+        .in("usage_log_id", ids);
+      for (const l of (links ?? []) as any[]) {
+        const arr = staffByLog.get(l.usage_log_id) ?? [];
+        arr.push(l.profiles?.email ?? "Staff");
+        staffByLog.set(l.usage_log_id, arr);
+      }
+    }
+    return (logs ?? []).map((l: any) => ({
+      id: l.id,
+      used_at: l.used_at,
+      package_name: pkgByCp.get(l.customer_package_id) ?? "Package",
+      sessions_deducted: 1,
+      staff: staffByLog.get(l.id) ?? [],
+    }));
+  });
+
+export const staffListMyHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isStaff = (roles ?? []).some((r: { role: string }) => r.role === "staff");
+    if (!isStaff) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: links, error } = await supabaseAdmin
+      .from("session_staff")
+      .select(
+        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, customer_packages(customer_id, packages(name), profiles:customer_id(email)))",
+      )
+      .eq("staff_user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return (links ?? []).map((l: any) => {
+      const ul = l.usage_logs;
+      const cp = ul?.customer_packages;
+      return {
+        id: ul?.id ?? l.usage_log_id,
+        used_at: ul?.used_at ?? l.created_at,
+        customer_email: cp?.profiles?.email ?? "Customer",
+        package_name: cp?.packages?.name ?? "Package",
+        sessions_deducted: 1,
+      };
+    });
+  });

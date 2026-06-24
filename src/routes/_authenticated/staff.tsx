@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
-import { ClipboardList, User } from "lucide-react";
+import { ClipboardList, User, History } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/staff")({
   component: StaffLayout,
@@ -34,6 +34,7 @@ function StaffLayout() {
       title="My Work"
       nav={[
         { to: "/staff", label: "Sessions", icon: ClipboardList },
+        { to: "/staff/history", label: "History", icon: History },
         { to: "/app/profile", label: "Profile", icon: User },
       ]}
     >
