@@ -20,7 +20,7 @@ export function AppShell({
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/", replace: true });
   };
 
   const isActive = (to: string) =>
