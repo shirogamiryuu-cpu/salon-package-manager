@@ -2,13 +2,13 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
-import { LayoutDashboard, Package, Users } from "lucide-react";
+import { ClipboardList, User } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/admin")({
-  component: AdminLayout,
+export const Route = createFileRoute("/_authenticated/staff")({
+  component: StaffLayout,
 });
 
-function AdminLayout() {
+function StaffLayout() {
   const navigate = useNavigate();
   const [ok, setOk] = useState<boolean | null>(null);
 
@@ -17,10 +17,10 @@ function AdminLayout() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return navigate({ to: "/auth" });
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      const isAdmin = data?.some((r) => r.role === "admin");
       const isStaff = data?.some((r) => r.role === "staff");
-      if (!isAdmin) {
-        navigate({ to: isStaff ? "/staff" : "/app" });
+      const isAdmin = data?.some((r) => r.role === "admin");
+      if (!isStaff && !isAdmin) {
+        navigate({ to: "/app" });
         return;
       }
       setOk(true);
@@ -31,11 +31,10 @@ function AdminLayout() {
 
   return (
     <AppShell
-      title="Salon Admin"
+      title="My Work"
       nav={[
-        { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/admin/packages", label: "Packages", icon: Package },
-        { to: "/admin/customers", label: "Customers", icon: Users },
+        { to: "/staff", label: "Sessions", icon: ClipboardList },
+        { to: "/app/profile", label: "Profile", icon: User },
       ]}
     >
       <Outlet />

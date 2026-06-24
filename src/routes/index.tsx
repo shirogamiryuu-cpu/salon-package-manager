@@ -31,7 +31,9 @@ function Landing() {
         .select("role")
         .eq("user_id", data.session.user.id);
       const isAdmin = roles?.some((r) => r.role === "admin");
-      navigate({ to: isAdmin ? "/admin" : "/app", replace: true });
+      const isStaff = roles?.some((r) => r.role === "staff");
+      const to = isAdmin ? "/admin" : isStaff ? "/staff" : "/app";
+      navigate({ to, replace: true });
     })();
   }, [navigate]);
 
