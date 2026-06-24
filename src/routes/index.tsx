@@ -53,18 +53,18 @@ function Landing() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-5xl font-bold tracking-tight">Manage your salon packages, beautifully</h1>
+        <h1 className="text-5xl font-bold tracking-tight">Your salon, in your pocket</h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Sell service packages, track customer sessions, and reward loyalty — all in one place.
+          See your remaining sessions, track loyalty points, and browse packages from your favourite salon.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Link to="/auth"><Button size="lg">Get started</Button></Link>
+          <Link to="/auth"><Button size="lg">Sign in / Sign up</Button></Link>
         </div>
         <div className="mt-20 grid gap-6 md:grid-cols-3 text-left">
           {[
-            { icon: Sparkles, title: "Service packages", body: "Create packages with sessions and loyalty points." },
-            { icon: Users, title: "Customer profiles", body: "Track each customer's remaining sessions and points." },
-            { icon: Scissors, title: "Session tracking", body: "One click to deduct a session when a customer visits." },
+            { icon: Sparkles, title: "Your packages", body: "Check how many sessions you have left at a glance." },
+            { icon: Users, title: "Loyalty points", body: "Earn points with every package and watch them grow." },
+            { icon: Scissors, title: "Browse offers", body: "Discover packages the salon currently offers." },
           ].map((f) => (
             <div key={f.title} className="rounded-lg border bg-card p-6">
               <f.icon className="h-6 w-6 text-primary" />
