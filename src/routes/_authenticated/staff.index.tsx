@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { staffListMySessions } from "@/lib/admin.functions";
@@ -36,9 +36,14 @@ function StaffDash() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">My sessions</h1>
-        <p className="text-sm text-muted-foreground">Recent sessions you were assigned to.</p>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">My sessions</h1>
+          <p className="text-sm text-muted-foreground">Recent sessions you were assigned to.</p>
+        </div>
+        <Link to="/staff/history" className="text-sm text-primary hover:underline shrink-0">
+          View all
+        </Link>
       </div>
 
       {rows.length === 0 ? (
