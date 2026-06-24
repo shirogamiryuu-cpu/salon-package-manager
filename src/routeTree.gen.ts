@@ -19,9 +19,12 @@ import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicSeedAdminRouteImport } from './routes/api/public/seed-admin'
+import { Route as AuthenticatedStaffHistoryRouteImport } from './routes/_authenticated/staff.history'
 import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/app.profile'
 import { Route as AuthenticatedAppPackagesRouteImport } from './routes/_authenticated/app.packages'
+import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/app.history'
 import { Route as AuthenticatedAdminPackagesRouteImport } from './routes/_authenticated/admin.packages'
+import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authenticated/admin.history'
 import { Route as AuthenticatedAdminCustomersIndexRouteImport } from './routes/_authenticated/admin.customers.index'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 
@@ -74,6 +77,12 @@ const ApiPublicSeedAdminRoute = ApiPublicSeedAdminRouteImport.update({
   path: '/api/public/seed-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedStaffHistoryRoute =
+  AuthenticatedStaffHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedStaffRoute,
+  } as any)
 const AuthenticatedAppProfileRoute = AuthenticatedAppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -85,10 +94,21 @@ const AuthenticatedAppPackagesRoute =
     path: '/packages',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAdminPackagesRoute =
   AuthenticatedAdminPackagesRouteImport.update({
     id: '/packages',
     path: '/packages',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminHistoryRoute =
+  AuthenticatedAdminHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminCustomersIndexRoute =
@@ -110,9 +130,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/staff': typeof AuthenticatedStaffRouteWithChildren
+  '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
+  '/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -123,9 +146,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
+  '/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -141,9 +167,12 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/staff': typeof AuthenticatedStaffRouteWithChildren
+  '/_authenticated/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/_authenticated/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/_authenticated/app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/app/packages': typeof AuthenticatedAppPackagesRoute
   '/_authenticated/app/profile': typeof AuthenticatedAppProfileRoute
+  '/_authenticated/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -159,9 +188,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/staff'
+    | '/admin/history'
     | '/admin/packages'
+    | '/app/history'
     | '/app/packages'
     | '/app/profile'
+    | '/staff/history'
     | '/api/public/seed-admin'
     | '/admin/'
     | '/app/'
@@ -172,9 +204,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/admin/history'
     | '/admin/packages'
+    | '/app/history'
     | '/app/packages'
     | '/app/profile'
+    | '/staff/history'
     | '/api/public/seed-admin'
     | '/admin'
     | '/app'
@@ -189,9 +224,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/app'
     | '/_authenticated/staff'
+    | '/_authenticated/admin/history'
     | '/_authenticated/admin/packages'
+    | '/_authenticated/app/history'
     | '/_authenticated/app/packages'
     | '/_authenticated/app/profile'
+    | '/_authenticated/staff/history'
     | '/api/public/seed-admin'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
@@ -279,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSeedAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/staff/history': {
+      id: '/_authenticated/staff/history'
+      path: '/history'
+      fullPath: '/staff/history'
+      preLoaderRoute: typeof AuthenticatedStaffHistoryRouteImport
+      parentRoute: typeof AuthenticatedStaffRoute
+    }
     '/_authenticated/app/profile': {
       id: '/_authenticated/app/profile'
       path: '/profile'
@@ -293,11 +338,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPackagesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/history': {
+      id: '/_authenticated/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AuthenticatedAppHistoryRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/admin/packages': {
       id: '/_authenticated/admin/packages'
       path: '/packages'
       fullPath: '/admin/packages'
       preLoaderRoute: typeof AuthenticatedAdminPackagesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/history': {
+      id: '/_authenticated/admin/history'
+      path: '/history'
+      fullPath: '/admin/history'
+      preLoaderRoute: typeof AuthenticatedAdminHistoryRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/customers/': {
@@ -318,6 +377,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminHistoryRoute: typeof AuthenticatedAdminHistoryRoute
   AuthenticatedAdminPackagesRoute: typeof AuthenticatedAdminPackagesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
@@ -325,6 +385,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminHistoryRoute: AuthenticatedAdminHistoryRoute,
   AuthenticatedAdminPackagesRoute: AuthenticatedAdminPackagesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminCustomersIdRoute: AuthenticatedAdminCustomersIdRoute,
@@ -335,12 +396,14 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
   AuthenticatedAppPackagesRoute: typeof AuthenticatedAppPackagesRoute
   AuthenticatedAppProfileRoute: typeof AuthenticatedAppProfileRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
   AuthenticatedAppPackagesRoute: AuthenticatedAppPackagesRoute,
   AuthenticatedAppProfileRoute: AuthenticatedAppProfileRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
@@ -350,10 +413,12 @@ const AuthenticatedAppRouteWithChildren =
   AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
 interface AuthenticatedStaffRouteChildren {
+  AuthenticatedStaffHistoryRoute: typeof AuthenticatedStaffHistoryRoute
   AuthenticatedStaffIndexRoute: typeof AuthenticatedStaffIndexRoute
 }
 
 const AuthenticatedStaffRouteChildren: AuthenticatedStaffRouteChildren = {
+  AuthenticatedStaffHistoryRoute: AuthenticatedStaffHistoryRoute,
   AuthenticatedStaffIndexRoute: AuthenticatedStaffIndexRoute,
 }
 
