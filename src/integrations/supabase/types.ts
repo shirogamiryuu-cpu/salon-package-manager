@@ -115,6 +115,35 @@ export type Database = {
         }
         Relationships: []
       }
+      session_staff: {
+        Row: {
+          created_at: string
+          id: string
+          staff_user_id: string
+          usage_log_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          staff_user_id: string
+          usage_log_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          staff_user_id?: string
+          usage_log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_staff_usage_log_id_fkey"
+            columns: ["usage_log_id"]
+            isOneToOne: false
+            referencedRelation: "usage_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_logs: {
         Row: {
           admin_id: string
@@ -179,7 +208,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer"
+      app_role: "admin" | "customer" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -307,7 +336,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer"],
+      app_role: ["admin", "customer", "staff"],
     },
   },
 } as const

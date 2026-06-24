@@ -80,8 +80,13 @@ export const assignPackage = createServerFn({ method: "POST" })
 
 export const useSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { customerPackageId: string }) =>
-    z.object({ customerPackageId: z.string().uuid() }).parse(d),
+  .inputValidator((d: { customerPackageId: string; staffIds?: string[] }) =>
+    z
+      .object({
+        customerPackageId: z.string().uuid(),
+        staffIds: z.array(z.string().uuid()).optional().default([]),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -98,10 +103,147 @@ export const useSession = createServerFn({ method: "POST" })
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
       .eq("id", data.customerPackageId);
     if (uErr) throw new Error(uErr.message);
-    await supabaseAdmin
+    const { data: log, error: lErr } = await supabaseAdmin
       .from("usage_logs")
-      .insert({ customer_package_id: data.customerPackageId, admin_id: context.userId });
+      .insert({ customer_package_id: data.customerPackageId, admin_id: context.userId })
+      .select("id")
+      .single();
+    if (lErr || !log) throw new Error(lErr?.message ?? "Failed to log");
+    if (data.staffIds && data.staffIds.length) {
+      // Verify each id has staff role
+      const { data: validRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "staff")
+        .in("user_id", data.staffIds);
+      const valid = new Set((validRoles ?? []).map((r) => r.user_id));
+      const rows = data.staffIds
+        .filter((id) => valid.has(id))
+        .map((staff_user_id) => ({ usage_log_id: log.id, staff_user_id }));
+      if (rows.length) await supabaseAdmin.from("session_staff").insert(rows);
+    }
     return { ok: true, remaining: cp.sessions_remaining - 1 };
+  });
+
+export const adminListStaff = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roles, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "staff");
+    if (error) throw new Error(error.message);
+    const ids = (roles ?? []).map((r) => r.user_id);
+    if (!ids.length) return [];
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id,email,created_at")
+      .in("id", ids)
+      .order("created_at", { ascending: false });
+    return profiles ?? [];
+  });
+
+export const adminCreateStaff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; password: string }) =>
+    z
+      .object({
+        email: z.string().trim().email().max(255),
+        password: z.string().min(8).max(72),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+    });
+    if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
+    const userId = created.user.id;
+    // Replace any auto-assigned customer role with staff (single role for new staff accounts)
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+    const { error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: userId, role: "staff" });
+    if (rErr) throw new Error(rErr.message);
+    return { ok: true, email: data.email };
+  });
+
+export const adminPromoteToStaff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.userId, role: "staff" });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminRemoveStaffRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", "staff");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const staffListMySessions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isStaff = (roles ?? []).some((r: { role: string }) => r.role === "staff");
+    if (!isStaff) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: links, error } = await supabaseAdmin
+      .from("session_staff")
+      .select("usage_log_id, created_at")
+      .eq("staff_user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    const logIds = (links ?? []).map((l) => l.usage_log_id);
+    if (!logIds.length) return [];
+    const { data: logs } = await supabaseAdmin
+      .from("usage_logs")
+      .select(
+        "id, used_at, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, customer_id, packages(name), profiles:customer_id(email))",
+      )
+      .in("id", logIds);
+    // join manually to keep ordering by created_at desc
+    const map = new Map((logs ?? []).map((l: any) => [l.id, l]));
+    return (links ?? [])
+      .map((link) => {
+        const l: any = map.get(link.usage_log_id);
+        if (!l) return null;
+        const cp = l.customer_packages;
+        return {
+          id: l.id,
+          used_at: l.used_at,
+          package_name: cp?.packages?.name ?? "Package",
+          customer_email: cp?.profiles?.email ?? "Customer",
+          remaining: cp?.sessions_remaining ?? 0,
+          total: cp?.total_sessions ?? 0,
+        };
+      })
+      .filter(Boolean);
   });
 
 export const adminCreateAdmin = createServerFn({ method: "POST" })
