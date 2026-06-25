@@ -18,13 +18,14 @@ export const adminListCustomers = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
-      .select("id,email,phone,points,avatar_url,created_at")
+      .select("id,email,name,phone,points,avatar_url,created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id,role");
     const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
     return (profiles ?? []).filter((p) => !adminIds.has(p.id));
   });
+
 
 export const adminGetCustomer = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -139,19 +140,21 @@ export const adminListStaff = createServerFn({ method: "GET" })
     if (!ids.length) return [];
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id,email,created_at")
+      .select("id,email,name,created_at")
       .in("id", ids)
       .order("created_at", { ascending: false });
     return profiles ?? [];
   });
 
+
 export const adminCreateStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; password: string }) =>
+  .inputValidator((d: { email: string; password: string; name?: string }) =>
     z
       .object({
         email: z.string().trim().email().max(255),
         password: z.string().min(8).max(72),
+        name: z.string().trim().min(1).max(120).optional(),
       })
       .parse(d),
   )
@@ -162,6 +165,7 @@ export const adminCreateStaff = createServerFn({ method: "POST" })
       email: data.email,
       password: data.password,
       email_confirm: true,
+      user_metadata: data.name ? { name: data.name } : undefined,
     });
     if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
     const userId = created.user.id;
@@ -171,8 +175,12 @@ export const adminCreateStaff = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: userId, role: "staff" });
     if (rErr) throw new Error(rErr.message);
+    if (data.name) {
+      await supabaseAdmin.from("profiles").update({ name: data.name }).eq("id", userId);
+    }
     return { ok: true, email: data.email };
   });
+
 
 export const adminPromoteToStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -248,11 +256,12 @@ export const staffListMySessions = createServerFn({ method: "GET" })
 
 export const adminCreateAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; password: string }) =>
+  .inputValidator((d: { email: string; password: string; name?: string }) =>
     z
       .object({
         email: z.string().trim().email().max(255),
         password: z.string().min(8).max(72),
+        name: z.string().trim().min(1).max(120).optional(),
       })
       .parse(d),
   )
@@ -263,6 +272,7 @@ export const adminCreateAdmin = createServerFn({ method: "POST" })
       email: data.email,
       password: data.password,
       email_confirm: true,
+      user_metadata: data.name ? { name: data.name } : undefined,
     });
     if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
     const userId = created.user.id;
@@ -271,6 +281,9 @@ export const adminCreateAdmin = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: userId, role: "admin" });
     if (rErr) throw new Error(rErr.message);
+    if (data.name) {
+      await supabaseAdmin.from("profiles").update({ name: data.name }).eq("id", userId);
+    }
     return { ok: true, email: data.email };
   });
 
@@ -288,11 +301,12 @@ export const adminListAdmins = createServerFn({ method: "GET" })
     if (!ids.length) return [];
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id,email,created_at")
+      .select("id,email,name,created_at")
       .in("id", ids)
       .order("created_at", { ascending: false });
     return profiles ?? [];
   });
+
 
 export const adminResetPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
