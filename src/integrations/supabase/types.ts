@@ -99,6 +99,7 @@ export type Database = {
           email: string
           id: string
           must_change_password: boolean
+          name: string | null
           phone: string | null
           points: number
         }
@@ -108,6 +109,7 @@ export type Database = {
           email: string
           id: string
           must_change_password?: boolean
+          name?: string | null
           phone?: string | null
           points?: number
         }
@@ -117,6 +119,7 @@ export type Database = {
           email?: string
           id?: string
           must_change_password?: boolean
+          name?: string | null
           phone?: string | null
           points?: number
         }
