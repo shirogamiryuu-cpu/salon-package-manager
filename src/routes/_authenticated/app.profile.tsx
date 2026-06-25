@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/app/profile")({
 
 function Profile() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -21,8 +22,13 @@ function Profile() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data } = await supabase.from("profiles").select("email,phone").eq("id", u.user.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("email,name,phone")
+        .eq("id", u.user.id)
+        .maybeSingle();
       setEmail(data?.email ?? u.user.email ?? "");
+      setName(data?.name ?? "");
       setPhone(data?.phone ?? "");
     })();
   }, []);
@@ -31,7 +37,10 @@ function Profile() {
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { error } = await supabase.from("profiles").update({ phone }).eq("id", u.user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ name: name.trim() || null, phone })
+      .eq("id", u.user.id);
     setSaving(false);
     if (error) toast.error(error.message);
     else toast.success("Profile updated");
@@ -52,6 +61,10 @@ function Profile() {
         <CardHeader><CardTitle>Contact info</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div>
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          </div>
+          <div>
             <Label>Email</Label>
             <Input value={email} disabled />
           </div>
@@ -62,6 +75,7 @@ function Profile() {
           <Button onClick={saveProfile} disabled={saving}>Save</Button>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader><CardTitle>Change password</CardTitle></CardHeader>
         <CardContent className="space-y-3">
