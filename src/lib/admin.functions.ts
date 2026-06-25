@@ -344,14 +344,17 @@ type HistoryRow = {
   used_at: string;
   customer_id: string;
   customer_email: string;
+  customer_name: string | null;
   package_id: string;
   package_name: string;
   customer_package_id: string;
   sessions_deducted: number;
   admin_id: string | null;
   admin_email: string;
-  staff: { id: string; email: string }[];
+  admin_name: string | null;
+  staff: { id: string; email: string; name: string | null }[];
 };
+
 
 export const adminListHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -389,7 +392,7 @@ export const adminListHistory = createServerFn({ method: "POST" })
     let q = supabaseAdmin
       .from("usage_logs")
       .select(
-        "id, used_at, admin_id, customer_package_id, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email))",
+        "id, used_at, admin_id, customer_package_id, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email,name))",
       )
       .order("used_at", { ascending: false })
       .limit(500);
@@ -411,39 +414,49 @@ export const adminListHistory = createServerFn({ method: "POST" })
       ids.length
         ? supabaseAdmin
             .from("session_staff")
-            .select("usage_log_id, staff_user_id, profiles:staff_user_id(id,email)")
+            .select("usage_log_id, staff_user_id, profiles:staff_user_id(id,email,name)")
             .in("usage_log_id", ids)
         : Promise.resolve({ data: [] as any[] }),
       adminIds.length
-        ? supabaseAdmin.from("profiles").select("id,email").in("id", adminIds)
+        ? supabaseAdmin.from("profiles").select("id,email,name").in("id", adminIds)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
-    const staffByLog = new Map<string, { id: string; email: string }[]>();
+    const staffByLog = new Map<string, { id: string; email: string; name: string | null }[]>();
     for (const sl of (staffLinks ?? []) as any[]) {
       const arr = staffByLog.get(sl.usage_log_id) ?? [];
-      arr.push({ id: sl.staff_user_id, email: sl.profiles?.email ?? sl.staff_user_id });
+      arr.push({
+        id: sl.staff_user_id,
+        email: sl.profiles?.email ?? sl.staff_user_id,
+        name: sl.profiles?.name ?? null,
+      });
       staffByLog.set(sl.usage_log_id, arr);
     }
-    const adminEmail = new Map(((adminProfiles ?? []) as any[]).map((p) => [p.id, p.email]));
+    const adminInfo = new Map(
+      ((adminProfiles ?? []) as any[]).map((p) => [p.id, { email: p.email, name: p.name }]),
+    );
 
     return (logs ?? []).map((l: any): HistoryRow => {
       const cp = l.customer_packages;
+      const a = l.admin_id ? adminInfo.get(l.admin_id) : null;
       return {
         id: l.id,
         used_at: l.used_at,
         customer_id: cp?.customer_id ?? "",
         customer_email: cp?.profiles?.email ?? "",
+        customer_name: cp?.profiles?.name ?? null,
         package_id: cp?.package_id ?? "",
         package_name: cp?.packages?.name ?? "Package",
         customer_package_id: l.customer_package_id,
         sessions_deducted: 1,
         admin_id: l.admin_id,
-        admin_email: l.admin_id ? (adminEmail.get(l.admin_id) ?? "") : "",
+        admin_email: a?.email ?? "",
+        admin_name: a?.name ?? null,
         staff: staffByLog.get(l.id) ?? [],
       };
     });
   });
+
 
 export const customerListMyHistory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -466,16 +479,16 @@ export const customerListMyHistory = createServerFn({ method: "GET" })
       .limit(500);
     if (error) throw new Error(error.message);
     const ids = (logs ?? []).map((l: any) => l.id);
-    let staffByLog = new Map<string, string[]>();
+    const staffByLog = new Map<string, string[]>();
     if (ids.length) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: links } = await supabaseAdmin
         .from("session_staff")
-        .select("usage_log_id, profiles:staff_user_id(email)")
+        .select("usage_log_id, profiles:staff_user_id(email,name)")
         .in("usage_log_id", ids);
       for (const l of (links ?? []) as any[]) {
         const arr = staffByLog.get(l.usage_log_id) ?? [];
-        arr.push(l.profiles?.email ?? "Staff");
+        arr.push(l.profiles?.name ?? l.profiles?.email ?? "Staff");
         staffByLog.set(l.usage_log_id, arr);
       }
     }
@@ -501,7 +514,7 @@ export const staffListMyHistory = createServerFn({ method: "GET" })
     const { data: links, error } = await supabaseAdmin
       .from("session_staff")
       .select(
-        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, customer_packages(customer_id, packages(name), profiles:customer_id(email)))",
+        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, customer_packages(customer_id, packages(name), profiles:customer_id(email,name)))",
       )
       .eq("staff_user_id", context.userId)
       .order("created_at", { ascending: false })
@@ -514,8 +527,10 @@ export const staffListMyHistory = createServerFn({ method: "GET" })
         id: ul?.id ?? l.usage_log_id,
         used_at: ul?.used_at ?? l.created_at,
         customer_email: cp?.profiles?.email ?? "Customer",
+        customer_name: cp?.profiles?.name ?? null,
         package_name: cp?.packages?.name ?? "Package",
         sessions_deducted: 1,
       };
     });
+
   });
