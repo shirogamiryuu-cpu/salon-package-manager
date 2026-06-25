@@ -232,7 +232,7 @@ export const staffListMySessions = createServerFn({ method: "GET" })
     const { data: logs } = await supabaseAdmin
       .from("usage_logs")
       .select(
-        "id, used_at, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, customer_id, packages(name), profiles:customer_id(email))",
+        "id, used_at, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, customer_id, packages(name), profiles:customer_id(email,name))",
       )
       .in("id", logIds);
     // join manually to keep ordering by created_at desc
@@ -247,12 +247,14 @@ export const staffListMySessions = createServerFn({ method: "GET" })
           used_at: l.used_at,
           package_name: cp?.packages?.name ?? "Package",
           customer_email: cp?.profiles?.email ?? "Customer",
+          customer_name: cp?.profiles?.name ?? null,
           remaining: cp?.sessions_remaining ?? 0,
           total: cp?.total_sessions ?? 0,
         };
       })
       .filter(Boolean);
   });
+
 
 export const adminCreateAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
