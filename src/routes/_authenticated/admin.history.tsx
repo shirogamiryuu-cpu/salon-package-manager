@@ -58,8 +58,9 @@ function AdminHistory() {
         listStaff(),
         supabase.from("packages").select("id,name").order("name"),
       ]);
-      setCustomers((c as any[]).map((x) => ({ id: x.id, label: x.email ?? x.id })));
-      setStaff((s as any[]).map((x) => ({ id: x.id, label: x.email ?? x.id })));
+      setCustomers((c as any[]).map((x) => ({ id: x.id, label: x.name ?? x.email ?? x.id })));
+      setStaff((s as any[]).map((x) => ({ id: x.id, label: x.name ?? x.email ?? x.id })));
+
       setPackages((p.data ?? []).map((x: any) => ({ id: x.id, label: x.name })));
     })().catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load"));
   }, [listCustomers, listStaff]);
@@ -177,17 +178,18 @@ function AdminHistory() {
             {rows.map((r) => (
               <Card key={r.id}>
                 <CardContent className="p-4 space-y-1">
-                  <div className="font-medium">{r.customer_email}</div>
+                  <div className="font-medium">{r.customer_name ?? r.customer_email}</div>
                   <div className="text-sm">{r.package_name}</div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
                   </div>
                   <div className="text-xs">
-                    Staff: {r.staff.length ? r.staff.map((s) => s.email).join(", ") : "—"}
+                    Staff: {r.staff.length ? r.staff.map((s) => s.name ?? s.email).join(", ") : "—"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    By: {r.admin_email || "—"}
+                    By: {r.admin_name ?? r.admin_email ?? "—"}
                   </div>
+
                 </CardContent>
               </Card>
             ))}
@@ -213,13 +215,14 @@ function AdminHistory() {
                       <TableCell className="whitespace-nowrap">
                         {new Date(r.used_at).toLocaleString()}
                       </TableCell>
-                      <TableCell>{r.customer_email}</TableCell>
+                      <TableCell>{r.customer_name ?? r.customer_email}</TableCell>
                       <TableCell>{r.package_name}</TableCell>
                       <TableCell className="text-center">{r.sessions_deducted}</TableCell>
                       <TableCell>
-                        {r.staff.length ? r.staff.map((s) => s.email).join(", ") : "—"}
+                        {r.staff.length ? r.staff.map((s) => s.name ?? s.email).join(", ") : "—"}
                       </TableCell>
-                      <TableCell>{r.admin_email || "—"}</TableCell>
+                      <TableCell>{r.admin_name ?? r.admin_email ?? "—"}</TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>

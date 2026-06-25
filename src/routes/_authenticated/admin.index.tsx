@@ -61,8 +61,8 @@ function genTempPassword() {
   return out + "!9";
 }
 
-type PersonRow = { id: string; email: string | null; created_at: string };
-type CustomerRow = { id: string; email: string | null; phone: string | null; points: number | null };
+type PersonRow = { id: string; email: string | null; name: string | null; created_at: string };
+type CustomerRow = { id: string; email: string | null; name: string | null; phone: string | null; points: number | null };
 
 function AdminDash() {
   const [stats, setStats] = useState({ customers: 0, packages: 0, sold: 0 });
@@ -74,12 +74,15 @@ function AdminDash() {
   const [addAdminOpen, setAddAdminOpen] = useState(false);
   const [addStaffOpen, setAddStaffOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState(genTempPassword());
   const [saving, setSaving] = useState(false);
 
   const [staffEmail, setStaffEmail] = useState("");
+  const [staffName, setStaffName] = useState("");
   const [staffPassword, setStaffPassword] = useState(genTempPassword());
   const [savingStaff, setSavingStaff] = useState(false);
+
 
   const [resetFor, setResetFor] = useState<PersonRow | null>(null);
   const [resetPwd, setResetPwd] = useState(genTempPassword());
@@ -123,9 +126,10 @@ function AdminDash() {
     e.preventDefault();
     setSaving(true);
     try {
-      await createAdmin({ data: { email: email.trim(), password } });
+      await createAdmin({ data: { email: email.trim(), password, name: name.trim() || undefined } });
       toast.success(`Admin created. Temp password: ${password}`, { duration: 10000 });
       setEmail("");
+      setName("");
       setPassword(genTempPassword());
       setAddAdminOpen(false);
       refresh();
@@ -136,13 +140,15 @@ function AdminDash() {
     }
   }
 
+
   async function onCreateStaff(e: React.FormEvent) {
     e.preventDefault();
     setSavingStaff(true);
     try {
-      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword } });
+      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined } });
       toast.success(`Staff created. Temp password: ${staffPassword}`, { duration: 10000 });
       setStaffEmail("");
+      setStaffName("");
       setStaffPassword(genTempPassword());
       setAddStaffOpen(false);
       refresh();
@@ -152,6 +158,7 @@ function AdminDash() {
       setSavingStaff(false);
     }
   }
+
 
   async function onReset(e: React.FormEvent) {
     e.preventDefault();
@@ -230,8 +237,9 @@ function AdminDash() {
             <Card key={c.id}>
               <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{c.email ?? "—"}</div>
+                  <div className="font-medium truncate">{c.name ?? c.email ?? "—"}</div>
                   <div className="text-xs text-muted-foreground truncate">
+                    {c.name ? `${c.email ?? ""} · ` : ""}
                     {c.phone ?? "no phone"} · {c.points ?? 0} pts
                   </div>
                 </div>
@@ -243,6 +251,7 @@ function AdminDash() {
               </CardContent>
             </Card>
           ))}
+
         </TabsContent>
 
         <TabsContent value="team" className="space-y-6 pt-4">
@@ -269,6 +278,15 @@ function AdminDash() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
+                        <Label htmlFor="admin-name">Name</Label>
+                        <Input
+                          id="admin-name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="admin-email">Email</Label>
                         <Input
                           id="admin-email"
@@ -279,6 +297,7 @@ function AdminDash() {
                           placeholder="name@salon.com"
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="admin-pass">Temporary password</Label>
                         <div className="flex gap-2">
@@ -312,10 +331,12 @@ function AdminDash() {
               <Card key={a.id}>
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{a.email ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {a.id === me ? "You" : "Admin"}
+                    <div className="font-medium truncate">{a.name ?? a.email ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {a.name ? a.email ?? "" : a.id === me ? "You" : "Admin"}
+                      {a.name && a.id === me ? " · You" : ""}
                     </div>
+
                   </div>
                   {a.id !== me && (
                     <Button
@@ -359,6 +380,15 @@ function AdminDash() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
+                        <Label htmlFor="staff-name">Name</Label>
+                        <Input
+                          id="staff-name"
+                          value={staffName}
+                          onChange={(e) => setStaffName(e.target.value)}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="staff-email">Email</Label>
                         <Input
                           id="staff-email"
@@ -369,6 +399,7 @@ function AdminDash() {
                           placeholder="name@salon.com"
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="staff-pass">Temporary password</Label>
                         <div className="flex gap-2">
@@ -405,8 +436,9 @@ function AdminDash() {
               <Card key={s.id}>
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{s.email ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">Staff</div>
+                    <div className="font-medium truncate">{s.name ?? s.email ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{s.name ? s.email ?? "Staff" : "Staff"}</div>
+
                   </div>
                   <Button
                     size="sm"
@@ -451,7 +483,7 @@ function AdminDash() {
             <DialogHeader>
               <DialogTitle>Reset password</DialogTitle>
               <DialogDescription>
-                Set a temporary password for {resetFor?.email}. Share it securely — they can change
+                Set a temporary password for {resetFor?.name ?? resetFor?.email}. Share it securely — they can change
                 it after signing in.
               </DialogDescription>
             </DialogHeader>
@@ -487,7 +519,7 @@ function AdminDash() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove staff role?</AlertDialogTitle>
             <AlertDialogDescription>
-              {removeStaffFor?.email} will no longer have access to the staff dashboard. Their
+              {removeStaffFor?.name ?? removeStaffFor?.email} will no longer have access to the staff dashboard. Their
               customer account stays intact.
             </AlertDialogDescription>
           </AlertDialogHeader>

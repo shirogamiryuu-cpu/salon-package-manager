@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
 });
 
-type C = { id: string; email: string; phone: string | null; points: number; created_at: string };
+type C = { id: string; email: string; name: string | null; phone: string | null; points: number; created_at: string };
 
 function Customers() {
   const list = useServerFn(adminListCustomers);
@@ -24,18 +24,24 @@ function Customers() {
 
   const filtered = useMemo(() => {
     const s = q.toLowerCase();
-    return rows.filter((r) => r.email.toLowerCase().includes(s) || (r.phone ?? "").includes(s));
+    return rows.filter(
+      (r) =>
+        (r.name ?? "").toLowerCase().includes(s) ||
+        r.email.toLowerCase().includes(s) ||
+        (r.phone ?? "").includes(s),
+    );
   }, [rows, q]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Customers</h1>
-      <Input placeholder="Search by email or phone" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+      <Input placeholder="Search by name, email or phone" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Points</TableHead>
@@ -46,7 +52,8 @@ function Customers() {
             <TableBody>
               {filtered.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.email}</TableCell>
+                  <TableCell className="font-medium">{c.name ?? "—"}</TableCell>
+                  <TableCell>{c.email}</TableCell>
                   <TableCell>{c.phone ?? "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{c.points}</Badge></TableCell>
                   <TableCell>{new Date(c.created_at).toLocaleDateString()}</TableCell>
@@ -56,7 +63,7 @@ function Customers() {
                 </TableRow>
               ))}
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No customers</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No customers</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -65,3 +72,4 @@ function Customers() {
     </div>
   );
 }
+

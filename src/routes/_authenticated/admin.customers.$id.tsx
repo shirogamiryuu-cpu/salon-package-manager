@@ -47,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
   component: CustomerDetail,
 });
 
-type StaffOpt = { id: string; email: string | null };
+type StaffOpt = { id: string; email: string | null; name: string | null };
 
 function CustomerDetail() {
   const { id } = Route.useParams();
@@ -157,9 +157,12 @@ function CustomerDetail() {
       </Link>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold">{profile?.email}</h1>
-          <p className="text-sm text-muted-foreground">{profile?.phone ?? "No phone"}</p>
+          <h1 className="text-2xl font-semibold">{profile?.name ?? profile?.email}</h1>
+          <p className="text-sm text-muted-foreground">
+            {profile?.name ? `${profile?.email} · ` : ""}{profile?.phone ?? "No phone"}
+          </p>
         </div>
+
         <div className="flex items-center gap-2">
           {isStaff && <Badge>Staff</Badge>}
           <Badge variant="secondary" className="text-base">
@@ -176,8 +179,9 @@ function CustomerDetail() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Promote to staff?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {profile?.email} will gain access to the staff dashboard and can be assigned to
+                    {profile?.name ?? profile?.email} will gain access to the staff dashboard and can be assigned to
                     session deductions. Their customer account stays intact.
+
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -256,8 +260,9 @@ function CustomerDetail() {
           <DialogHeader>
             <DialogTitle>Deduct a session</DialogTitle>
             <DialogDescription>
-              {profile?.email} · {deductFor?.packages?.name}. Select the staff who performed the
+              {profile?.name ?? profile?.email} · {deductFor?.packages?.name}. Select the staff who performed the
               service (optional).
+
             </DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2 max-h-72 overflow-y-auto">
@@ -273,7 +278,7 @@ function CustomerDetail() {
                   checked={selectedStaff.has(s.id)}
                   onCheckedChange={() => toggleStaff(s.id)}
                 />
-                <span className="text-sm">{s.email}</span>
+                <span className="text-sm">{s.name ?? s.email}</span>
               </label>
             ))}
           </div>

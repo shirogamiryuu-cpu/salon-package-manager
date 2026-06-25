@@ -26,6 +26,8 @@ function AuthPage() {
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suPhone, setSuPhone] = useState("");
+  const [suName, setSuName] = useState("");
+
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -64,9 +66,10 @@ function AuthPage() {
       password: suPassword,
       options: {
         emailRedirectTo: `${window.location.origin}/app`,
-        data: { phone: suPhone },
+        data: { phone: suPhone, name: suName.trim() || undefined },
       },
     });
+
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Account created — signing you in...");
@@ -112,9 +115,14 @@ function AuthPage() {
             <TabsContent value="signup">
               <form onSubmit={signUp} className="space-y-3 mt-4">
                 <div>
+                  <Label htmlFor="su-name">Name</Label>
+                  <Input id="su-name" required value={suName} onChange={(e) => setSuName(e.target.value)} placeholder="Your name" />
+                </div>
+                <div>
                   <Label htmlFor="su-email">Email</Label>
                   <Input id="su-email" type="email" required value={suEmail} onChange={(e) => setSuEmail(e.target.value)} />
                 </div>
+
                 <div>
                   <Label htmlFor="su-phone">Phone</Label>
                   <Input id="su-phone" type="tel" value={suPhone} onChange={(e) => setSuPhone(e.target.value)} />
