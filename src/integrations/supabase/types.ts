@@ -41,6 +41,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "customer_packages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customer_packages_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
@@ -136,6 +143,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "session_staff_staff_user_id_fkey"
+            columns: ["staff_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "session_staff_usage_log_id_fkey"
             columns: ["usage_log_id"]
             isOneToOne: false
@@ -164,6 +178,13 @@ export type Database = {
           used_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "usage_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "usage_logs_customer_package_id_fkey"
             columns: ["customer_package_id"]
