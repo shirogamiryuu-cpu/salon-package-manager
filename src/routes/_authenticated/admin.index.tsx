@@ -436,8 +436,9 @@ function AdminDash() {
               <Card key={s.id}>
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{s.email ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">Staff</div>
+                    <div className="font-medium truncate">{s.name ?? s.email ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{s.name ? s.email ?? "Staff" : "Staff"}</div>
+
                   </div>
                   <Button
                     size="sm"
@@ -482,7 +483,7 @@ function AdminDash() {
             <DialogHeader>
               <DialogTitle>Reset password</DialogTitle>
               <DialogDescription>
-                Set a temporary password for {resetFor?.email}. Share it securely — they can change
+                Set a temporary password for {resetFor?.name ?? resetFor?.email}. Share it securely — they can change
                 it after signing in.
               </DialogDescription>
             </DialogHeader>
@@ -518,7 +519,7 @@ function AdminDash() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove staff role?</AlertDialogTitle>
             <AlertDialogDescription>
-              {removeStaffFor?.email} will no longer have access to the staff dashboard. Their
+              {removeStaffFor?.name ?? removeStaffFor?.email} will no longer have access to the staff dashboard. Their
               customer account stays intact.
             </AlertDialogDescription>
           </AlertDialogHeader>
