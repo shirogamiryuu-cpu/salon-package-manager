@@ -15,9 +15,11 @@ type Row = {
   used_at: string;
   package_name: string;
   customer_email: string;
+  customer_name: string | null;
   remaining: number;
   total: number;
 };
+
 
 function StaffDash() {
   const list = useServerFn(staffListMySessions);
@@ -62,7 +64,7 @@ function StaffDash() {
             <Card key={r.id}>
               <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{r.customer_email}</div>
+                  <div className="font-medium truncate">{r.customer_name ?? r.customer_email}</div>
                   <div className="text-xs text-muted-foreground truncate">
                     {r.package_name} · {new Date(r.used_at).toLocaleString()}
                   </div>

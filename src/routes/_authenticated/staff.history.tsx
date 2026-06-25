@@ -22,9 +22,11 @@ type Row = {
   id: string;
   used_at: string;
   customer_email: string;
+  customer_name: string | null;
   package_name: string;
   sessions_deducted: number;
 };
+
 
 function StaffHistory() {
   const list = useServerFn(staffListMyHistory);
@@ -61,7 +63,7 @@ function StaffHistory() {
             {rows.map((r) => (
               <Card key={r.id}>
                 <CardContent className="p-4 space-y-1">
-                  <div className="font-medium">{r.customer_email}</div>
+                  <div className="font-medium">{r.customer_name ?? r.customer_email}</div>
                   <div className="text-sm">{r.package_name}</div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
@@ -87,7 +89,7 @@ function StaffHistory() {
                       <TableCell className="whitespace-nowrap">
                         {new Date(r.used_at).toLocaleString()}
                       </TableCell>
-                      <TableCell>{r.customer_email}</TableCell>
+                      <TableCell>{r.customer_name ?? r.customer_email}</TableCell>
                       <TableCell>{r.package_name}</TableCell>
                       <TableCell className="text-center">{r.sessions_deducted}</TableCell>
                     </TableRow>
