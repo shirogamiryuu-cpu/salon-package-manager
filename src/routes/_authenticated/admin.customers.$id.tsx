@@ -93,9 +93,20 @@ function CustomerDetail() {
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({ data: { customerId: id, packageId: pickId } });
+      await assign({ data: { customerId: id, packageId: pickId, depositPaid: assignDeposit } });
       toast.success("Package assigned");
       setPickId("");
+      setAssignDeposit(false);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const toggleDeposit = async (cp: any) => {
+    try {
+      await setDeposit({ data: { customerPackageId: cp.id, paid: !cp.deposit_paid } });
+      toast.success(cp.deposit_paid ? "Marked unpaid" : "Deposit marked paid");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
