@@ -224,9 +224,10 @@ function AdminDash() {
       </div>
 
       <Tabs defaultValue="customers">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="staff">Staff</TabsTrigger>
+          <TabsTrigger value="admins">Admins</TabsTrigger>
         </TabsList>
 
         <TabsContent value="customers" className="space-y-3 pt-4">
@@ -254,7 +255,7 @@ function AdminDash() {
 
         </TabsContent>
 
-        <TabsContent value="team" className="space-y-6 pt-4">
+        <TabsContent value="admins" className="space-y-6 pt-4">
           {/* Admins section */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
@@ -356,6 +357,29 @@ function AdminDash() {
             ))}
           </section>
 
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Change my password
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={onSelfChange} className="space-y-3">
+                <Input
+                  type="password"
+                  placeholder="New password (min 8 chars)"
+                  value={selfPwd}
+                  onChange={(e) => setSelfPwd(e.target.value)}
+                />
+                <Button type="submit" disabled={selfSaving} className="w-full">
+                  {selfSaving ? "Updating..." : "Update password"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="staff" className="space-y-6 pt-4">
           {/* Staff section */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
@@ -453,27 +477,6 @@ function AdminDash() {
               </Card>
             ))}
           </section>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lock className="h-4 w-4" /> Change my password
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={onSelfChange} className="space-y-3">
-                <Input
-                  type="password"
-                  placeholder="New password (min 8 chars)"
-                  value={selfPwd}
-                  onChange={(e) => setSelfPwd(e.target.value)}
-                />
-                <Button type="submit" disabled={selfSaving} className="w-full">
-                  {selfSaving ? "Updating..." : "Update password"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
