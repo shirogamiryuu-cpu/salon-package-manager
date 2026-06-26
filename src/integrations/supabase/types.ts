@@ -17,6 +17,8 @@ export type Database = {
       customer_packages: {
         Row: {
           customer_id: string
+          deposit_paid: boolean
+          deposit_paid_at: string | null
           id: string
           package_id: string
           purchase_date: string
@@ -25,6 +27,8 @@ export type Database = {
         }
         Insert: {
           customer_id: string
+          deposit_paid?: boolean
+          deposit_paid_at?: string | null
           id?: string
           package_id: string
           purchase_date?: string
@@ -33,6 +37,8 @@ export type Database = {
         }
         Update: {
           customer_id?: string
+          deposit_paid?: boolean
+          deposit_paid_at?: string | null
           id?: string
           package_id?: string
           purchase_date?: string

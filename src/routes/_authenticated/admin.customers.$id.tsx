@@ -6,6 +6,7 @@ import {
   adminListStaff,
   adminPromoteToStaff,
   assignPackage,
+  setDepositPaid,
   useSession,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,10 +57,12 @@ function CustomerDetail() {
   const use = useServerFn(useSession);
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
+  const setDeposit = useServerFn(setDepositPaid);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string }[]>([]);
   const [pickId, setPickId] = useState<string>("");
+  const [assignDeposit, setAssignDeposit] = useState(false);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
 
@@ -90,9 +93,20 @@ function CustomerDetail() {
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({ data: { customerId: id, packageId: pickId } });
+      await assign({ data: { customerId: id, packageId: pickId, depositPaid: assignDeposit } });
       toast.success("Package assigned");
       setPickId("");
+      setAssignDeposit(false);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const toggleDeposit = async (cp: any) => {
+    try {
+      await setDeposit({ data: { customerPackageId: cp.id, paid: !cp.deposit_paid } });
+      toast.success(cp.deposit_paid ? "Marked unpaid" : "Deposit marked paid");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -198,22 +212,31 @@ function CustomerDetail() {
         <CardHeader>
           <CardTitle>Assign a package</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
-          <Select value={pickId} onValueChange={setPickId}>
-            <SelectTrigger className="max-w-xs">
-              <SelectValue placeholder="Choose a package" />
-            </SelectTrigger>
-            <SelectContent>
-              {packages.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={doAssign} disabled={!pickId}>
-            Assign
-          </Button>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Select value={pickId} onValueChange={setPickId}>
+              <SelectTrigger className="max-w-xs">
+                <SelectValue placeholder="Choose a package" />
+              </SelectTrigger>
+              <SelectContent>
+                {packages.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={doAssign} disabled={!pickId}>
+              Assign
+            </Button>
+          </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={assignDeposit}
+              onCheckedChange={(v) => setAssignDeposit(v === true)}
+            />
+            Half deposit paid on assignment
+          </label>
         </CardContent>
       </Card>
 
@@ -235,6 +258,18 @@ function CustomerDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={cp.deposit_paid ? "default" : "secondary"}>
+                      {cp.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant={cp.deposit_paid ? "ghost" : "secondary"}
+                      onClick={() => toggleDeposit(cp)}
+                    >
+                      {cp.deposit_paid ? "Mark unpaid" : "Mark paid"}
+                    </Button>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}

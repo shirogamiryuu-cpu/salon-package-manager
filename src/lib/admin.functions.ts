@@ -46,8 +46,14 @@ export const adminGetCustomer = createServerFn({ method: "GET" })
 
 export const assignPackage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { customerId: string; packageId: string }) =>
-    z.object({ customerId: z.string().uuid(), packageId: z.string().uuid() }).parse(d),
+  .inputValidator((d: { customerId: string; packageId: string; depositPaid?: boolean }) =>
+    z
+      .object({
+        customerId: z.string().uuid(),
+        packageId: z.string().uuid(),
+        depositPaid: z.boolean().optional().default(false),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -63,6 +69,8 @@ export const assignPackage = createServerFn({ method: "POST" })
       package_id: data.packageId,
       sessions_remaining: pkg.total_sessions,
       total_sessions: pkg.total_sessions,
+      deposit_paid: data.depositPaid,
+      deposit_paid_at: data.depositPaid ? new Date().toISOString() : null,
     });
     if (error) throw new Error(error.message);
     if (pkg.points_awarded) {
@@ -76,6 +84,25 @@ export const assignPackage = createServerFn({ method: "POST" })
         .update({ points: (prof?.points ?? 0) + pkg.points_awarded })
         .eq("id", data.customerId);
     }
+    return { ok: true };
+  });
+
+export const setDepositPaid = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { customerPackageId: string; paid: boolean }) =>
+    z.object({ customerPackageId: z.string().uuid(), paid: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("customer_packages")
+      .update({
+        deposit_paid: data.paid,
+        deposit_paid_at: data.paid ? new Date().toISOString() : null,
+      })
+      .eq("id", data.customerPackageId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
