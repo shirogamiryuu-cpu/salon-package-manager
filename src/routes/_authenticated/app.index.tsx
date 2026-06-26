@@ -69,9 +69,14 @@ function MyPackages() {
                 <CardContent className="space-y-3">
                   {r.packages?.description && <p className="text-sm text-muted-foreground">{r.packages.description}</p>}
                   <Progress value={pct} />
-                  <p className="text-xs text-muted-foreground">
-                    {used} used · purchased {new Date(r.purchase_date).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={r.deposit_paid ? "default" : "secondary"}>
+                      {r.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {used} used · {new Date(r.purchase_date).toLocaleDateString()}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             );
