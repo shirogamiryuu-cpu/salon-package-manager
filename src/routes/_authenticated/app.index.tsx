@@ -14,6 +14,7 @@ type Row = {
   sessions_remaining: number;
   total_sessions: number;
   purchase_date: string;
+  deposit_paid: boolean;
   packages: { name: string; description: string | null; points_awarded: number } | null;
 };
 
@@ -29,7 +30,7 @@ function MyPackages() {
       const [{ data: cp }, { data: p }] = await Promise.all([
         supabase
           .from("customer_packages")
-          .select("id,sessions_remaining,total_sessions,purchase_date,packages(name,description,points_awarded)")
+          .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,packages(name,description,points_awarded)")
           .eq("customer_id", u.user.id)
           .order("purchase_date", { ascending: false }),
         supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
