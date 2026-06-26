@@ -258,6 +258,18 @@ function CustomerDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={cp.deposit_paid ? "default" : "secondary"}>
+                      {cp.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant={cp.deposit_paid ? "ghost" : "secondary"}
+                      onClick={() => toggleDeposit(cp)}
+                    >
+                      {cp.deposit_paid ? "Mark unpaid" : "Mark paid"}
+                    </Button>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}
