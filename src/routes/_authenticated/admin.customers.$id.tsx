@@ -212,22 +212,31 @@ function CustomerDetail() {
         <CardHeader>
           <CardTitle>Assign a package</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
-          <Select value={pickId} onValueChange={setPickId}>
-            <SelectTrigger className="max-w-xs">
-              <SelectValue placeholder="Choose a package" />
-            </SelectTrigger>
-            <SelectContent>
-              {packages.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={doAssign} disabled={!pickId}>
-            Assign
-          </Button>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Select value={pickId} onValueChange={setPickId}>
+              <SelectTrigger className="max-w-xs">
+                <SelectValue placeholder="Choose a package" />
+              </SelectTrigger>
+              <SelectContent>
+                {packages.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={doAssign} disabled={!pickId}>
+              Assign
+            </Button>
+          </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={assignDeposit}
+              onCheckedChange={(v) => setAssignDeposit(v === true)}
+            />
+            Half deposit paid on assignment
+          </label>
         </CardContent>
       </Card>
 
