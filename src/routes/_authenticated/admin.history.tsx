@@ -184,7 +184,7 @@ function AdminHistory() {
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
                   </div>
                   <div className="text-xs">
-                    Staff: {r.staff.length ? r.staff.map((s) => s.name ?? s.email).join(", ") : "—"}
+                    Staff: {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     By: {r.admin_name ?? r.admin_email ?? "—"}
@@ -219,7 +219,7 @@ function AdminHistory() {
                       <TableCell>{r.package_name}</TableCell>
                       <TableCell className="text-center">{r.sessions_deducted}</TableCell>
                       <TableCell>
-                        {r.staff.length ? r.staff.map((s) => s.name ?? s.email).join(", ") : "—"}
+                        {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
                       </TableCell>
                       <TableCell>{r.admin_name ?? r.admin_email ?? "—"}</TableCell>
 
