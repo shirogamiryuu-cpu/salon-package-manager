@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/server-fn";
 import { staffListMySessions } from "@/lib/admin.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList, MinusCircle } from "lucide-react";
