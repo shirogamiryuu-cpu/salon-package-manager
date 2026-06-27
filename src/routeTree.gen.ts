@@ -18,7 +18,6 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff.index'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as ApiPublicSeedAdminRouteImport } from './routes/api/public/seed-admin'
 import { Route as AuthenticatedStaffHistoryRouteImport } from './routes/_authenticated/staff.history'
 import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/app.profile'
 import { Route as AuthenticatedAppPackagesRouteImport } from './routes/_authenticated/app.packages'
@@ -71,11 +70,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const ApiPublicSeedAdminRoute = ApiPublicSeedAdminRouteImport.update({
-  id: '/api/public/seed-admin',
-  path: '/api/public/seed-admin',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStaffHistoryRoute =
   AuthenticatedStaffHistoryRouteImport.update({
@@ -136,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
   '/staff/history': typeof AuthenticatedStaffHistoryRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/staff/': typeof AuthenticatedStaffIndexRoute
@@ -152,7 +145,6 @@ export interface FileRoutesByTo {
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
   '/staff/history': typeof AuthenticatedStaffHistoryRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/staff': typeof AuthenticatedStaffIndexRoute
@@ -173,7 +165,6 @@ export interface FileRoutesById {
   '/_authenticated/app/packages': typeof AuthenticatedAppPackagesRoute
   '/_authenticated/app/profile': typeof AuthenticatedAppProfileRoute
   '/_authenticated/staff/history': typeof AuthenticatedStaffHistoryRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
@@ -194,7 +185,6 @@ export interface FileRouteTypes {
     | '/app/packages'
     | '/app/profile'
     | '/staff/history'
-    | '/api/public/seed-admin'
     | '/admin/'
     | '/app/'
     | '/staff/'
@@ -210,7 +200,6 @@ export interface FileRouteTypes {
     | '/app/packages'
     | '/app/profile'
     | '/staff/history'
-    | '/api/public/seed-admin'
     | '/admin'
     | '/app'
     | '/staff'
@@ -230,7 +219,6 @@ export interface FileRouteTypes {
     | '/_authenticated/app/packages'
     | '/_authenticated/app/profile'
     | '/_authenticated/staff/history'
-    | '/api/public/seed-admin'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
     | '/_authenticated/staff/'
@@ -242,7 +230,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  ApiPublicSeedAdminRoute: typeof ApiPublicSeedAdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -309,13 +296,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/api/public/seed-admin': {
-      id: '/api/public/seed-admin'
-      path: '/api/public/seed-admin'
-      fullPath: '/api/public/seed-admin'
-      preLoaderRoute: typeof ApiPublicSeedAdminRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/staff/history': {
       id: '/_authenticated/staff/history'
@@ -444,18 +424,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  ApiPublicSeedAdminRoute: ApiPublicSeedAdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
