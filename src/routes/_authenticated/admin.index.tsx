@@ -148,11 +148,12 @@ function AdminDash() {
     e.preventDefault();
     setSavingStaff(true);
     try {
-      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined } });
-      toast.success(`Staff created. Temp password: ${staffPassword}`, { duration: 10000 });
+      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined, category: staffCategory } });
+      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} created. Temp password: ${staffPassword}`, { duration: 10000 });
       setStaffEmail("");
       setStaffName("");
       setStaffPassword(genTempPassword());
+      setStaffCategory("staff");
       setAddStaffOpen(false);
       refresh();
     } catch (err) {
