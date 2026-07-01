@@ -21,6 +21,7 @@ type CP = {
   purchase_date: string;
   deposit_paid: boolean;
   deposit_paid_at: string | null;
+  deposit_sessions_paid: number;
   packages: {
     name: string;
     description: string | null;
@@ -49,7 +50,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,packages(name,description,price,points_awarded)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -69,7 +70,10 @@ function PackageDetail() {
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
 
   const price = Number(cp.packages?.price ?? 0);
-  const deposit = price / 2;
+  const pricePer = cp.total_sessions > 0 ? price / cp.total_sessions : 0;
+  const depositSessions = cp.deposit_sessions_paid ?? 0;
+  const depositAmount = pricePer * depositSessions;
+  const outstanding = Math.max(0, price - depositAmount);
   const used = cp.total_sessions - cp.sessions_remaining;
   const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
   const lastUsed = history && history.length ? history[0].used_at : null;
@@ -100,32 +104,41 @@ function PackageDetail() {
             {used} used · Purchased {new Date(cp.purchase_date).toLocaleDateString()}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Total price</div>
               <div className="text-base font-semibold">${price.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-xs text-muted-foreground">Half deposit</div>
-              <div className="text-base font-semibold">${deposit.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">Deposit paid</div>
+              <div className="text-base font-semibold">${depositAmount.toFixed(2)}</div>
+              <div className="text-[10px] text-muted-foreground">
+                {depositSessions}/{cp.total_sessions} sessions
+              </div>
+            </div>
+            <div className="rounded-lg border p-3">
+              <div className="text-xs text-muted-foreground">Outstanding</div>
+              <div className="text-base font-semibold">${outstanding.toFixed(2)}</div>
             </div>
           </div>
 
           <div className="flex flex-col gap-1 rounded-lg border p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Payment status</span>
-              <Badge variant={cp.deposit_paid ? "default" : "secondary"}>
-                {cp.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+              <Badge variant={depositSessions > 0 ? "default" : "secondary"}>
+                {depositSessions > 0
+                  ? `${depositSessions}/${cp.total_sessions} sessions paid`
+                  : "Deposit unpaid"}
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              {cp.deposit_paid
+              {depositSessions > 0
                 ? `Paid ${
                     cp.deposit_paid_at
                       ? new Date(cp.deposit_paid_at).toLocaleDateString()
                       : ""
-                  } · $${deposit.toFixed(2)} of $${price.toFixed(2)}`
-                : `Outstanding deposit: $${deposit.toFixed(2)}`}
+                  } · $${depositAmount.toFixed(2)} of $${price.toFixed(2)}`
+                : `Outstanding balance: $${price.toFixed(2)}`}
             </div>
           </div>
 

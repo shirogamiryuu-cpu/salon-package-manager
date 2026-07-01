@@ -13,12 +13,12 @@ export const adminGetCustomer = (a: { data: { id: string } }) =>
   callAdminApi("adminGetCustomer", payload(a));
 
 export const assignPackage = (a: {
-  data: { customerId: string; packageId: string; depositPaid?: boolean };
+  data: { customerId: string; packageId: string; depositSessionsPaid?: number };
 }) => callAdminApi("assignPackage", payload(a));
 
-export const setDepositPaid = (a: {
-  data: { customerPackageId: string; paid: boolean };
-}) => callAdminApi("setDepositPaid", payload(a));
+export const setDepositSessions = (a: {
+  data: { customerPackageId: string; sessions: number };
+}) => callAdminApi("setDepositSessions", payload(a));
 
 export const useSession = (a: {
   data: { customerPackageId: string; staffIds?: string[] };
@@ -28,7 +28,7 @@ export const adminListStaff = (_a?: Arg<undefined>) =>
   callAdminApi("adminListStaff");
 
 export const adminCreateStaff = (a: {
-  data: { email: string; password: string; name?: string };
+  data: { email: string; password: string; name?: string; category?: "staff" | "stylist" };
 }) => callAdminApi("adminCreateStaff", payload(a));
 
 export const adminPromoteToStaff = (a: { data: { userId: string } }) =>
@@ -36,6 +36,10 @@ export const adminPromoteToStaff = (a: { data: { userId: string } }) =>
 
 export const adminRemoveStaffRole = (a: { data: { userId: string } }) =>
   callAdminApi("adminRemoveStaffRole", payload(a));
+
+export const adminSetStaffCategory = (a: {
+  data: { userId: string; category: "staff" | "stylist" };
+}) => callAdminApi("adminSetStaffCategory", payload(a));
 
 export const staffListMySessions = (_a?: Arg<undefined>) =>
   callAdminApi("staffListMySessions");

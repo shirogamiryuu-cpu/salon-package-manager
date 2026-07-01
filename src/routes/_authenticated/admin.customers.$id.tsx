@@ -6,7 +6,7 @@ import {
   adminListStaff,
   adminPromoteToStaff,
   assignPackage,
-  setDepositPaid,
+  setDepositSessions,
   useSession,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -41,7 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
@@ -57,14 +58,15 @@ function CustomerDetail() {
   const use = useServerFn(useSession);
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
-  const setDeposit = useServerFn(setDepositPaid);
+  const setDeposit = useServerFn(setDepositSessions);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
   const [pickId, setPickId] = useState<string>("");
-  const [assignDeposit, setAssignDeposit] = useState(false);
+  const [assignDeposit, setAssignDeposit] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
+  const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
@@ -85,28 +87,38 @@ function CustomerDetail() {
     refresh();
     supabase
       .from("packages")
-      .select("id,name")
+      .select("id,name,total_sessions,price")
       .eq("is_active", true)
-      .then(({ data }) => setPackages(data ?? []));
+      .then(({ data }) => setPackages((data ?? []) as any));
   }, [refresh]);
+
+  const selectedPkg = packages.find((p) => p.id === pickId);
 
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({ data: { customerId: id, packageId: pickId, depositPaid: assignDeposit } });
+      await assign({
+        data: { customerId: id, packageId: pickId, depositSessionsPaid: assignDeposit },
+      });
       toast.success("Package assigned");
       setPickId("");
-      setAssignDeposit(false);
+      setAssignDeposit(0);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
     }
   };
 
-  const toggleDeposit = async (cp: any) => {
+  const saveDeposit = async (cp: any) => {
+    const val = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
     try {
-      await setDeposit({ data: { customerPackageId: cp.id, paid: !cp.deposit_paid } });
-      toast.success(cp.deposit_paid ? "Marked unpaid" : "Deposit marked paid");
+      await setDeposit({ data: { customerPackageId: cp.id, sessions: val } });
+      toast.success("Deposit updated");
+      setDepositDrafts((d) => {
+        const n = { ...d };
+        delete n[cp.id];
+        return n;
+      });
       refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -230,13 +242,25 @@ function CustomerDetail() {
               Assign
             </Button>
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox
-              checked={assignDeposit}
-              onCheckedChange={(v) => setAssignDeposit(v === true)}
-            />
-            Half deposit paid on assignment
-          </label>
+          {selectedPkg && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Deposit sessions paid:</span>
+              <Input
+                type="number"
+                min={0}
+                max={selectedPkg.total_sessions}
+                value={assignDeposit}
+                onChange={(e) => setAssignDeposit(Math.max(0, Math.min(selectedPkg.total_sessions, Number(e.target.value) || 0)))}
+                className="w-20 h-8"
+              />
+              <span className="text-muted-foreground">/ {selectedPkg.total_sessions}</span>
+              {selectedPkg.price > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  (~${((Number(selectedPkg.price) / selectedPkg.total_sessions) * assignDeposit).toFixed(2)})
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -258,18 +282,51 @@ function CustomerDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant={cp.deposit_paid ? "default" : "secondary"}>
-                      {cp.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant={cp.deposit_paid ? "ghost" : "secondary"}
-                      onClick={() => toggleDeposit(cp)}
-                    >
-                      {cp.deposit_paid ? "Mark unpaid" : "Mark paid"}
-                    </Button>
-                  </div>
+                  {(() => {
+                    const draft = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
+                    const dirty = draft !== (cp.deposit_sessions_paid ?? 0);
+                    const pricePer = cp.packages?.price
+                      ? Number(cp.packages.price) / cp.total_sessions
+                      : 0;
+                    return (
+                      <div className="rounded-md border p-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={draft > 0 ? "default" : "secondary"}>
+                            Deposit: {draft}/{cp.total_sessions} sessions
+                          </Badge>
+                          {pricePer > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              ~${(pricePer * draft).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={cp.total_sessions}
+                            value={draft}
+                            onChange={(e) => {
+                              const v = Math.max(
+                                0,
+                                Math.min(cp.total_sessions, Number(e.target.value) || 0),
+                              );
+                              setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
+                            }}
+                            className="h-8"
+                          />
+                          <Button
+                            size="sm"
+                            variant={dirty ? "default" : "ghost"}
+                            disabled={!dirty}
+                            onClick={() => saveDeposit(cp)}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Save
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}

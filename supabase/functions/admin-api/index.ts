@@ -45,7 +45,7 @@ async function requireUser(req: Request) {
   return { userId: data.user.id, userClient, token };
 }
 
-async function hasRole(userId: string, role: "admin" | "staff" | "customer") {
+async function hasRole(userId: string, role: "admin" | "staff" | "customer" | "stylist") {
   const sb = admin();
   const { data, error } = await sb.rpc("has_role", { _user_id: userId, _role: role });
   if (error) throw new Error(error.message);
@@ -57,7 +57,8 @@ async function assertAdmin(userId: string) {
 }
 
 async function assertStaff(userId: string) {
-  if (!(await hasRole(userId, "staff"))) throw new Error("Forbidden");
+  const [s, st] = await Promise.all([hasRole(userId, "staff"), hasRole(userId, "stylist")]);
+  if (!s && !st) throw new Error("Forbidden");
 }
 
 // ============== Action handlers ==============
@@ -89,7 +90,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, depositPaid }, { userId }) {
+  async assignPackage({ customerId, packageId, depositSessionsPaid }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -98,13 +99,15 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
+    const dep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, pkg.total_sessions));
     const { error } = await sb.from("customer_packages").insert({
       customer_id: customerId,
       package_id: packageId,
       sessions_remaining: pkg.total_sessions,
       total_sessions: pkg.total_sessions,
-      deposit_paid: !!depositPaid,
-      deposit_paid_at: depositPaid ? new Date().toISOString() : null,
+      deposit_sessions_paid: dep,
+      deposit_paid: dep > 0,
+      deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
     });
     if (error) throw new Error(error.message);
     if (pkg.points_awarded) {
@@ -117,14 +120,20 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async setDepositPaid({ customerPackageId, paid }, { userId }) {
+  async setDepositSessions({ customerPackageId, sessions }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
+    const { data: cp, error: cErr } = await sb
+      .from("customer_packages").select("total_sessions")
+      .eq("id", customerPackageId).maybeSingle();
+    if (cErr || !cp) throw new Error("Not found");
+    const dep = Math.max(0, Math.min(Number(sessions) || 0, cp.total_sessions));
     const { error } = await sb
       .from("customer_packages")
       .update({
-        deposit_paid: !!paid,
-        deposit_paid_at: paid ? new Date().toISOString() : null,
+        deposit_sessions_paid: dep,
+        deposit_paid: dep > 0,
+        deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
       })
       .eq("id", customerPackageId);
     if (error) throw new Error(error.message);
@@ -152,7 +161,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (Array.isArray(staffIds) && staffIds.length) {
       const { data: validRoles } = await sb
         .from("user_roles").select("user_id")
-        .eq("role", "staff").in("user_id", staffIds);
+        .in("role", ["staff", "stylist"]).in("user_id", staffIds);
       const valid = new Set((validRoles ?? []).map((r) => r.user_id));
       const rows = staffIds
         .filter((id: string) => valid.has(id))
@@ -166,17 +175,31 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const { data: roles, error } = await sb
-      .from("user_roles").select("user_id").eq("role", "staff");
+      .from("user_roles").select("user_id,role").in("role", ["staff", "stylist"]);
     if (error) throw new Error(error.message);
-    const ids = (roles ?? []).map((r) => r.user_id);
+    const ids = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
     if (!ids.length) return [];
+    const byUser = new Map<string, Set<string>>();
+    for (const r of roles ?? []) {
+      const s = byUser.get(r.user_id) ?? new Set<string>();
+      s.add(r.role);
+      byUser.set(r.user_id, s);
+    }
     const { data: profiles } = await sb
       .from("profiles").select("id,email,name,created_at")
       .in("id", ids).order("created_at", { ascending: false });
-    return profiles ?? [];
+    return (profiles ?? []).map((p: any) => {
+      const set = byUser.get(p.id) ?? new Set();
+      return {
+        ...p,
+        is_staff: set.has("staff"),
+        is_stylist: set.has("stylist"),
+        category: set.has("stylist") ? "stylist" : "staff",
+      };
+    });
   },
 
-  async adminCreateStaff({ email, password, name }, { userId }) {
+  async adminCreateStaff({ email, password, name, category }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: created, error } = await sb.auth.admin.createUser({
@@ -186,7 +209,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
     const uid = created.user.id;
     await sb.from("user_roles").delete().eq("user_id", uid);
-    const { error: rErr } = await sb.from("user_roles").insert({ user_id: uid, role: "staff" });
+    const role = category === "stylist" ? "stylist" : "staff";
+    const { error: rErr } = await sb.from("user_roles").insert({ user_id: uid, role });
     if (rErr) throw new Error(rErr.message);
     if (name) await sb.from("profiles").update({ name }).eq("id", uid);
     return { ok: true, email };
@@ -205,7 +229,18 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { error } = await sb
       .from("user_roles").delete()
-      .eq("user_id", targetId).eq("role", "staff");
+      .eq("user_id", targetId).in("role", ["staff", "stylist"]);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
+  async adminSetStaffCategory({ userId: targetId, category }, { userId }) {
+    await assertAdmin(userId);
+    if (category !== "staff" && category !== "stylist") throw new Error("Invalid category");
+    const sb = admin();
+    await sb.from("user_roles").delete()
+      .eq("user_id", targetId).in("role", ["staff", "stylist"]);
+    const { error } = await sb.from("user_roles").insert({ user_id: targetId, role: category });
     if (error) throw new Error(error.message);
     return { ok: true };
   },

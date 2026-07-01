@@ -45,6 +45,7 @@ import {
   adminListStaff,
   adminRemoveStaffRole,
   adminResetPassword,
+  adminSetStaffCategory,
 } from "@/lib/admin.functions";
 import { Link } from "@tanstack/react-router";
 
@@ -61,7 +62,7 @@ function genTempPassword() {
   return out + "!9";
 }
 
-type PersonRow = { id: string; email: string | null; name: string | null; created_at: string };
+type PersonRow = { id: string; email: string | null; name: string | null; created_at: string; is_staff?: boolean; is_stylist?: boolean; category?: "staff" | "stylist" };
 type CustomerRow = { id: string; email: string | null; name: string | null; phone: string | null; points: number | null };
 
 function AdminDash() {
@@ -81,6 +82,7 @@ function AdminDash() {
   const [staffEmail, setStaffEmail] = useState("");
   const [staffName, setStaffName] = useState("");
   const [staffPassword, setStaffPassword] = useState(genTempPassword());
+  const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("staff");
   const [savingStaff, setSavingStaff] = useState(false);
 
 
@@ -100,6 +102,7 @@ function AdminDash() {
   const listCustomers = useServerFn(adminListCustomers);
   const resetPassword = useServerFn(adminResetPassword);
   const removeStaffRole = useServerFn(adminRemoveStaffRole);
+  const setStaffCat = useServerFn(adminSetStaffCategory);
 
   const refresh = useCallback(async () => {
     const [{ count: cCount }, { count: pCount }, { count: sCount }, a, s, c, u] = await Promise.all([
@@ -145,11 +148,12 @@ function AdminDash() {
     e.preventDefault();
     setSavingStaff(true);
     try {
-      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined } });
-      toast.success(`Staff created. Temp password: ${staffPassword}`, { duration: 10000 });
+      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined, category: staffCategory } });
+      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} created. Temp password: ${staffPassword}`, { duration: 10000 });
       setStaffEmail("");
       setStaffName("");
       setStaffPassword(genTempPassword());
+      setStaffCategory("staff");
       setAddStaffOpen(false);
       refresh();
     } catch (err) {
@@ -425,6 +429,30 @@ function AdminDash() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label>Category</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={staffCategory === "staff" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStaffCategory("staff")}
+                            className="flex-1"
+                          >
+                            Staff
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={staffCategory === "stylist" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStaffCategory("stylist")}
+                            className="flex-1"
+                          >
+                            Stylist
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="staff-pass">Temporary password</Label>
                         <div className="flex gap-2">
                           <Input
@@ -456,26 +484,64 @@ function AdminDash() {
             {staff.length === 0 && (
               <p className="text-sm text-muted-foreground">No staff members yet.</p>
             )}
-            {staff.map((s) => (
-              <Card key={s.id}>
-                <CardContent className="p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{s.name ?? s.email ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground truncate">{s.name ? s.email ?? "Staff" : "Staff"}</div>
 
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setRemoveStaffFor(s)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Remove
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {(["stylist", "staff"] as const).map((cat) => {
+              const rows = staff.filter((s) => (s.category ?? "staff") === cat);
+              if (rows.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {cat === "stylist" ? "Stylists" : "General staff"}
+                  </h3>
+                  {rows.map((s) => {
+                    const other = cat === "stylist" ? "staff" : "stylist";
+                    return (
+                      <Card key={s.id}>
+                        <CardContent className="p-4 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">{s.name ?? s.email ?? "—"}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {s.name ? s.email ?? "" : ""}
+                            </div>
+                            <div className="mt-1">
+                              <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium">
+                                {cat === "stylist" ? "Stylist" : "Staff"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  await setStaffCat({ data: { userId: s.id, category: other } });
+                                  toast.success(`Moved to ${other}`);
+                                  refresh();
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : "Failed");
+                                }
+                              }}
+                            >
+                              Make {other === "stylist" ? "Stylist" : "Staff"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setRemoveStaffFor(s)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Remove
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </section>
         </TabsContent>
       </Tabs>
