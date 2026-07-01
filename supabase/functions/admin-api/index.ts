@@ -160,7 +160,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (Array.isArray(staffIds) && staffIds.length) {
       const { data: validRoles } = await sb
         .from("user_roles").select("user_id")
-        .eq("role", "staff").in("user_id", staffIds);
+        .in("role", ["staff", "stylist"]).in("user_id", staffIds);
       const valid = new Set((validRoles ?? []).map((r) => r.user_id));
       const rows = staffIds
         .filter((id: string) => valid.has(id))
