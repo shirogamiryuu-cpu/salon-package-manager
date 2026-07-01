@@ -58,14 +58,15 @@ function CustomerDetail() {
   const use = useServerFn(useSession);
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
-  const setDeposit = useServerFn(setDepositPaid);
+  const setDeposit = useServerFn(setDepositSessions);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
   const [pickId, setPickId] = useState<string>("");
-  const [assignDeposit, setAssignDeposit] = useState(false);
+  const [assignDeposit, setAssignDeposit] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
+  const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
