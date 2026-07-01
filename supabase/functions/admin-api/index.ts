@@ -45,7 +45,7 @@ async function requireUser(req: Request) {
   return { userId: data.user.id, userClient, token };
 }
 
-async function hasRole(userId: string, role: "admin" | "staff" | "customer") {
+async function hasRole(userId: string, role: "admin" | "staff" | "customer" | "stylist") {
   const sb = admin();
   const { data, error } = await sb.rpc("has_role", { _user_id: userId, _role: role });
   if (error) throw new Error(error.message);
