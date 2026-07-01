@@ -242,13 +242,25 @@ function CustomerDetail() {
               Assign
             </Button>
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox
-              checked={assignDeposit}
-              onCheckedChange={(v) => setAssignDeposit(v === true)}
-            />
-            Half deposit paid on assignment
-          </label>
+          {selectedPkg && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Deposit sessions paid:</span>
+              <Input
+                type="number"
+                min={0}
+                max={selectedPkg.total_sessions}
+                value={assignDeposit}
+                onChange={(e) => setAssignDeposit(Math.max(0, Math.min(selectedPkg.total_sessions, Number(e.target.value) || 0)))}
+                className="w-20 h-8"
+              />
+              <span className="text-muted-foreground">/ {selectedPkg.total_sessions}</span>
+              {selectedPkg.price > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  (~${((Number(selectedPkg.price) / selectedPkg.total_sessions) * assignDeposit).toFixed(2)})
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
