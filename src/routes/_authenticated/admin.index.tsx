@@ -429,6 +429,30 @@ function AdminDash() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label>Category</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={staffCategory === "staff" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStaffCategory("staff")}
+                            className="flex-1"
+                          >
+                            Staff
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={staffCategory === "stylist" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStaffCategory("stylist")}
+                            className="flex-1"
+                          >
+                            Stylist
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="staff-pass">Temporary password</Label>
                         <div className="flex gap-2">
                           <Input
