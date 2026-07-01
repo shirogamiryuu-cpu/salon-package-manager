@@ -102,6 +102,7 @@ function AdminDash() {
   const listCustomers = useServerFn(adminListCustomers);
   const resetPassword = useServerFn(adminResetPassword);
   const removeStaffRole = useServerFn(adminRemoveStaffRole);
+  const setStaffCat = useServerFn(adminSetStaffCategory);
 
   const refresh = useCallback(async () => {
     const [{ count: cCount }, { count: pCount }, { count: sCount }, a, s, c, u] = await Promise.all([
