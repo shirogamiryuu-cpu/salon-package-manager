@@ -57,27 +57,33 @@ function MyPackages() {
             const used = r.total_sessions - r.sessions_remaining;
             const pct = (r.sessions_remaining / r.total_sessions) * 100;
             return (
-              <Card key={r.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{r.packages?.name ?? "Package"}</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {r.sessions_remaining}/{r.total_sessions} left
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {r.packages?.description && <p className="text-sm text-muted-foreground">{r.packages.description}</p>}
-                  <Progress value={pct} />
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant={r.deposit_paid ? "default" : "secondary"}>
-                      {r.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {used} used · {new Date(r.purchase_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
+              <Card key={r.id} className="transition hover:shadow-md">
+                <Link
+                  to="/app/mine/$id"
+                  params={{ id: r.id }}
+                  className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-xl"
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{r.packages?.name ?? "Package"}</span>
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {r.sessions_remaining}/{r.total_sessions} left
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {r.packages?.description && <p className="text-sm text-muted-foreground">{r.packages.description}</p>}
+                    <Progress value={pct} />
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant={r.deposit_paid ? "default" : "secondary"}>
+                        {r.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {used} used · {new Date(r.purchase_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Link>
               </Card>
             );
           })}
