@@ -87,28 +87,38 @@ function CustomerDetail() {
     refresh();
     supabase
       .from("packages")
-      .select("id,name")
+      .select("id,name,total_sessions,price")
       .eq("is_active", true)
-      .then(({ data }) => setPackages(data ?? []));
+      .then(({ data }) => setPackages((data ?? []) as any));
   }, [refresh]);
+
+  const selectedPkg = packages.find((p) => p.id === pickId);
 
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({ data: { customerId: id, packageId: pickId, depositPaid: assignDeposit } });
+      await assign({
+        data: { customerId: id, packageId: pickId, depositSessionsPaid: assignDeposit },
+      });
       toast.success("Package assigned");
       setPickId("");
-      setAssignDeposit(false);
+      setAssignDeposit(0);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
     }
   };
 
-  const toggleDeposit = async (cp: any) => {
+  const saveDeposit = async (cp: any) => {
+    const val = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
     try {
-      await setDeposit({ data: { customerPackageId: cp.id, paid: !cp.deposit_paid } });
-      toast.success(cp.deposit_paid ? "Marked unpaid" : "Deposit marked paid");
+      await setDeposit({ data: { customerPackageId: cp.id, sessions: val } });
+      toast.success("Deposit updated");
+      setDepositDrafts((d) => {
+        const n = { ...d };
+        delete n[cp.id];
+        return n;
+      });
       refresh();
     } catch (e: any) {
       toast.error(e.message);
