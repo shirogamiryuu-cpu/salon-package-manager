@@ -89,7 +89,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, depositPaid }, { userId }) {
+  async assignPackage({ customerId, packageId, depositSessionsPaid }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -98,13 +98,15 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
+    const dep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, pkg.total_sessions));
     const { error } = await sb.from("customer_packages").insert({
       customer_id: customerId,
       package_id: packageId,
       sessions_remaining: pkg.total_sessions,
       total_sessions: pkg.total_sessions,
-      deposit_paid: !!depositPaid,
-      deposit_paid_at: depositPaid ? new Date().toISOString() : null,
+      deposit_sessions_paid: dep,
+      deposit_paid: dep > 0,
+      deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
     });
     if (error) throw new Error(error.message);
     if (pkg.points_awarded) {
@@ -117,14 +119,20 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async setDepositPaid({ customerPackageId, paid }, { userId }) {
+  async setDepositSessions({ customerPackageId, sessions }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
+    const { data: cp, error: cErr } = await sb
+      .from("customer_packages").select("total_sessions")
+      .eq("id", customerPackageId).maybeSingle();
+    if (cErr || !cp) throw new Error("Not found");
+    const dep = Math.max(0, Math.min(Number(sessions) || 0, cp.total_sessions));
     const { error } = await sb
       .from("customer_packages")
       .update({
-        deposit_paid: !!paid,
-        deposit_paid_at: paid ? new Date().toISOString() : null,
+        deposit_sessions_paid: dep,
+        deposit_paid: dep > 0,
+        deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
       })
       .eq("id", customerPackageId);
     if (error) throw new Error(error.message);
