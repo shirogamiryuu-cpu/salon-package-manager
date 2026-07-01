@@ -282,18 +282,51 @@ function CustomerDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant={cp.deposit_paid ? "default" : "secondary"}>
-                      {cp.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant={cp.deposit_paid ? "ghost" : "secondary"}
-                      onClick={() => toggleDeposit(cp)}
-                    >
-                      {cp.deposit_paid ? "Mark unpaid" : "Mark paid"}
-                    </Button>
-                  </div>
+                  {(() => {
+                    const draft = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
+                    const dirty = draft !== (cp.deposit_sessions_paid ?? 0);
+                    const pricePer = cp.packages?.price
+                      ? Number(cp.packages.price) / cp.total_sessions
+                      : 0;
+                    return (
+                      <div className="rounded-md border p-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={draft > 0 ? "default" : "secondary"}>
+                            Deposit: {draft}/{cp.total_sessions} sessions
+                          </Badge>
+                          {pricePer > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              ~${(pricePer * draft).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={cp.total_sessions}
+                            value={draft}
+                            onChange={(e) => {
+                              const v = Math.max(
+                                0,
+                                Math.min(cp.total_sessions, Number(e.target.value) || 0),
+                              );
+                              setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
+                            }}
+                            className="h-8"
+                          />
+                          <Button
+                            size="sm"
+                            variant={dirty ? "default" : "ghost"}
+                            disabled={!dirty}
+                            onClick={() => saveDeposit(cp)}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Save
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}
