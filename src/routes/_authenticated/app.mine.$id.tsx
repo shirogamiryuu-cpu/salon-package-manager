@@ -21,6 +21,7 @@ type CP = {
   purchase_date: string;
   deposit_paid: boolean;
   deposit_paid_at: string | null;
+  deposit_sessions_paid: number;
   packages: {
     name: string;
     description: string | null;
