@@ -50,7 +50,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,packages(name,description,price,points_awarded)",
         )
         .eq("id", id)
         .maybeSingle();
