@@ -45,6 +45,7 @@ import {
   adminListStaff,
   adminRemoveStaffRole,
   adminResetPassword,
+  adminSetStaffCategory,
 } from "@/lib/admin.functions";
 import { Link } from "@tanstack/react-router";
 
