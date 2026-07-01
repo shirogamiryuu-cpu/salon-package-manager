@@ -82,6 +82,7 @@ function AdminDash() {
   const [staffEmail, setStaffEmail] = useState("");
   const [staffName, setStaffName] = useState("");
   const [staffPassword, setStaffPassword] = useState(genTempPassword());
+  const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("staff");
   const [savingStaff, setSavingStaff] = useState(false);
 
 
