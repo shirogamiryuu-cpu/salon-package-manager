@@ -76,8 +76,8 @@ function MyPackages() {
                     {r.packages?.description && <p className="text-sm text-muted-foreground">{r.packages.description}</p>}
                     <Progress value={pct} />
                     <div className="flex items-center justify-between gap-2">
-                      <Badge variant={r.deposit_paid ? "default" : "secondary"}>
-                        {r.deposit_paid ? "Half deposit paid" : "Deposit unpaid"}
+                      <Badge variant={r.deposit_sessions_paid > 0 ? "default" : "secondary"}>
+                        Deposit {r.deposit_sessions_paid}/{r.total_sessions} paid
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {used} used · {new Date(r.purchase_date).toLocaleDateString()}
