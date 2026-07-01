@@ -174,17 +174,31 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const { data: roles, error } = await sb
-      .from("user_roles").select("user_id").eq("role", "staff");
+      .from("user_roles").select("user_id,role").in("role", ["staff", "stylist"]);
     if (error) throw new Error(error.message);
-    const ids = (roles ?? []).map((r) => r.user_id);
+    const ids = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
     if (!ids.length) return [];
+    const byUser = new Map<string, Set<string>>();
+    for (const r of roles ?? []) {
+      const s = byUser.get(r.user_id) ?? new Set<string>();
+      s.add(r.role);
+      byUser.set(r.user_id, s);
+    }
     const { data: profiles } = await sb
       .from("profiles").select("id,email,name,created_at")
       .in("id", ids).order("created_at", { ascending: false });
-    return profiles ?? [];
+    return (profiles ?? []).map((p: any) => {
+      const set = byUser.get(p.id) ?? new Set();
+      return {
+        ...p,
+        is_staff: set.has("staff"),
+        is_stylist: set.has("stylist"),
+        category: set.has("stylist") ? "stylist" : "staff",
+      };
+    });
   },
 
-  async adminCreateStaff({ email, password, name }, { userId }) {
+  async adminCreateStaff({ email, password, name, category }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: created, error } = await sb.auth.admin.createUser({
@@ -194,7 +208,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
     const uid = created.user.id;
     await sb.from("user_roles").delete().eq("user_id", uid);
-    const { error: rErr } = await sb.from("user_roles").insert({ user_id: uid, role: "staff" });
+    const role = category === "stylist" ? "stylist" : "staff";
+    const { error: rErr } = await sb.from("user_roles").insert({ user_id: uid, role });
     if (rErr) throw new Error(rErr.message);
     if (name) await sb.from("profiles").update({ name }).eq("id", uid);
     return { ok: true, email };
@@ -213,7 +228,18 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { error } = await sb
       .from("user_roles").delete()
-      .eq("user_id", targetId).eq("role", "staff");
+      .eq("user_id", targetId).in("role", ["staff", "stylist"]);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
+  async adminSetStaffCategory({ userId: targetId, category }, { userId }) {
+    await assertAdmin(userId);
+    if (category !== "staff" && category !== "stylist") throw new Error("Invalid category");
+    const sb = admin();
+    await sb.from("user_roles").delete()
+      .eq("user_id", targetId).in("role", ["staff", "stylist"]);
+    const { error } = await sb.from("user_roles").insert({ user_id: targetId, role: category });
     if (error) throw new Error(error.message);
     return { ok: true };
   },
