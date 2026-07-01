@@ -391,6 +391,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return (logs ?? []).map((l: any) => ({
       id: l.id,
       used_at: l.used_at,
+      customer_package_id: l.customer_package_id,
       package_name: pkgByCp.get(l.customer_package_id) ?? "Package",
       sessions_deducted: 1,
       staff: staffByLog.get(l.id) ?? [],

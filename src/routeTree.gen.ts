@@ -25,6 +25,7 @@ import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminPackagesRouteImport } from './routes/_authenticated/admin.packages'
 import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authenticated/admin.history'
 import { Route as AuthenticatedAdminCustomersIndexRouteImport } from './routes/_authenticated/admin.customers.index'
+import { Route as AuthenticatedAppMineIdRouteImport } from './routes/_authenticated/app.mine.$id'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -111,6 +112,11 @@ const AuthenticatedAdminCustomersIndexRoute =
     path: '/customers/',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAppMineIdRoute = AuthenticatedAppMineIdRouteImport.update({
+  id: '/mine/$id',
+  path: '/mine/$id',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAdminCustomersIdRoute =
   AuthenticatedAdminCustomersIdRouteImport.update({
     id: '/customers/$id',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AuthenticatedAppIndexRoute
   '/staff/': typeof AuthenticatedStaffIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
+  '/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/admin/customers/': typeof AuthenticatedAdminCustomersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppIndexRoute
   '/staff': typeof AuthenticatedStaffIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
+  '/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersIndexRoute
 }
 export interface FileRoutesById {
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
+  '/_authenticated/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/_authenticated/admin/customers/': typeof AuthenticatedAdminCustomersIndexRoute
 }
 export interface FileRouteTypes {
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/staff/'
     | '/admin/customers/$id'
+    | '/app/mine/$id'
     | '/admin/customers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/staff'
     | '/admin/customers/$id'
+    | '/app/mine/$id'
     | '/admin/customers'
   id:
     | '__root__'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/'
     | '/_authenticated/staff/'
     | '/_authenticated/admin/customers/$id'
+    | '/_authenticated/app/mine/$id'
     | '/_authenticated/admin/customers/'
   fileRoutesById: FileRoutesById
 }
@@ -346,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCustomersIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/app/mine/$id': {
+      id: '/_authenticated/app/mine/$id'
+      path: '/mine/$id'
+      fullPath: '/app/mine/$id'
+      preLoaderRoute: typeof AuthenticatedAppMineIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/admin/customers/$id': {
       id: '/_authenticated/admin/customers/$id'
       path: '/customers/$id'
@@ -380,6 +399,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppPackagesRoute: typeof AuthenticatedAppPackagesRoute
   AuthenticatedAppProfileRoute: typeof AuthenticatedAppProfileRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppMineIdRoute: typeof AuthenticatedAppMineIdRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -387,6 +407,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppPackagesRoute: AuthenticatedAppPackagesRoute,
   AuthenticatedAppProfileRoute: AuthenticatedAppProfileRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppMineIdRoute: AuthenticatedAppMineIdRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
