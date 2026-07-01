@@ -19,6 +19,7 @@ export type Database = {
           customer_id: string
           deposit_paid: boolean
           deposit_paid_at: string | null
+          deposit_sessions_paid: number
           id: string
           package_id: string
           purchase_date: string
@@ -29,6 +30,7 @@ export type Database = {
           customer_id: string
           deposit_paid?: boolean
           deposit_paid_at?: string | null
+          deposit_sessions_paid?: number
           id?: string
           package_id: string
           purchase_date?: string
@@ -39,6 +41,7 @@ export type Database = {
           customer_id?: string
           deposit_paid?: boolean
           deposit_paid_at?: string | null
+          deposit_sessions_paid?: number
           id?: string
           package_id?: string
           purchase_date?: string
@@ -238,7 +241,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer" | "staff"
+      app_role: "admin" | "customer" | "staff" | "stylist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -366,7 +369,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer", "staff"],
+      app_role: ["admin", "customer", "staff", "stylist"],
     },
   },
 } as const
