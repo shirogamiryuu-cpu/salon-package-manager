@@ -62,7 +62,7 @@ function genTempPassword() {
   return out + "!9";
 }
 
-type PersonRow = { id: string; email: string | null; name: string | null; created_at: string };
+type PersonRow = { id: string; email: string | null; name: string | null; created_at: string; is_staff?: boolean; is_stylist?: boolean; category?: "staff" | "stylist" };
 type CustomerRow = { id: string; email: string | null; name: string | null; phone: string | null; points: number | null };
 
 function AdminDash() {
