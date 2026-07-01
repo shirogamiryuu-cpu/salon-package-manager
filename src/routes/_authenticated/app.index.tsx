@@ -31,7 +31,7 @@ function MyPackages() {
       const [{ data: cp }, { data: p }] = await Promise.all([
         supabase
           .from("customer_packages")
-          .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,packages(name,description,points_awarded)")
+          .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name,description,points_awarded)")
           .eq("customer_id", u.user.id)
           .order("purchase_date", { ascending: false }),
         supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
