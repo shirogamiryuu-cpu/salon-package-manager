@@ -57,7 +57,8 @@ async function assertAdmin(userId: string) {
 }
 
 async function assertStaff(userId: string) {
-  if (!(await hasRole(userId, "staff"))) throw new Error("Forbidden");
+  const [s, st] = await Promise.all([hasRole(userId, "staff"), hasRole(userId, "stylist")]);
+  if (!s && !st) throw new Error("Forbidden");
 }
 
 // ============== Action handlers ==============
