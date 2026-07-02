@@ -268,14 +268,23 @@ function CustomerDetail() {
         <h2 className="text-lg font-semibold">Owned packages</h2>
         {customerPackages.length === 0 && <p className="text-muted-foreground">None yet.</p>}
         <div className="grid gap-3 md:grid-cols-2">
-          {customerPackages.map((cp: any) => {
+          {customerPackages.map((cp: any, idx: number) => {
             const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
             return (
               <Card key={cp.id}>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <span>{cp.packages?.name}</span>
-                    <span className="text-sm text-muted-foreground">
+                  <CardTitle className="flex items-center justify-between text-base gap-2">
+                    <Link
+                      to="/admin/customers/$id/packages/$cpId"
+                      params={{ id, cpId: cp.id }}
+                      className="flex items-center gap-2 hover:underline min-w-0"
+                    >
+                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                        {idx + 1}
+                      </span>
+                      <span className="truncate">{cp.packages?.name}</span>
+                    </Link>
+                    <span className="text-sm text-muted-foreground shrink-0">
                       {cp.sessions_remaining}/{cp.total_sessions}
                     </span>
                   </CardTitle>
