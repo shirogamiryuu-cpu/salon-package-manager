@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
 import {
+  adminAddSessions,
   adminGetCustomer,
   adminListStaff,
   adminPromoteToStaff,
