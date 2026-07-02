@@ -392,18 +392,34 @@ function CustomerDetail() {
                       </div>
                     );
                   })()}
-                  <div className="flex items-center justify-between">
+                  {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>
+                        {cp.warranty_years > 0 ? `${cp.warranty_years} yr warranty` : "Warranty"}
+                        {cp.warranty_expires_at
+                          ? ` · until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={cp.sessions_remaining === 0}
-                      onClick={() => openDeduct(cp)}
-                    >
-                      <MinusCircle className="h-3 w-3 mr-1" /> Deduct session
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openAdd(cp)}>
+                        <Plus className="h-3 w-3 mr-1" /> Add sessions
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={cp.sessions_remaining === 0}
+                        onClick={() => openDeduct(cp)}
+                      >
+                        <MinusCircle className="h-3 w-3 mr-1" /> Deduct
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -411,6 +427,56 @@ function CustomerDetail() {
           })}
         </div>
       </div>
+
+      <Dialog open={!!addFor} onOpenChange={(o) => !o && setAddFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add sessions</DialogTitle>
+            <DialogDescription>
+              {profile?.name ?? profile?.email} · {addFor?.packages?.name}. Extend this package with more
+              sessions, deposit, and/or warranty.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Sessions to add</span>
+              <Input
+                type="number"
+                min={1}
+                value={addSessions}
+                onChange={(e) => setAddSessions(Math.max(1, Number(e.target.value) || 1))}
+                className="w-24 h-8"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Extra deposit sessions paid</span>
+              <Input
+                type="number"
+                min={0}
+                value={addDeposit}
+                onChange={(e) => setAddDeposit(Math.max(0, Number(e.target.value) || 0))}
+                className="w-24 h-8"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Extra warranty years</span>
+              <Input
+                type="number"
+                min={0}
+                value={addWarranty}
+                onChange={(e) => setAddWarranty(Math.max(0, Number(e.target.value) || 0))}
+                className="w-24 h-8"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
+            <Button onClick={confirmAdd} disabled={adding}>
+              {adding ? "Adding..." : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deductFor} onOpenChange={(o) => !o && setDeductFor(null)}>
         <DialogContent>
