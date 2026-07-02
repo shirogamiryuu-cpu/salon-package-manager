@@ -13,8 +13,12 @@ export const adminGetCustomer = (a: { data: { id: string } }) =>
   callAdminApi("adminGetCustomer", payload(a));
 
 export const assignPackage = (a: {
-  data: { customerId: string; packageId: string; depositSessionsPaid?: number };
+  data: { customerId: string; packageId: string; depositSessionsPaid?: number; warrantyYears?: number };
 }) => callAdminApi("assignPackage", payload(a));
+
+export const adminAddSessions = (a: {
+  data: { customerPackageId: string; sessions: number; depositSessionsPaid?: number; warrantyYears?: number };
+}) => callAdminApi("adminAddSessions", payload(a));
 
 export const setDepositSessions = (a: {
   data: { customerPackageId: string; sessions: number };
