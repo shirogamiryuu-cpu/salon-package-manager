@@ -60,11 +60,13 @@ function CustomerDetail() {
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
   const setDeposit = useServerFn(setDepositSessions);
+  const addSessionsFn = useServerFn(adminAddSessions);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
   const [pickId, setPickId] = useState<string>("");
   const [assignDeposit, setAssignDeposit] = useState<number>(0);
+  const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
@@ -72,6 +74,12 @@ function CustomerDetail() {
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
+
+  const [addFor, setAddFor] = useState<any | null>(null);
+  const [addSessions, setAddSessions] = useState<number>(1);
+  const [addDeposit, setAddDeposit] = useState<number>(0);
+  const [addWarranty, setAddWarranty] = useState<number>(0);
+  const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
     const [d, staffList, { data: roles }] = await Promise.all([
