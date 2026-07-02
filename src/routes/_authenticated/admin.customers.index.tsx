@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
 import { adminListCustomers } from "@/lib/admin.functions";
@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
@@ -15,6 +16,7 @@ type C = { id: string; email: string; name: string | null; phone: string | null;
 
 function Customers() {
   const list = useServerFn(adminListCustomers);
+  const navigate = useNavigate();
   const [rows, setRows] = useState<C[]>([]);
   const [q, setQ] = useState("");
 
@@ -51,14 +53,18 @@ function Customers() {
             </TableHeader>
             <TableBody>
               {filtered.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
+                >
                   <TableCell className="font-medium">{c.name ?? "—"}</TableCell>
                   <TableCell>{c.email}</TableCell>
                   <TableCell>{c.phone ?? "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{c.points}</Badge></TableCell>
                   <TableCell>{new Date(c.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Link to="/admin/customers/$id" params={{ id: c.id }} className="text-primary hover:underline text-sm">View</Link>
+                  <TableCell className="text-right">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground inline" />
                   </TableCell>
                 </TableRow>
               ))}
