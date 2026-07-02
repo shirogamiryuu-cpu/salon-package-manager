@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
 import {
+  adminAddSessions,
   adminGetCustomer,
   adminListStaff,
   adminPromoteToStaff,
@@ -42,7 +43,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Check } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Check, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
@@ -59,11 +60,13 @@ function CustomerDetail() {
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
   const setDeposit = useServerFn(setDepositSessions);
+  const addSessionsFn = useServerFn(adminAddSessions);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
   const [pickId, setPickId] = useState<string>("");
   const [assignDeposit, setAssignDeposit] = useState<number>(0);
+  const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
@@ -71,6 +74,12 @@ function CustomerDetail() {
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
+
+  const [addFor, setAddFor] = useState<any | null>(null);
+  const [addSessions, setAddSessions] = useState<number>(1);
+  const [addDeposit, setAddDeposit] = useState<number>(0);
+  const [addWarranty, setAddWarranty] = useState<number>(0);
+  const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
     const [d, staffList, { data: roles }] = await Promise.all([
@@ -97,15 +106,50 @@ function CustomerDetail() {
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({
-        data: { customerId: id, packageId: pickId, depositSessionsPaid: assignDeposit },
+      const res: any = await assign({
+        data: {
+          customerId: id,
+          packageId: pickId,
+          depositSessionsPaid: assignDeposit,
+          warrantyYears: assignWarranty,
+        },
       });
-      toast.success("Package assigned");
+      toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
       setAssignDeposit(0);
+      setAssignWarranty(0);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const openAdd = (cp: any) => {
+    setAddSessions(1);
+    setAddDeposit(0);
+    setAddWarranty(0);
+    setAddFor(cp);
+  };
+
+  const confirmAdd = async () => {
+    if (!addFor) return;
+    setAdding(true);
+    try {
+      await addSessionsFn({
+        data: {
+          customerPackageId: addFor.id,
+          sessions: addSessions,
+          depositSessionsPaid: addDeposit,
+          warrantyYears: addWarranty,
+        },
+      });
+      toast.success("Sessions added");
+      setAddFor(null);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -243,22 +287,34 @@ function CustomerDetail() {
             </Button>
           </div>
           {selectedPkg && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Deposit sessions paid:</span>
-              <Input
-                type="number"
-                min={0}
-                max={selectedPkg.total_sessions}
-                value={assignDeposit}
-                onChange={(e) => setAssignDeposit(Math.max(0, Math.min(selectedPkg.total_sessions, Number(e.target.value) || 0)))}
-                className="w-20 h-8"
-              />
-              <span className="text-muted-foreground">/ {selectedPkg.total_sessions}</span>
-              {selectedPkg.price > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  (~${((Number(selectedPkg.price) / selectedPkg.total_sessions) * assignDeposit).toFixed(2)})
-                </span>
-              )}
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Deposit sessions paid:</span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={selectedPkg.total_sessions}
+                  value={assignDeposit}
+                  onChange={(e) => setAssignDeposit(Math.max(0, Math.min(selectedPkg.total_sessions, Number(e.target.value) || 0)))}
+                  className="w-20 h-8"
+                />
+                <span className="text-muted-foreground">/ {selectedPkg.total_sessions}</span>
+                {selectedPkg.price > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    (~${((Number(selectedPkg.price) / selectedPkg.total_sessions) * assignDeposit).toFixed(2)})
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Warranty years:</span>
+                <Input
+                  type="number"
+                  min={0}
+                  value={assignWarranty}
+                  onChange={(e) => setAssignWarranty(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-20 h-8"
+                />
+              </div>
             </div>
           )}
         </CardContent>
@@ -336,18 +392,34 @@ function CustomerDetail() {
                       </div>
                     );
                   })()}
-                  <div className="flex items-center justify-between">
+                  {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>
+                        {cp.warranty_years > 0 ? `${cp.warranty_years} yr warranty` : "Warranty"}
+                        {cp.warranty_expires_at
+                          ? ` · until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">
                       Purchased {new Date(cp.purchase_date).toLocaleDateString()}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={cp.sessions_remaining === 0}
-                      onClick={() => openDeduct(cp)}
-                    >
-                      <MinusCircle className="h-3 w-3 mr-1" /> Deduct session
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openAdd(cp)}>
+                        <Plus className="h-3 w-3 mr-1" /> Add sessions
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={cp.sessions_remaining === 0}
+                        onClick={() => openDeduct(cp)}
+                      >
+                        <MinusCircle className="h-3 w-3 mr-1" /> Deduct
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -355,6 +427,56 @@ function CustomerDetail() {
           })}
         </div>
       </div>
+
+      <Dialog open={!!addFor} onOpenChange={(o) => !o && setAddFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add sessions</DialogTitle>
+            <DialogDescription>
+              {profile?.name ?? profile?.email} · {addFor?.packages?.name}. Extend this package with more
+              sessions, deposit, and/or warranty.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Sessions to add</span>
+              <Input
+                type="number"
+                min={1}
+                value={addSessions}
+                onChange={(e) => setAddSessions(Math.max(1, Number(e.target.value) || 1))}
+                className="w-24 h-8"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Extra deposit sessions paid</span>
+              <Input
+                type="number"
+                min={0}
+                value={addDeposit}
+                onChange={(e) => setAddDeposit(Math.max(0, Number(e.target.value) || 0))}
+                className="w-24 h-8"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Extra warranty years</span>
+              <Input
+                type="number"
+                min={0}
+                value={addWarranty}
+                onChange={(e) => setAddWarranty(Math.max(0, Number(e.target.value) || 0))}
+                className="w-24 h-8"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
+            <Button onClick={confirmAdd} disabled={adding}>
+              {adding ? "Adding..." : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deductFor} onOpenChange={(o) => !o && setDeductFor(null)}>
         <DialogContent>

@@ -24,6 +24,8 @@ type CP = {
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_sessions_paid: number;
+  warranty_years: number;
+  warranty_expires_at: string | null;
   packages: {
     name: string;
     description: string | null;
@@ -55,7 +57,7 @@ function AdminPackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
         )
         .eq("id", cpId)
         .maybeSingle();
@@ -112,6 +114,14 @@ function AdminPackageDetail() {
           <div className="text-xs text-muted-foreground">
             {used} used · Purchased {new Date(cp.purchase_date).toLocaleDateString()}
           </div>
+          {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
+            <div className="text-xs text-muted-foreground">
+              🛡️ {cp.warranty_years > 0 ? `${cp.warranty_years} year warranty` : "Warranty"}
+              {cp.warranty_expires_at
+                ? ` · valid until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
+                : ""}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">

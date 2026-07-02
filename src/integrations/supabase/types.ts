@@ -25,6 +25,8 @@ export type Database = {
           purchase_date: string
           sessions_remaining: number
           total_sessions: number
+          warranty_expires_at: string | null
+          warranty_years: number
         }
         Insert: {
           customer_id: string
@@ -36,6 +38,8 @@ export type Database = {
           purchase_date?: string
           sessions_remaining: number
           total_sessions: number
+          warranty_expires_at?: string | null
+          warranty_years?: number
         }
         Update: {
           customer_id?: string
@@ -47,6 +51,8 @@ export type Database = {
           purchase_date?: string
           sessions_remaining?: number
           total_sessions?: number
+          warranty_expires_at?: string | null
+          warranty_years?: number
         }
         Relationships: [
           {
