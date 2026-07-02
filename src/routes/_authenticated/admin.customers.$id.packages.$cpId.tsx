@@ -57,7 +57,7 @@ function AdminPackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
         )
         .eq("id", cpId)
         .maybeSingle();
