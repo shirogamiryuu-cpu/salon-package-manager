@@ -90,7 +90,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, depositSessionsPaid }, { userId }) {
+  async assignPackage({ customerId, packageId, depositSessionsPaid, warrantyYears }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -99,17 +99,56 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
-    const dep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, pkg.total_sessions));
-    const { error } = await sb.from("customer_packages").insert({
-      customer_id: customerId,
-      package_id: packageId,
-      sessions_remaining: pkg.total_sessions,
-      total_sessions: pkg.total_sessions,
-      deposit_sessions_paid: dep,
-      deposit_paid: dep > 0,
-      deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
-    });
-    if (error) throw new Error(error.message);
+    const addDep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, pkg.total_sessions));
+    const yrs = Math.max(0, Number(warrantyYears) || 0);
+    const nowIso = new Date().toISOString();
+    const expiresAt = yrs > 0
+      ? new Date(Date.now() + yrs * 365 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    // If the customer already owns this package, top it up instead of duplicating.
+    const { data: existing } = await sb
+      .from("customer_packages")
+      .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, warranty_years, warranty_expires_at")
+      .eq("customer_id", customerId)
+      .eq("package_id", packageId)
+      .order("purchase_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      const newTotal = existing.total_sessions + pkg.total_sessions;
+      const newRemaining = existing.sessions_remaining + pkg.total_sessions;
+      const newDep = Math.min(newTotal, (existing.deposit_sessions_paid ?? 0) + addDep);
+      const newYears = (existing.warranty_years ?? 0) + yrs;
+      const currentExp = existing.warranty_expires_at ? new Date(existing.warranty_expires_at).getTime() : 0;
+      const candidateExp = expiresAt ? new Date(expiresAt).getTime() : 0;
+      const newExp = Math.max(currentExp, candidateExp);
+      const { error } = await sb.from("customer_packages").update({
+        total_sessions: newTotal,
+        sessions_remaining: newRemaining,
+        deposit_sessions_paid: newDep,
+        deposit_paid: newDep > 0,
+        deposit_paid_at: newDep > 0 ? nowIso : null,
+        warranty_years: newYears,
+        warranty_expires_at: newExp ? new Date(newExp).toISOString() : null,
+      }).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb.from("customer_packages").insert({
+        customer_id: customerId,
+        package_id: packageId,
+        sessions_remaining: pkg.total_sessions,
+        total_sessions: pkg.total_sessions,
+        deposit_sessions_paid: addDep,
+        deposit_paid: addDep > 0,
+        deposit_paid_at: addDep > 0 ? nowIso : null,
+        warranty_years: yrs,
+        warranty_expires_at: expiresAt,
+      });
+      if (error) throw new Error(error.message);
+    }
+
     if (pkg.points_awarded) {
       const { data: prof } = await sb
         .from("profiles").select("points").eq("id", customerId).maybeSingle();
@@ -117,8 +156,41 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         .update({ points: (prof?.points ?? 0) + pkg.points_awarded })
         .eq("id", customerId);
     }
+    return { ok: true, merged: !!existing };
+  },
+
+  async adminAddSessions({ customerPackageId, sessions, depositSessionsPaid, warrantyYears }, { userId }) {
+    await assertAdmin(userId);
+    const add = Math.max(1, Number(sessions) || 0);
+    const addDep = Math.max(0, Number(depositSessionsPaid) || 0);
+    const yrs = Math.max(0, Number(warrantyYears) || 0);
+    const sb = admin();
+    const { data: cp, error: cErr } = await sb
+      .from("customer_packages")
+      .select("total_sessions, sessions_remaining, deposit_sessions_paid, warranty_years, warranty_expires_at")
+      .eq("id", customerPackageId).maybeSingle();
+    if (cErr || !cp) throw new Error("Not found");
+    const newTotal = cp.total_sessions + add;
+    const newRemaining = cp.sessions_remaining + add;
+    const newDep = Math.min(newTotal, (cp.deposit_sessions_paid ?? 0) + addDep);
+    const newYears = (cp.warranty_years ?? 0) + yrs;
+    const currentExp = cp.warranty_expires_at ? new Date(cp.warranty_expires_at).getTime() : 0;
+    const candidateExp = yrs > 0 ? Date.now() + yrs * 365 * 24 * 60 * 60 * 1000 : 0;
+    const newExp = Math.max(currentExp, candidateExp);
+    const nowIso = new Date().toISOString();
+    const { error } = await sb.from("customer_packages").update({
+      total_sessions: newTotal,
+      sessions_remaining: newRemaining,
+      deposit_sessions_paid: newDep,
+      deposit_paid: newDep > 0,
+      deposit_paid_at: newDep > 0 ? nowIso : null,
+      warranty_years: newYears,
+      warranty_expires_at: newExp ? new Date(newExp).toISOString() : null,
+    }).eq("id", customerPackageId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   },
+
 
   async setDepositSessions({ customerPackageId, sessions }, { userId }) {
     await assertAdmin(userId);
