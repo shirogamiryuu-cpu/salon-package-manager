@@ -43,7 +43,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Check } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Check, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
