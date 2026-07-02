@@ -114,6 +114,14 @@ function AdminPackageDetail() {
           <div className="text-xs text-muted-foreground">
             {used} used · Purchased {new Date(cp.purchase_date).toLocaleDateString()}
           </div>
+          {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
+            <div className="text-xs text-muted-foreground">
+              🛡️ {cp.warranty_years > 0 ? `${cp.warranty_years} year warranty` : "Warranty"}
+              {cp.warranty_expires_at
+                ? ` · valid until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
+                : ""}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
