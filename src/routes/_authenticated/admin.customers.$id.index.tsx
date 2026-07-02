@@ -45,7 +45,7 @@ import {
 import { ArrowLeft, MinusCircle, Scissors, Check } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
+export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
   component: CustomerDetail,
 });
 
