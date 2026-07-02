@@ -106,15 +106,50 @@ function CustomerDetail() {
   const doAssign = async () => {
     if (!pickId) return;
     try {
-      await assign({
-        data: { customerId: id, packageId: pickId, depositSessionsPaid: assignDeposit },
+      const res: any = await assign({
+        data: {
+          customerId: id,
+          packageId: pickId,
+          depositSessionsPaid: assignDeposit,
+          warrantyYears: assignWarranty,
+        },
       });
-      toast.success("Package assigned");
+      toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
       setAssignDeposit(0);
+      setAssignWarranty(0);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const openAdd = (cp: any) => {
+    setAddSessions(1);
+    setAddDeposit(0);
+    setAddWarranty(0);
+    setAddFor(cp);
+  };
+
+  const confirmAdd = async () => {
+    if (!addFor) return;
+    setAdding(true);
+    try {
+      await addSessionsFn({
+        data: {
+          customerPackageId: addFor.id,
+          sessions: addSessions,
+          depositSessionsPaid: addDeposit,
+          warrantyYears: addWarranty,
+        },
+      });
+      toast.success("Sessions added");
+      setAddFor(null);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAdding(false);
     }
   };
 
