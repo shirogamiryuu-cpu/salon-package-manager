@@ -16,6 +16,7 @@ type C = { id: string; email: string; name: string | null; phone: string | null;
 
 function Customers() {
   const list = useServerFn(adminListCustomers);
+  const navigate = useNavigate();
   const [rows, setRows] = useState<C[]>([]);
   const [q, setQ] = useState("");
 
