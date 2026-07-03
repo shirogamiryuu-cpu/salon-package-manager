@@ -90,7 +90,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, depositSessionsPaid, warrantyYears }, { userId }) {
+  async assignPackage({ customerId, packageId, sessions, depositSessionsPaid, warrantyYears }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -99,7 +99,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
-    const addDep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, pkg.total_sessions));
+    const totalSessions = Math.max(1, Number(sessions) || pkg.total_sessions || 1);
+    const addDep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, totalSessions));
     const yrs = Math.max(0, Number(warrantyYears) || 0);
     const nowIso = new Date().toISOString();
     const expiresAt = yrs > 0
@@ -117,8 +118,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .maybeSingle();
 
     if (existing) {
-      const newTotal = existing.total_sessions + pkg.total_sessions;
-      const newRemaining = existing.sessions_remaining + pkg.total_sessions;
+      const newTotal = existing.total_sessions + totalSessions;
+      const newRemaining = existing.sessions_remaining + totalSessions;
       const newDep = Math.min(newTotal, (existing.deposit_sessions_paid ?? 0) + addDep);
       const newYears = (existing.warranty_years ?? 0) + yrs;
       const currentExp = existing.warranty_expires_at ? new Date(existing.warranty_expires_at).getTime() : 0;
@@ -138,8 +139,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       const { error } = await sb.from("customer_packages").insert({
         customer_id: customerId,
         package_id: packageId,
-        sessions_remaining: pkg.total_sessions,
-        total_sessions: pkg.total_sessions,
+        sessions_remaining: totalSessions,
+        total_sessions: totalSessions,
         deposit_sessions_paid: addDep,
         deposit_paid: addDep > 0,
         deposit_paid_at: addDep > 0 ? nowIso : null,
