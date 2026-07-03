@@ -27,6 +27,7 @@ type Pkg = {
 
 const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "" };
 
+
 function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [open, setOpen] = useState(false);
@@ -59,7 +60,7 @@ function PackagesAdmin() {
         name: form.name,
         description: form.description || null,
         price: Number(form.price),
-        total_sessions: Number(form.total_sessions),
+        total_sessions: 1,
         points_awarded: Number(form.points_awarded),
         image_url,
       };
@@ -99,9 +100,8 @@ function PackagesAdmin() {
             <div className="space-y-3">
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-              <div className="grid grid-cols-3 gap-2">
-                <div><Label>Price</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-                <div><Label>Sessions</Label><Input type="number" value={form.total_sessions} onChange={(e) => setForm({ ...form, total_sessions: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Price per session</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
                 <div><Label>Points</Label><Input type="number" value={form.points_awarded} onChange={(e) => setForm({ ...form, points_awarded: e.target.value })} /></div>
               </div>
               <div><Label>Image</Label><Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></div>
@@ -120,13 +120,12 @@ function PackagesAdmin() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>{p.name}</span>
-                <span className="text-base">${Number(p.price).toFixed(2)}</span>
+                <span className="text-base">${Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
               <div className="flex gap-2 text-xs">
-                <Badge variant="secondary">{p.total_sessions} sessions</Badge>
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
               </div>
               <div className="flex gap-2">
