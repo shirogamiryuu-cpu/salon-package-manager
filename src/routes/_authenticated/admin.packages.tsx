@@ -120,13 +120,12 @@ function PackagesAdmin() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>{p.name}</span>
-                <span className="text-base">${Number(p.price).toFixed(2)}</span>
+                <span className="text-base">${Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
               <div className="flex gap-2 text-xs">
-                <Badge variant="secondary">{p.total_sessions} sessions</Badge>
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
               </div>
               <div className="flex gap-2">
