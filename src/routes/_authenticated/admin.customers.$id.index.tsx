@@ -292,21 +292,26 @@ function CustomerDetail() {
           {selectedPkg && (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Sessions:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={assignSessions}
+                  onChange={(e) => setAssignSessions(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-20 h-8"
+                />
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Deposit sessions paid:</span>
                 <Input
                   type="number"
                   min={0}
-                  max={selectedPkg.total_sessions}
+                  max={assignSessions}
                   value={assignDeposit}
-                  onChange={(e) => setAssignDeposit(Math.max(0, Math.min(selectedPkg.total_sessions, Number(e.target.value) || 0)))}
+                  onChange={(e) => setAssignDeposit(Math.max(0, Math.min(assignSessions, Number(e.target.value) || 0)))}
                   className="w-20 h-8"
                 />
-                <span className="text-muted-foreground">/ {selectedPkg.total_sessions}</span>
-                {selectedPkg.price > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    (~${((Number(selectedPkg.price) / selectedPkg.total_sessions) * assignDeposit).toFixed(2)})
-                  </span>
-                )}
+                <span className="text-muted-foreground">/ {assignSessions}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Warranty years:</span>
@@ -318,6 +323,19 @@ function CustomerDetail() {
                   className="w-20 h-8"
                 />
               </div>
+              <div className="w-full rounded-md border p-2 flex items-center justify-between">
+                <span className="text-muted-foreground">
+                  ${Number(selectedPkg.price).toFixed(2)} × {assignSessions} session{assignSessions === 1 ? "" : "s"}
+                </span>
+                <span className="font-semibold">
+                  Total ${(Number(selectedPkg.price) * assignSessions).toFixed(2)}
+                </span>
+              </div>
+              {assignDeposit > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Deposit: ${(Number(selectedPkg.price) * assignDeposit).toFixed(2)} · Outstanding: ${(Number(selectedPkg.price) * (assignSessions - assignDeposit)).toFixed(2)}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
