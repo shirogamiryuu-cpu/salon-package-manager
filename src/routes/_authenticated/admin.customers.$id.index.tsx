@@ -111,12 +111,14 @@ function CustomerDetail() {
         data: {
           customerId: id,
           packageId: pickId,
+          sessions: assignSessions,
           depositSessionsPaid: assignDeposit,
           warrantyYears: assignWarranty,
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
+      setAssignSessions(1);
       setAssignDeposit(0);
       setAssignWarranty(0);
       refresh();
