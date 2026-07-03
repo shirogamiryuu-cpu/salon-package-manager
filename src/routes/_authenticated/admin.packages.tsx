@@ -60,7 +60,7 @@ function PackagesAdmin() {
         name: form.name,
         description: form.description || null,
         price: Number(form.price),
-        total_sessions: Number(form.total_sessions),
+        total_sessions: 1,
         points_awarded: Number(form.points_awarded),
         image_url,
       };
