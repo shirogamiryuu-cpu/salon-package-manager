@@ -100,9 +100,8 @@ function PackagesAdmin() {
             <div className="space-y-3">
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-              <div className="grid grid-cols-3 gap-2">
-                <div><Label>Price</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-                <div><Label>Sessions</Label><Input type="number" value={form.total_sessions} onChange={(e) => setForm({ ...form, total_sessions: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Price per session</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
                 <div><Label>Points</Label><Input type="number" value={form.points_awarded} onChange={(e) => setForm({ ...form, points_awarded: e.target.value })} /></div>
               </div>
               <div><Label>Image</Label><Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></div>
