@@ -27,6 +27,7 @@ type Pkg = {
 
 const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "" };
 
+
 function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [open, setOpen] = useState(false);
