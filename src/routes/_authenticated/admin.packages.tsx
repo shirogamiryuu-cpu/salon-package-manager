@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/admin/packages")({
   component: PackagesAdmin,
@@ -30,6 +31,7 @@ const empty = { name: "", description: "", price: 0, total_sessions: 1, points_a
 
 function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
+  const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
   const [form, setForm] = useState<any>(empty);
@@ -38,7 +40,9 @@ function PackagesAdmin() {
 
   const load = async () => {
     const { data } = await supabase.from("packages").select("*").order("created_at", { ascending: false });
-    setPkgs((data ?? []) as Pkg[]);
+    const list = (data ?? []) as Pkg[];
+    setPkgs(list);
+    setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
   };
   useEffect(() => { load(); }, []);
 
@@ -114,18 +118,29 @@ function PackagesAdmin() {
         </Dialog>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {pkgs.map((p) => (
+        {pkgs.map((p) => {
+          const promo = promoMap.get(p.id);
+          const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
+          return (
           <Card key={p.id}>
             {p.image_url && <img src={p.image_url} alt={p.name} className="h-32 w-full object-cover rounded-t-md" />}
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between gap-2">
                 <span>{p.name}</span>
-                <span className="text-base">${Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
+                {pricing ? (
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground line-through">${pricing.original.toFixed(2)}</div>
+                    <div className="text-base text-primary">${pricing.final.toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
+                  </div>
+                ) : (
+                  <span className="text-base">${Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
-              <div className="flex gap-2 text-xs">
+              <div className="flex flex-wrap gap-2 text-xs">
+                {promo && <Badge className="bg-primary">{formatDiscountLabel(promo)} · {promo.name}</Badge>}
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
               </div>
               <div className="flex gap-2">
@@ -134,7 +149,8 @@ function PackagesAdmin() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
         {pkgs.length === 0 && <p className="text-muted-foreground">No packages yet.</p>}
       </div>
     </div>
