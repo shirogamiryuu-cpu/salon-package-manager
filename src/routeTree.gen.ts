@@ -22,6 +22,7 @@ import { Route as AuthenticatedStaffHistoryRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/app.profile'
 import { Route as AuthenticatedAppPackagesRouteImport } from './routes/_authenticated/app.packages'
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/app.history'
+import { Route as AuthenticatedAdminPromotionsRouteImport } from './routes/_authenticated/admin.promotions'
 import { Route as AuthenticatedAdminPackagesRouteImport } from './routes/_authenticated/admin.packages'
 import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authenticated/admin.history'
 import { Route as AuthenticatedAdminCustomersIndexRouteImport } from './routes/_authenticated/admin.customers.index'
@@ -95,6 +96,12 @@ const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAdminPromotionsRoute =
+  AuthenticatedAdminPromotionsRouteImport.update({
+    id: '/promotions',
+    path: '/promotions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPackagesRoute =
   AuthenticatedAdminPackagesRouteImport.update({
     id: '/packages',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AuthenticatedStaffRouteWithChildren
   '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
@@ -156,6 +164,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
@@ -178,6 +187,7 @@ export interface FileRoutesById {
   '/_authenticated/staff': typeof AuthenticatedStaffRouteWithChildren
   '/_authenticated/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/_authenticated/admin/packages': typeof AuthenticatedAdminPackagesRoute
+  '/_authenticated/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/_authenticated/app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/app/packages': typeof AuthenticatedAppPackagesRoute
   '/_authenticated/app/profile': typeof AuthenticatedAppProfileRoute
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/admin/history'
     | '/admin/packages'
+    | '/admin/promotions'
     | '/app/history'
     | '/app/packages'
     | '/app/profile'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/history'
     | '/admin/packages'
+    | '/admin/promotions'
     | '/app/history'
     | '/app/packages'
     | '/app/profile'
@@ -238,6 +250,7 @@ export interface FileRouteTypes {
     | '/_authenticated/staff'
     | '/_authenticated/admin/history'
     | '/_authenticated/admin/packages'
+    | '/_authenticated/admin/promotions'
     | '/_authenticated/app/history'
     | '/_authenticated/app/packages'
     | '/_authenticated/app/profile'
@@ -350,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppHistoryRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/admin/promotions': {
+      id: '/_authenticated/admin/promotions'
+      path: '/promotions'
+      fullPath: '/admin/promotions'
+      preLoaderRoute: typeof AuthenticatedAdminPromotionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/packages': {
       id: '/_authenticated/admin/packages'
       path: '/packages'
@@ -398,6 +418,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminHistoryRoute: typeof AuthenticatedAdminHistoryRoute
   AuthenticatedAdminPackagesRoute: typeof AuthenticatedAdminPackagesRoute
+  AuthenticatedAdminPromotionsRoute: typeof AuthenticatedAdminPromotionsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminCustomersIndexRoute: typeof AuthenticatedAdminCustomersIndexRoute
   AuthenticatedAdminCustomersIdIndexRoute: typeof AuthenticatedAdminCustomersIdIndexRoute
@@ -407,6 +428,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminHistoryRoute: AuthenticatedAdminHistoryRoute,
   AuthenticatedAdminPackagesRoute: AuthenticatedAdminPackagesRoute,
+  AuthenticatedAdminPromotionsRoute: AuthenticatedAdminPromotionsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminCustomersIndexRoute: AuthenticatedAdminCustomersIndexRoute,
   AuthenticatedAdminCustomersIdIndexRoute:
