@@ -28,6 +28,13 @@ export const useSession = (a: {
   data: { customerPackageId: string; staffIds?: string[] };
 }) => callAdminApi("useSession", payload(a));
 
+export const customerListPendingRequests = (_a?: Arg<undefined>) =>
+  callAdminApi("customerListPendingRequests");
+
+export const respondSessionRequest = (a: {
+  data: { requestId: string; approve: boolean };
+}) => callAdminApi("respondSessionRequest", payload(a));
+
 export const adminListStaff = (_a?: Arg<undefined>) =>
   callAdminApi("adminListStaff");
 
