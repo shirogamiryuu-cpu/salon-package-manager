@@ -215,6 +215,60 @@ export type Database = {
         }
         Relationships: []
       }
+      session_deduction_requests: {
+        Row: {
+          admin_id: string
+          created_at: string
+          customer_id: string
+          customer_package_id: string
+          expires_at: string
+          id: string
+          responded_at: string | null
+          staff_ids: string[]
+          status: string
+          usage_log_id: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          customer_id: string
+          customer_package_id: string
+          expires_at?: string
+          id?: string
+          responded_at?: string | null
+          staff_ids?: string[]
+          status?: string
+          usage_log_id?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          customer_id?: string
+          customer_package_id?: string
+          expires_at?: string
+          id?: string
+          responded_at?: string | null
+          staff_ids?: string[]
+          status?: string
+          usage_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_deduction_requests_customer_package_id_fkey"
+            columns: ["customer_package_id"]
+            isOneToOne: false
+            referencedRelation: "customer_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_deduction_requests_usage_log_id_fkey"
+            columns: ["usage_log_id"]
+            isOneToOne: false
+            referencedRelation: "usage_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_staff: {
         Row: {
           created_at: string
