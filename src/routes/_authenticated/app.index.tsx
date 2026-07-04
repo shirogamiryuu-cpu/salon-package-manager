@@ -24,28 +24,69 @@ type Row = {
   packages: { name: string; description: string | null; points_awarded: number } | null;
 };
 
+type PendingReq = {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  package_name: string;
+  remaining: number;
+  total: number;
+  staff: { name: string | null; email: string | null }[];
+};
+
 function MyPackages() {
   const [rows, setRows] = useState<Row[]>([]);
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState<PendingReq[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const listPending = useServerFn(customerListPendingRequests);
+  const respond = useServerFn(respondSessionRequest);
+
+  const loadPending = useCallback(async () => {
+    try {
+      const d = await listPending();
+      setPending((d as PendingReq[]) ?? []);
+    } catch {
+      setPending([]);
+    }
+  }, [listPending]);
+
+  const loadPackages = useCallback(async () => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const [{ data: cp }, { data: p }] = await Promise.all([
+      supabase
+        .from("customer_packages")
+        .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name,description,points_awarded)")
+        .eq("customer_id", u.user.id)
+        .order("purchase_date", { ascending: false }),
+      supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
+    ]);
+    setRows((cp ?? []) as any);
+    setPoints(p?.points ?? 0);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const [{ data: cp }, { data: p }] = await Promise.all([
-        supabase
-          .from("customer_packages")
-          .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name,description,points_awarded)")
-          .eq("customer_id", u.user.id)
-          .order("purchase_date", { ascending: false }),
-        supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
-      ]);
-      setRows((cp ?? []) as any);
-      setPoints(p?.points ?? 0);
-      setLoading(false);
-    })();
-  }, []);
+    loadPackages();
+    loadPending();
+    const t = setInterval(loadPending, 15000);
+    return () => clearInterval(t);
+  }, [loadPackages, loadPending]);
+
+  const decide = async (id: string, approve: boolean) => {
+    setBusyId(id);
+    try {
+      await respond({ data: { requestId: id, approve } });
+      toast.success(approve ? "Session approved" : "Request rejected");
+      await Promise.all([loadPending(), loadPackages()]);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,6 +94,42 @@ function MyPackages() {
         <h1 className="text-2xl font-semibold">My packages</h1>
         <Badge variant="secondary" className="text-sm">⭐ {points} points</Badge>
       </div>
+
+      {pending.length > 0 && (
+        <div className="space-y-2">
+          {pending.map((r) => {
+            const mins = Math.max(0, Math.round((new Date(r.expires_at).getTime() - Date.now()) / 60000));
+            const staffNames = r.staff.map((s) => s.name ?? s.email).filter(Boolean).join(", ");
+            return (
+              <Card key={r.id} className="border-primary/40 bg-primary/5">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium">Approve session deduction?</div>
+                      <div className="text-sm text-muted-foreground truncate">
+                        {r.package_name} · {r.remaining}/{r.total} left
+                        {staffNames ? ` · with ${staffNames}` : ""}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                      <Clock className="h-3 w-3" /> {mins}m left
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1" disabled={busyId === r.id} onClick={() => decide(r.id, true)}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" disabled={busyId === r.id} onClick={() => decide(r.id, false)}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Reject
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : rows.length === 0 ? (
