@@ -217,34 +217,117 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
-      .from("customer_packages").select("sessions_remaining, total_sessions, deposit_sessions_paid")
+      .from("customer_packages")
+      .select("id, customer_id, sessions_remaining, total_sessions, deposit_sessions_paid")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
     const dep = cp.deposit_sessions_paid ?? 0;
     if (used + 1 > dep) throw new Error("Deposit exhausted — collect more deposit before deducting another session");
-    const { error: uErr } = await sb
+
+    // Cancel any stale pending requests on this package before creating a new one.
+    await sb.from("session_deduction_requests")
+      .update({ status: "cancelled", responded_at: new Date().toISOString() })
+      .eq("customer_package_id", customerPackageId).eq("status", "pending");
+
+    const staffArr = Array.isArray(staffIds) ? staffIds.filter((s) => typeof s === "string") : [];
+    const { data: reqRow, error: rErr } = await sb
+      .from("session_deduction_requests")
+      .insert({
+        customer_package_id: customerPackageId,
+        customer_id: cp.customer_id,
+        admin_id: userId,
+        staff_ids: staffArr,
+      })
+      .select("id, expires_at").single();
+    if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
+    return { ok: true, pending: true, requestId: reqRow.id, expiresAt: reqRow.expires_at };
+  },
+
+  async customerListPendingRequests(_p, { userId }) {
+    const sb = admin();
+    const nowIso = new Date().toISOString();
+    // Expire stale ones first.
+    await sb.from("session_deduction_requests")
+      .update({ status: "expired", responded_at: nowIso })
+      .eq("customer_id", userId).eq("status", "pending").lt("expires_at", nowIso);
+    const { data, error } = await sb
+      .from("session_deduction_requests")
+      .select("id, created_at, expires_at, staff_ids, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, packages(name))")
+      .eq("customer_id", userId).eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const staffIds = Array.from(new Set((data ?? []).flatMap((r: any) => r.staff_ids ?? [])));
+    let staffMap = new Map<string, { name: string | null; email: string | null }>();
+    if (staffIds.length) {
+      const { data: sp } = await sb.from("profiles").select("id,name,email").in("id", staffIds);
+      staffMap = new Map((sp ?? []).map((s: any) => [s.id, { name: s.name, email: s.email }]));
+    }
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      created_at: r.created_at,
+      expires_at: r.expires_at,
+      package_name: r.customer_packages?.packages?.name ?? "Package",
+      remaining: r.customer_packages?.sessions_remaining ?? 0,
+      total: r.customer_packages?.total_sessions ?? 0,
+      staff: (r.staff_ids ?? []).map((id: string) => staffMap.get(id) ?? { name: null, email: null }),
+    }));
+  },
+
+  async respondSessionRequest({ requestId, approve }, { userId }) {
+    const sb = admin();
+    const { data: req, error } = await sb
+      .from("session_deduction_requests")
+      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id")
+      .eq("id", requestId).maybeSingle();
+    if (error || !req) throw new Error("Request not found");
+    if (req.customer_id !== userId) throw new Error("Forbidden");
+    if (req.status !== "pending") throw new Error("Request already handled");
+    const nowIso = new Date().toISOString();
+    if (new Date(req.expires_at).getTime() < Date.now()) {
+      await sb.from("session_deduction_requests")
+        .update({ status: "expired", responded_at: nowIso }).eq("id", req.id);
+      throw new Error("Request expired");
+    }
+
+    if (!approve) {
+      await sb.from("session_deduction_requests")
+        .update({ status: "rejected", responded_at: nowIso }).eq("id", req.id);
+      return { ok: true, status: "rejected" };
+    }
+
+    // Approve: run the actual deduction.
+    const { data: cp, error: cpErr } = await sb
       .from("customer_packages")
+      .select("sessions_remaining, total_sessions, deposit_sessions_paid")
+      .eq("id", req.customer_package_id).maybeSingle();
+    if (cpErr || !cp) throw new Error("Package not found");
+    if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
+    const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+    const dep = cp.deposit_sessions_paid ?? 0;
+    if (used + 1 > dep) throw new Error("Deposit exhausted");
+
+    const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
-      .eq("id", customerPackageId);
+      .eq("id", req.customer_package_id);
     if (uErr) throw new Error(uErr.message);
-    const { data: log, error: lErr } = await sb
-      .from("usage_logs")
-      .insert({ customer_package_id: customerPackageId, admin_id: userId })
+    const { data: log, error: lErr } = await sb.from("usage_logs")
+      .insert({ customer_package_id: req.customer_package_id, admin_id: req.admin_id })
       .select("id").single();
     if (lErr || !log) throw new Error(lErr?.message ?? "Failed to log");
-    if (Array.isArray(staffIds) && staffIds.length) {
-      const { data: validRoles } = await sb
-        .from("user_roles").select("user_id")
-        .in("role", ["staff", "stylist"]).in("user_id", staffIds);
-      const valid = new Set((validRoles ?? []).map((r) => r.user_id));
-      const rows = staffIds
-        .filter((id: string) => valid.has(id))
+    if (Array.isArray(req.staff_ids) && req.staff_ids.length) {
+      const { data: validRoles } = await sb.from("user_roles")
+        .select("user_id").in("role", ["staff", "stylist"]).in("user_id", req.staff_ids);
+      const valid = new Set((validRoles ?? []).map((r: any) => r.user_id));
+      const rows = req.staff_ids.filter((id: string) => valid.has(id))
         .map((staff_user_id: string) => ({ usage_log_id: log.id, staff_user_id }));
       if (rows.length) await sb.from("session_staff").insert(rows);
     }
-    return { ok: true, remaining: cp.sessions_remaining - 1 };
+    await sb.from("session_deduction_requests")
+      .update({ status: "approved", responded_at: nowIso, usage_log_id: log.id })
+      .eq("id", req.id);
+    return { ok: true, status: "approved", remaining: cp.sessions_remaining - 1 };
   },
 
   async adminListStaff(_p, { userId }) {
