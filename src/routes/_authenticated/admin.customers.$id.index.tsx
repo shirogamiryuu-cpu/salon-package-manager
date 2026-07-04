@@ -196,7 +196,7 @@ function CustomerDetail() {
           staffIds: Array.from(selectedStaff),
         },
       });
-      toast.success("Session deducted");
+      toast.success("Approval request sent to customer (expires in 15 min)");
       setDeductFor(null);
       refresh();
     } catch (e: any) {
