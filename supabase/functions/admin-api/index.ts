@@ -217,10 +217,13 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
-      .from("customer_packages").select("sessions_remaining")
+      .from("customer_packages").select("sessions_remaining, total_sessions, deposit_sessions_paid")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
+    const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+    const dep = cp.deposit_sessions_paid ?? 0;
+    if (used + 1 > dep) throw new Error("Deposit exhausted — collect more deposit before deducting another session");
     const { error: uErr } = await sb
       .from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })

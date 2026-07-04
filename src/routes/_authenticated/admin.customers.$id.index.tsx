@@ -432,14 +432,22 @@ function CustomerDetail() {
                       <Button size="sm" variant="outline" onClick={() => openAdd(cp)}>
                         <Plus className="h-3 w-3 mr-1" /> Add sessions
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={cp.sessions_remaining === 0}
-                        onClick={() => openDeduct(cp)}
-                      >
-                        <MinusCircle className="h-3 w-3 mr-1" /> Deduct
-                      </Button>
+                      {(() => {
+                        const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+                        const dep = cp.deposit_sessions_paid ?? 0;
+                        const depositExhausted = used + 1 > dep;
+                        return (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={cp.sessions_remaining === 0 || depositExhausted}
+                            title={depositExhausted ? "Deposit exhausted — collect more deposit first" : undefined}
+                            onClick={() => openDeduct(cp)}
+                          >
+                            <MinusCircle className="h-3 w-3 mr-1" /> {depositExhausted ? "Deposit needed" : "Deduct"}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </CardContent>
