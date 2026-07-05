@@ -72,8 +72,58 @@ function MyPackages() {
     loadPackages();
     loadPending();
     const t = setInterval(loadPending, 15000);
-    return () => clearInterval(t);
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      channel = supabase
+        .channel(`sdr-customer-${u.user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "session_deduction_requests",
+            filter: `customer_id=eq.${u.user.id}`,
+          },
+          () => {
+            toast.info("New session approval request from the salon", {
+              description: "Review and approve or reject below.",
+            });
+            loadPending();
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "session_deduction_requests",
+            filter: `customer_id=eq.${u.user.id}`,
+          },
+          (payload: any) => {
+            const oldStatus = payload.old?.status;
+            const newStatus = payload.new?.status;
+            if (oldStatus === "pending" && newStatus !== "pending") {
+              if (newStatus === "approved") toast.success("Session approved");
+              else if (newStatus === "rejected") toast("Request rejected");
+              else if (newStatus === "expired") toast.warning("Request expired");
+              else if (newStatus === "cancelled") toast("Request cancelled by salon");
+              loadPending();
+              loadPackages();
+            }
+          },
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      clearInterval(t);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [loadPackages, loadPending]);
+
 
   const decide = async (id: string, approve: boolean) => {
     setBusyId(id);
