@@ -78,7 +78,7 @@ function MyPackages() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       channel = supabase
-        .channel(`sdr-customer-${u.user.id}`)
+        .channel(`sdr-customer-${u.user.id}-${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           {
