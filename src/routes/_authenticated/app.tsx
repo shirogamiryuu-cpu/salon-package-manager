@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { Sparkles, ShoppingBag, User, History, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
-export const Route = createFileRoute("/_authenticated/app")({
-  component: () => (
+function CustomerApp() {
+  usePushNotifications();
+  return (
     <AppShell
       title="Salon Manager"
       nav={[
@@ -16,5 +18,9 @@ export const Route = createFileRoute("/_authenticated/app")({
     >
       <Outlet />
     </AppShell>
-  ),
+  );
+}
+
+export const Route = createFileRoute("/_authenticated/app")({
+  component: CustomerApp,
 });
