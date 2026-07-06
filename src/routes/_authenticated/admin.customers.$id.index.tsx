@@ -101,10 +101,21 @@ function CustomerDetail() {
       .from("packages")
       .select("id,name,total_sessions,price")
       .eq("is_active", true)
-      .then(({ data }) => setPackages((data ?? []) as any));
+      .then(async ({ data }) => {
+        const list = (data ?? []) as any[];
+        setPackages(list);
+        setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+      });
   }, [refresh]);
 
   const selectedPkg = packages.find((p) => p.id === pickId);
+  const selectedPromo = selectedPkg ? promoMap.get(selectedPkg.id) : undefined;
+  const selectedPricing = selectedPkg && selectedPromo
+    ? applyPromotion(Number(selectedPkg.price), selectedPromo)
+    : null;
+  const selectedUnit = selectedPkg
+    ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
+    : 0;
 
   const doAssign = async () => {
     if (!pickId) return;
