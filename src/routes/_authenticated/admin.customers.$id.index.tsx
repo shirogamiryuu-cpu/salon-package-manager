@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, MinusCircle, Scissors, Check, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
   component: CustomerDetail,
