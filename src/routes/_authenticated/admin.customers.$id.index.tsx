@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, MinusCircle, Scissors, Check, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
   component: CustomerDetail,
@@ -64,6 +65,7 @@ function CustomerDetail() {
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
+  const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
   const [assignDeposit, setAssignDeposit] = useState<number>(0);
@@ -99,10 +101,21 @@ function CustomerDetail() {
       .from("packages")
       .select("id,name,total_sessions,price")
       .eq("is_active", true)
-      .then(({ data }) => setPackages((data ?? []) as any));
+      .then(async ({ data }) => {
+        const list = (data ?? []) as any[];
+        setPackages(list);
+        setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+      });
   }, [refresh]);
 
   const selectedPkg = packages.find((p) => p.id === pickId);
+  const selectedPromo = selectedPkg ? promoMap.get(selectedPkg.id) : undefined;
+  const selectedPricing = selectedPkg && selectedPromo
+    ? applyPromotion(Number(selectedPkg.price), selectedPromo)
+    : null;
+  const selectedUnit = selectedPkg
+    ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
+    : 0;
 
   const doAssign = async () => {
     if (!pickId) return;
@@ -323,17 +336,32 @@ function CustomerDetail() {
                   className="w-20 h-8"
                 />
               </div>
-              <div className="w-full rounded-md border p-2 flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  ${Number(selectedPkg.price).toFixed(2)} × {assignSessions} session{assignSessions === 1 ? "" : "s"}
-                </span>
-                <span className="font-semibold">
-                  Total ${(Number(selectedPkg.price) * assignSessions).toFixed(2)}
-                </span>
+              <div className="w-full rounded-md border p-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {selectedPricing ? (
+                      <>
+                        <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
+                        <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <>${selectedUnit.toFixed(2)}</>
+                    )}
+                    {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
+                  </span>
+                  <span className="font-semibold">
+                    Total ${(selectedUnit * assignSessions).toFixed(2)}
+                  </span>
+                </div>
+                {selectedPromo && (
+                  <div className="text-xs">
+                    <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
+                  </div>
+                )}
               </div>
               {assignDeposit > 0 && (
                 <div className="text-xs text-muted-foreground">
-                  Deposit: ${(Number(selectedPkg.price) * assignDeposit).toFixed(2)} · Outstanding: ${(Number(selectedPkg.price) * (assignSessions - assignDeposit)).toFixed(2)}
+                  Deposit: ${(selectedUnit * assignDeposit).toFixed(2)} · Outstanding: ${(selectedUnit * (assignSessions - assignDeposit)).toFixed(2)}
                 </div>
               )}
             </div>
