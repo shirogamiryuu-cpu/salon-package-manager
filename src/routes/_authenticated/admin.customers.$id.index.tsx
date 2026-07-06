@@ -65,6 +65,7 @@ function CustomerDetail() {
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
+  const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
   const [assignDeposit, setAssignDeposit] = useState<number>(0);
