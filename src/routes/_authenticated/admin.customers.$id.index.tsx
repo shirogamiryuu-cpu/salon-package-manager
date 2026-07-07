@@ -321,16 +321,16 @@ function CustomerDetail() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Deposit sessions paid:</span>
+                <span className="text-muted-foreground">Deposit amount ($):</span>
                 <Input
                   type="number"
                   min={0}
-                  max={assignSessions}
-                  value={assignDeposit}
-                  onChange={(e) => setAssignDeposit(Math.max(0, Math.min(assignSessions, Number(e.target.value) || 0)))}
-                  className="w-20 h-8"
+                  step="0.01"
+                  max={totalAmount || undefined}
+                  value={assignDepositAmount}
+                  onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
+                  className="w-28 h-8"
                 />
-                <span className="text-muted-foreground">/ {assignSessions}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Warranty years:</span>
@@ -356,8 +356,12 @@ function CustomerDetail() {
                     {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
                   </span>
                   <span className="font-semibold">
-                    Total ${(selectedUnit * assignSessions).toFixed(2)}
+                    Total ${totalAmount.toFixed(2)}
                   </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Deposit: ${assignDepositAmount.toFixed(2)}</span>
+                  <span>Outstanding: ${outstandingAmount.toFixed(2)}</span>
                 </div>
                 {selectedPromo && (
                   <div className="text-xs">
@@ -365,11 +369,7 @@ function CustomerDetail() {
                   </div>
                 )}
               </div>
-              {assignDeposit > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  Deposit: ${(selectedUnit * assignDeposit).toFixed(2)} · Outstanding: ${(selectedUnit * (assignSessions - assignDeposit)).toFixed(2)}
-                </div>
-              )}
+
             </div>
           )}
         </CardContent>
