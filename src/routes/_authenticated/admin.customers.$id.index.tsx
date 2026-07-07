@@ -117,6 +117,12 @@ function CustomerDetail() {
     ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
     : 0;
 
+  const totalAmount = selectedUnit * assignSessions;
+  const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
+  const depositSessionsEq = selectedUnit > 0
+    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
+    : 0;
+
   const doAssign = async () => {
     if (!pickId) return;
     try {
@@ -125,14 +131,14 @@ function CustomerDetail() {
           customerId: id,
           packageId: pickId,
           sessions: assignSessions,
-          depositSessionsPaid: assignDeposit,
+          depositSessionsPaid: depositSessionsEq,
           warrantyYears: assignWarranty,
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
       setAssignSessions(1);
-      setAssignDeposit(0);
+      setAssignDepositAmount(0);
       setAssignWarranty(0);
       refresh();
     } catch (e: any) {
