@@ -68,7 +68,7 @@ function CustomerDetail() {
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
-  const [assignDeposit, setAssignDeposit] = useState<number>(0);
+  const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
