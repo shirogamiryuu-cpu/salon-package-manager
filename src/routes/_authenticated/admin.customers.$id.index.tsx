@@ -68,7 +68,7 @@ function CustomerDetail() {
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
-  const [assignDeposit, setAssignDeposit] = useState<number>(0);
+  const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
@@ -117,6 +117,12 @@ function CustomerDetail() {
     ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
     : 0;
 
+  const totalAmount = selectedUnit * assignSessions;
+  const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
+  const depositSessionsEq = selectedUnit > 0
+    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
+    : 0;
+
   const doAssign = async () => {
     if (!pickId) return;
     try {
@@ -125,14 +131,14 @@ function CustomerDetail() {
           customerId: id,
           packageId: pickId,
           sessions: assignSessions,
-          depositSessionsPaid: assignDeposit,
+          depositSessionsPaid: depositSessionsEq,
           warrantyYears: assignWarranty,
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
       setAssignSessions(1);
-      setAssignDeposit(0);
+      setAssignDepositAmount(0);
       setAssignWarranty(0);
       refresh();
     } catch (e: any) {
@@ -315,16 +321,16 @@ function CustomerDetail() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Deposit sessions paid:</span>
+                <span className="text-muted-foreground">Deposit amount ($):</span>
                 <Input
                   type="number"
                   min={0}
-                  max={assignSessions}
-                  value={assignDeposit}
-                  onChange={(e) => setAssignDeposit(Math.max(0, Math.min(assignSessions, Number(e.target.value) || 0)))}
-                  className="w-20 h-8"
+                  step="0.01"
+                  max={totalAmount || undefined}
+                  value={assignDepositAmount}
+                  onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
+                  className="w-28 h-8"
                 />
-                <span className="text-muted-foreground">/ {assignSessions}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Warranty years:</span>
@@ -350,8 +356,12 @@ function CustomerDetail() {
                     {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
                   </span>
                   <span className="font-semibold">
-                    Total ${(selectedUnit * assignSessions).toFixed(2)}
+                    Total ${totalAmount.toFixed(2)}
                   </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Deposit: ${assignDepositAmount.toFixed(2)}</span>
+                  <span>Outstanding: ${outstandingAmount.toFixed(2)}</span>
                 </div>
                 {selectedPromo && (
                   <div className="text-xs">
@@ -359,11 +369,7 @@ function CustomerDetail() {
                   </div>
                 )}
               </div>
-              {assignDeposit > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  Deposit: ${(selectedUnit * assignDeposit).toFixed(2)} · Outstanding: ${(selectedUnit * (assignSessions - assignDeposit)).toFixed(2)}
-                </div>
-              )}
+
             </div>
           )}
         </CardContent>
