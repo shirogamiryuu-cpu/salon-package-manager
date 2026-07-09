@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
