@@ -72,6 +72,8 @@ function CustomerDetail() {
   const [assignSessions, setAssignSessions] = useState<number>(1);
   const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
+  const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
+  const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
