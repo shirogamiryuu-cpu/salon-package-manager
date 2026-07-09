@@ -86,6 +86,14 @@ function AdminDash() {
   const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("staff");
   const [savingStaff, setSavingStaff] = useState(false);
 
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [custName, setCustName] = useState("");
+  const [custEmail, setCustEmail] = useState("");
+  const [custPhone, setCustPhone] = useState("");
+  const [custPoints, setCustPoints] = useState("");
+  const [custPassword, setCustPassword] = useState(genTempPassword());
+  const [savingCust, setSavingCust] = useState(false);
+
 
   const [resetFor, setResetFor] = useState<PersonRow | null>(null);
   const [resetPwd, setResetPwd] = useState(genTempPassword());
