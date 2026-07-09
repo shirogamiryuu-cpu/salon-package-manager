@@ -126,13 +126,13 @@ function AdminPackageDetail() {
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Total price</div>
-              <div className="text-base font-semibold">${price.toFixed(2)}</div>
+              <div className="text-base font-semibold">${totalPrice.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Deposit paid</div>
               <div className="text-base font-semibold">${depositAmount.toFixed(2)}</div>
               <div className="text-[10px] text-muted-foreground">
-                {depositSessions}/{cp.total_sessions} sessions
+                of ${totalPrice.toFixed(2)}
               </div>
             </div>
             <div className="rounded-lg border p-3">
