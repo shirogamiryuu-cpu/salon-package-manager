@@ -7,7 +7,7 @@ import {
   adminListStaff,
   adminPromoteToStaff,
   assignPackage,
-  setDepositSessions,
+  addDepositAmount,
   useSession,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
