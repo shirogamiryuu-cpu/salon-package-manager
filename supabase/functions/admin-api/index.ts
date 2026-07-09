@@ -360,13 +360,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     // Approve: run the actual deduction.
     const { data: cp, error: cpErr } = await sb
       .from("customer_packages")
-      .select("sessions_remaining, total_sessions, deposit_sessions_paid")
+      .select("sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", req.customer_package_id).maybeSingle();
     if (cpErr || !cp) throw new Error("Package not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-    const dep = cp.deposit_sessions_paid ?? 0;
-    if (used + 1 > dep) throw new Error("Deposit exhausted");
+    const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
+    const needed = unit * (used + 1);
+    if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
 
     const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
