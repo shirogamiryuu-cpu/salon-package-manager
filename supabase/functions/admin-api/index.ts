@@ -280,6 +280,45 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
+  async deleteCustomerPackage({ customerPackageId }, { userId }) {
+    await assertAdmin(userId);
+    const sb = admin();
+    await sb.from("session_deduction_requests").delete().eq("customer_package_id", customerPackageId);
+    const { data: logs } = await sb.from("usage_logs").select("id").eq("customer_package_id", customerPackageId);
+    const logIds = (logs ?? []).map((l: any) => l.id);
+    if (logIds.length) {
+      await sb.from("session_staff").delete().in("usage_log_id", logIds);
+      await sb.from("usage_logs").delete().in("id", logIds);
+    }
+    const { error } = await sb.from("customer_packages").delete().eq("id", customerPackageId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+    await assertAdmin(userId);
+    const sb = admin();
+    const { data: cp, error: cErr } = await sb
+      .from("customer_packages").select("total_sessions, total_price")
+      .eq("id", customerPackageId).maybeSingle();
+    if (cErr || !cp) throw new Error("Not found");
+    const total = Number(cp.total_price ?? 0);
+    const dep = Math.max(0, Math.min(Number(amount) || 0, total));
+    const unit = cp.total_sessions > 0 ? total / cp.total_sessions : 0;
+    const depSessions = unit > 0
+      ? Math.max(0, Math.min(cp.total_sessions, Math.round(dep / unit)))
+      : 0;
+    const { error } = await sb
+      .from("customer_packages")
+      .update({
+        deposit_amount: dep,
+        deposit_sessions_paid: depSessions,
+        deposit_paid: dep > 0,
+        deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
+      })
+      .eq("id", customerPackageId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
   async useSession({ customerPackageId, staffIds }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
