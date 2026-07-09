@@ -50,6 +50,10 @@ export const adminCreateStaff = (a: {
   data: { email: string; password: string; name?: string; category?: "staff" | "stylist" };
 }) => callAdminApi("adminCreateStaff", payload(a));
 
+export const adminCreateCustomer = (a: {
+  data: { email?: string; phone?: string; name?: string; password?: string; points?: number };
+}) => callAdminApi("adminCreateCustomer", payload(a));
+
 export const adminPromoteToStaff = (a: { data: { userId: string } }) =>
   callAdminApi("adminPromoteToStaff", payload(a));
 
