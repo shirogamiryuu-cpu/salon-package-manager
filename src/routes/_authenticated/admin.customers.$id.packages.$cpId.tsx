@@ -80,11 +80,9 @@ function AdminPackageDetail() {
 
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
 
-  const price = Number(cp.packages?.price ?? 0);
-  const pricePer = cp.total_sessions > 0 ? price / cp.total_sessions : 0;
-  const depositSessions = cp.deposit_sessions_paid ?? 0;
-  const depositAmount = pricePer * depositSessions;
-  const outstanding = Math.max(0, price - depositAmount);
+  const totalPrice = Number(cp.total_price ?? 0) || Number(cp.packages?.price ?? 0);
+  const depositAmount = Number(cp.deposit_amount ?? 0);
+  const outstanding = Math.max(0, totalPrice - depositAmount);
   const used = cp.total_sessions - cp.sessions_remaining;
   const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
   const lastUsed = history && history.length ? history[0].used_at : null;
