@@ -8,6 +8,7 @@ import {
   adminPromoteToStaff,
   assignPackage,
   addDepositAmount,
+  deleteCustomerPackage,
   useSession,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
