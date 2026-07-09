@@ -18,8 +18,8 @@ function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // sign in
-  const [siEmail, setSiEmail] = useState("");
+  // sign in — accepts email or phone
+  const [siIdentifier, setSiIdentifier] = useState("");
   const [siPassword, setSiPassword] = useState("");
 
   // sign up
@@ -44,8 +44,23 @@ function AuthPage() {
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    let email = siIdentifier.trim();
+    const isEmail = email.includes("@");
+    if (!isEmail) {
+      // Treat as phone → resolve to email via edge function
+      const phone = email.replace(/\s+/g, "");
+      const { data: resolved, error: resolveErr } = await supabase.functions.invoke(
+        "resolve-login",
+        { body: { phone } },
+      );
+      if (resolveErr || !resolved?.email) {
+        setLoading(false);
+        return toast.error("No account found for that phone number");
+      }
+      email = resolved.email;
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: siEmail,
+      email,
       password: siPassword,
     });
     setLoading(false);
