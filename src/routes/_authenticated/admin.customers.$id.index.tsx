@@ -131,7 +131,8 @@ function CustomerDetail() {
           customerId: id,
           packageId: pickId,
           sessions: assignSessions,
-          depositSessionsPaid: depositSessionsEq,
+          depositAmount: assignDepositAmount,
+          totalPrice: totalAmount,
           warrantyYears: assignWarranty,
         },
       });
@@ -157,11 +158,16 @@ function CustomerDetail() {
     if (!addFor) return;
     setAdding(true);
     try {
+      const unit = addFor.total_sessions > 0
+        ? Number(addFor.total_price ?? 0) / addFor.total_sessions
+        : 0;
+      const addedPrice = Math.round(unit * addSessions * 100) / 100;
       await addSessionsFn({
         data: {
           customerPackageId: addFor.id,
           sessions: addSessions,
-          depositSessionsPaid: addDeposit,
+          depositAmount: addDeposit,
+          addedPrice,
           warrantyYears: addWarranty,
         },
       });
@@ -176,10 +182,11 @@ function CustomerDetail() {
   };
 
   const saveDeposit = async (cp: any) => {
-    const val = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
+    const amount = depositDrafts[cp.id] ?? 0;
+    if (!amount || amount <= 0) return;
     try {
-      await setDeposit({ data: { customerPackageId: cp.id, sessions: val } });
-      toast.success("Deposit updated");
+      await addDepositFn({ data: { customerPackageId: cp.id, amount } });
+      toast.success(`Added $${amount.toFixed(2)} deposit`);
       setDepositDrafts((d) => {
         const n = { ...d };
         delete n[cp.id];
