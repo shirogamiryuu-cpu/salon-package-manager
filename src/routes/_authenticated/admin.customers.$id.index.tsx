@@ -505,13 +505,6 @@ function CustomerDetail() {
         </div>
       </div>
 
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
       <Dialog open={!!addFor} onOpenChange={(o) => !o && setAddFor(null)}>
         <DialogContent>
           <DialogHeader>
