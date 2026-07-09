@@ -66,7 +66,7 @@ function CustomerDetail() {
   const deleteCpFn = useServerFn(deleteCustomerPackage);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
@@ -103,7 +103,7 @@ function CustomerDetail() {
     refresh();
     supabase
       .from("packages")
-      .select("id,name,total_sessions,price")
+      .select("id,name,total_sessions,price,first_time_price")
       .eq("is_active", true)
       .then(async ({ data }) => {
         const list = (data ?? []) as any[];
@@ -121,7 +121,18 @@ function CustomerDetail() {
     ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
     : 0;
 
-  const totalAmount = selectedUnit * assignSessions;
+  // First-time price applies when this customer has no existing package of this type.
+  const ownsThisPackage = !!(data?.customerPackages ?? []).find(
+    (cp: any) => cp.package_id === pickId,
+  );
+  const firstTimePrice = selectedPkg && !ownsThisPackage && selectedPkg.first_time_price != null
+    ? Number(selectedPkg.first_time_price)
+    : null;
+  const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
+
+  const totalAmount = firstTimeApplies
+    ? firstTimePrice! + selectedUnit * Math.max(0, assignSessions - 1)
+    : selectedUnit * assignSessions;
   const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
   const depositSessionsEq = selectedUnit > 0
     ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
