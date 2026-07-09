@@ -398,29 +398,58 @@ function CustomerDetail() {
                 />
               </div>
               <div className="w-full rounded-md border p-2 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {selectedPricing ? (
-                      <>
-                        <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
-                        <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
-                      </>
-                    ) : (
-                      <>${selectedUnit.toFixed(2)}</>
+                {firstTimeApplies ? (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        <Badge variant="secondary" className="mr-1">1st time</Badge>
+                        1st session
+                      </span>
+                      <span className="font-medium">${firstTimePrice!.toFixed(2)}</span>
+                    </div>
+                    {assignSessions > 1 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          ${selectedUnit.toFixed(2)} × {assignSessions - 1} more session{assignSessions - 1 === 1 ? "" : "s"}
+                        </span>
+                        <span className="font-medium">${(selectedUnit * (assignSessions - 1)).toFixed(2)}</span>
+                      </div>
                     )}
-                    {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
-                  </span>
-                  <span className="font-semibold">
-                    Total ${totalAmount.toFixed(2)}
-                  </span>
-                </div>
+                    <div className="flex items-center justify-between border-t pt-1">
+                      <span className="text-muted-foreground text-sm">Total</span>
+                      <span className="font-semibold">${totalAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {selectedPricing ? (
+                        <>
+                          <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
+                          <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <>${selectedUnit.toFixed(2)}</>
+                      )}
+                      {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
+                    </span>
+                    <span className="font-semibold">
+                      Total ${totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Deposit: ${assignDepositAmount.toFixed(2)}</span>
                   <span>Outstanding: ${outstandingAmount.toFixed(2)}</span>
                 </div>
-                {selectedPromo && (
+                {selectedPromo && !firstTimeApplies && (
                   <div className="text-xs">
                     <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
+                  </div>
+                )}
+                {selectedPkg?.first_time_price != null && ownsThisPackage && (
+                  <div className="text-xs text-muted-foreground">
+                    First-time price already used for this customer on this package.
                   </div>
                 )}
               </div>
