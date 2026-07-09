@@ -558,6 +558,39 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true, id: uid, tempPassword: finalPassword };
   },
 
+  async adminDeleteCustomer({ customerId }, { userId }) {
+    await assertAdmin(userId);
+    if (!customerId) throw new Error("customerId required");
+    if (customerId === userId) throw new Error("You cannot delete your own account");
+    const sb = admin();
+    // Refuse to delete admins via this action.
+    const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", customerId);
+    if ((roles ?? []).some((r: any) => r.role === "admin")) {
+      throw new Error("Cannot delete an admin account here");
+    }
+    // Clean dependent rows that don't cascade.
+    const { data: cps } = await sb
+      .from("customer_packages").select("id").eq("customer_id", customerId);
+    const cpIds = (cps ?? []).map((c: any) => c.id);
+    if (cpIds.length) {
+      await sb.from("session_deduction_requests").delete().in("customer_package_id", cpIds);
+      const { data: logs } = await sb.from("usage_logs").select("id").in("customer_package_id", cpIds);
+      const logIds = (logs ?? []).map((l: any) => l.id);
+      if (logIds.length) {
+        await sb.from("session_staff").delete().in("usage_log_id", logIds);
+        await sb.from("usage_logs").delete().in("id", logIds);
+      }
+      await sb.from("customer_packages").delete().in("id", cpIds);
+    }
+    await sb.from("session_deduction_requests").delete().eq("customer_id", customerId);
+    await sb.from("device_tokens").delete().eq("user_id", customerId);
+    await sb.from("user_roles").delete().eq("user_id", customerId);
+    // Deleting the auth user cascades to profiles (FK on auth.users).
+    const { error } = await sb.auth.admin.deleteUser(customerId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
   async adminListAdmins(_p, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
