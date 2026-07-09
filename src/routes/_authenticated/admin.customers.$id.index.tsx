@@ -410,45 +410,49 @@ function CustomerDetail() {
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
                   {(() => {
-                    const draft = depositDrafts[cp.id] ?? cp.deposit_sessions_paid ?? 0;
-                    const dirty = draft !== (cp.deposit_sessions_paid ?? 0);
-                    const pricePer = cp.packages?.price
-                      ? Number(cp.packages.price) / cp.total_sessions
-                      : 0;
+                    const totalPrice = Number(cp.total_price ?? 0);
+                    const deposited = Number(cp.deposit_amount ?? 0);
+                    const outstanding = Math.max(0, totalPrice - deposited);
+                    const unit = cp.total_sessions > 0 ? totalPrice / cp.total_sessions : 0;
+                    const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+                    const needed = unit * (used + 1);
+                    const depositExhausted = deposited + 0.005 < needed;
+                    const draft = depositDrafts[cp.id] ?? 0;
                     return (
-                      <div className="rounded-md border p-2 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Badge variant={draft > 0 ? "default" : "secondary"}>
-                            Deposit: {draft}/{cp.total_sessions} sessions
-                          </Badge>
-                          {pricePer > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              ~${(pricePer * draft).toFixed(2)}
-                            </span>
-                          )}
+                      <div className="rounded-md border p-2 space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <div className="text-muted-foreground">Deposit</div>
+                            <div className="font-semibold text-sm">
+                              ${deposited.toFixed(2)} / ${totalPrice.toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-muted-foreground">Outstanding</div>
+                            <div className="font-semibold text-sm">${outstanding.toFixed(2)}</div>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
                             min={0}
-                            max={cp.total_sessions}
-                            value={draft}
+                            step="0.01"
+                            max={outstanding || undefined}
+                            placeholder="Add deposit ($)"
+                            value={draft || ""}
                             onChange={(e) => {
-                              const v = Math.max(
-                                0,
-                                Math.min(cp.total_sessions, Number(e.target.value) || 0),
-                              );
+                              const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
                               setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
                             }}
                             className="h-8"
                           />
                           <Button
                             size="sm"
-                            variant={dirty ? "default" : "ghost"}
-                            disabled={!dirty}
+                            variant={draft > 0 ? "default" : "ghost"}
+                            disabled={draft <= 0 || outstanding <= 0}
                             onClick={() => saveDeposit(cp)}
                           >
-                            <Check className="h-3 w-3 mr-1" /> Save
+                            <Plus className="h-3 w-3 mr-1" /> Add
                           </Button>
                         </div>
                       </div>
@@ -474,9 +478,12 @@ function CustomerDetail() {
                         <Plus className="h-3 w-3 mr-1" /> Add sessions
                       </Button>
                       {(() => {
+                        const totalPrice = Number(cp.total_price ?? 0);
+                        const deposited = Number(cp.deposit_amount ?? 0);
+                        const unit = cp.total_sessions > 0 ? totalPrice / cp.total_sessions : 0;
                         const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-                        const dep = cp.deposit_sessions_paid ?? 0;
-                        const depositExhausted = used + 1 > dep;
+                        const needed = unit * (used + 1);
+                        const depositExhausted = deposited + 0.005 < needed;
                         return (
                           <Button
                             size="sm"
@@ -491,6 +498,13 @@ function CustomerDetail() {
                       })()}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
                 </CardContent>
               </Card>
             );
