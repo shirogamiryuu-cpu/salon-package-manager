@@ -54,7 +54,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,variant_label,packages(name,description,price,points_awarded)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -91,7 +91,7 @@ function PackageDetail() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
-            <span>{cp.packages?.name ?? "Package"}</span>
+            <span>{cp.packages?.name ?? "Package"}{(cp as any).variant_label ? ` · ${(cp as any).variant_label}` : ""}</span>
             <span className="text-sm font-normal text-muted-foreground">
               {cp.sessions_remaining}/{cp.total_sessions} left
             </span>

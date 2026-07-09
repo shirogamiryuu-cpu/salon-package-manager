@@ -94,7 +94,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, sessions, depositAmount, totalPrice, warrantyYears, purchaseDate, warrantyExpiresAt }, { userId }) {
+  async assignPackage({ customerId, packageId, variantId, sessions, depositAmount, totalPrice, warrantyYears, purchaseDate, warrantyExpiresAt }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -103,8 +103,25 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
+
+    let variantLabel: string | null = null;
+    let variantUnit: number | null = null;
+    if (variantId) {
+      const { data: v, error: vErr } = await sb
+        .from("package_variants")
+        .select("id,label,price,package_id")
+        .eq("id", variantId)
+        .maybeSingle();
+      if (vErr || !v) throw new Error("Variant not found");
+      if (v.package_id !== packageId) throw new Error("Variant does not belong to this package");
+      variantLabel = v.label;
+      variantUnit = Number(v.price) || 0;
+    }
+
     const totalSessions = Math.max(1, Number(sessions) || pkg.total_sessions || 1);
-    const defaultUnit = (Number(pkg.price) || 0) / Math.max(1, pkg.total_sessions || 1);
+    const defaultUnit = variantUnit != null
+      ? variantUnit
+      : (Number(pkg.price) || 0) / Math.max(1, pkg.total_sessions || 1);
     const addPrice = Number.isFinite(Number(totalPrice))
       ? Math.max(0, Number(totalPrice))
       : Math.round(defaultUnit * totalSessions * 100) / 100;
@@ -123,11 +140,13 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         ? new Date(new Date(purchaseIso).getTime() + yrs * 365 * 24 * 60 * 60 * 1000).toISOString()
         : null);
 
-    const { data: existing } = await sb
+    let existingQ = sb
       .from("customer_packages")
       .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at")
       .eq("customer_id", customerId)
-      .eq("package_id", packageId)
+      .eq("package_id", packageId);
+    existingQ = variantId ? existingQ.eq("variant_id", variantId) : existingQ.is("variant_id", null);
+    const { data: existing } = await existingQ
       .order("purchase_date", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -158,6 +177,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       const { error } = await sb.from("customer_packages").insert({
         customer_id: customerId,
         package_id: packageId,
+        variant_id: variantId ?? null,
+        variant_label: variantLabel,
         sessions_remaining: totalSessions,
         total_sessions: totalSessions,
         total_price: addPrice,
