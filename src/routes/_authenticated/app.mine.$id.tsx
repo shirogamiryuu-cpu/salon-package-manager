@@ -91,7 +91,7 @@ function PackageDetail() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
-            <span>{cp.packages?.name ?? "Package"}</span>
+            <span>{cp.packages?.name ?? "Package"}{(cp as any).variant_label ? ` · ${(cp as any).variant_label}` : ""}</span>
             <span className="text-sm font-normal text-muted-foreground">
               {cp.sessions_remaining}/{cp.total_sessions} left
             </span>
