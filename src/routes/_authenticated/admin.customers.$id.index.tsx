@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
 import {
   adminAddSessions,
+  adminDeleteCustomer,
   adminGetCustomer,
   adminListStaff,
   adminPromoteToStaff,
@@ -56,6 +57,7 @@ type StaffOpt = { id: string; email: string | null; name: string | null };
 
 function CustomerDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const get = useServerFn(adminGetCustomer);
   const assign = useServerFn(assignPackage);
   const use = useServerFn(useSession);
@@ -64,6 +66,7 @@ function CustomerDetail() {
   const addDepositFn = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
   const deleteCpFn = useServerFn(deleteCustomerPackage);
+  const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
@@ -297,6 +300,16 @@ function CustomerDetail() {
     }
   };
 
+  const doDeleteCustomer = async () => {
+    try {
+      await deleteCustomerFn({ data: { customerId: id } });
+      toast.success("Customer deleted");
+      navigate({ to: "/admin/customers" });
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   if (!data) return <p className="text-muted-foreground">Loading...</p>;
   const { profile, customerPackages } = data;
   const isStaff = customerRoles.includes("staff");
@@ -345,6 +358,31 @@ function CustomerDetail() {
               </AlertDialogContent>
             </AlertDialog>
           )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive">
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this customer?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes {profile?.name ?? profile?.email}, their packages,
+                  session history and login. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={doDeleteCustomer}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
