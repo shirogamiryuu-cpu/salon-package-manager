@@ -22,6 +22,8 @@ type CP = {
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_sessions_paid: number;
+  deposit_amount: number;
+  total_price: number;
   warranty_years: number;
   warranty_expires_at: string | null;
   packages: {
@@ -52,7 +54,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -71,11 +73,9 @@ function PackageDetail() {
 
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
 
-  const price = Number(cp.packages?.price ?? 0);
-  const pricePer = cp.total_sessions > 0 ? price / cp.total_sessions : 0;
-  const depositSessions = cp.deposit_sessions_paid ?? 0;
-  const depositAmount = pricePer * depositSessions;
-  const outstanding = Math.max(0, price - depositAmount);
+  const totalPrice = Number(cp.total_price ?? 0) || Number(cp.packages?.price ?? 0);
+  const depositAmount = Number(cp.deposit_amount ?? 0);
+  const outstanding = Math.max(0, totalPrice - depositAmount);
   const used = cp.total_sessions - cp.sessions_remaining;
   const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
   const lastUsed = history && history.length ? history[0].used_at : null;
