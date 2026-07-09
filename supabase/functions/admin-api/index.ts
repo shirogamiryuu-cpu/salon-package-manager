@@ -276,7 +276,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { data: cp, error } = await sb
       .from("customer_packages")
-      .select("id, customer_id, sessions_remaining, total_sessions, deposit_sessions_paid")
+      .select("id, customer_id, sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
