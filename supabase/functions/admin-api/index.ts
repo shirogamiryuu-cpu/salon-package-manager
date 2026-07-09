@@ -73,8 +73,12 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const { data: roles } = await sb.from("user_roles").select("user_id,role");
-    const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
-    return (profiles ?? []).filter((p) => !adminIds.has(p.id));
+    const nonCustomerIds = new Set(
+      (roles ?? [])
+        .filter((r) => r.role === "admin" || r.role === "staff" || r.role === "stylist")
+        .map((r) => r.user_id),
+    );
+    return (profiles ?? []).filter((p) => !nonCustomerIds.has(p.id));
   },
 
   async adminGetCustomer({ id }, { userId }) {
