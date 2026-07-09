@@ -19,8 +19,11 @@ type Pkg = {
   image_url: string | null;
 };
 
+type Variant = { id: string; label: string; price: number };
+
 function Available() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
+  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, Variant[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
 
   useEffect(() => {
@@ -33,6 +36,15 @@ function Available() {
       const list = (data ?? []) as Pkg[];
       setPkgs(list);
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+      const { data: vs } = await supabase
+        .from("package_variants")
+        .select("id,package_id,label,price,sort_order")
+        .order("sort_order", { ascending: true });
+      const map: Record<string, Variant[]> = {};
+      for (const v of (vs ?? []) as any[]) {
+        (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: Number(v.price) });
+      }
+      setVariantsByPkg(map);
     })();
   }, []);
 
@@ -46,13 +58,20 @@ function Available() {
         {pkgs.map((p) => {
           const promo = promoMap.get(p.id);
           const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
+          const vs = variantsByPkg[p.id] ?? [];
           return (
             <Card key={p.id} className="overflow-hidden">
               {p.image_url && <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" />}
               <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span>{p.name}</span>
-                  {pricing ? (
+                  {vs.length > 0 ? (
+                    <span className="text-base font-semibold">
+                      ${Math.min(...vs.map((v) => v.price)).toFixed(2)}
+                      {" – "}
+                      ${Math.max(...vs.map((v) => v.price)).toFixed(2)}
+                    </span>
+                  ) : pricing ? (
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground line-through">
                         ${pricing.original.toFixed(2)}
@@ -68,8 +87,18 @@ function Available() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {promo && <Badge className="bg-primary">{formatDiscountLabel(promo)}</Badge>}
+                {vs.length > 0 && (
+                  <div className="space-y-1 text-sm">
+                    {vs.map((v) => (
+                      <div key={v.id} className="flex items-center justify-between border-b last:border-0 py-1">
+                        <span className="text-muted-foreground">{v.label}</span>
+                        <span className="font-medium">${v.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 text-xs pt-1">
+                  {promo && vs.length === 0 && <Badge className="bg-primary">{formatDiscountLabel(promo)}</Badge>}
                   <Badge variant="outline">+{p.points_awarded} points</Badge>
                 </div>
               </CardContent>
