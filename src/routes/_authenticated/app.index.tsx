@@ -21,6 +21,8 @@ type Row = {
   purchase_date: string;
   deposit_paid: boolean;
   deposit_sessions_paid: number;
+  deposit_amount: number;
+  total_price: number;
   packages: { name: string; description: string | null; points_awarded: number } | null;
 };
 
