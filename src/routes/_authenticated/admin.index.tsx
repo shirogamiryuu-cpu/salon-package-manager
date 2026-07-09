@@ -106,6 +106,7 @@ function AdminDash() {
 
   const createAdmin = useServerFn(adminCreateAdmin);
   const createStaff = useServerFn(adminCreateStaff);
+  const createCustomer = useServerFn(adminCreateCustomer);
   const listAdmins = useServerFn(adminListAdmins);
   const listStaff = useServerFn(adminListStaff);
   const listCustomers = useServerFn(adminListCustomers);
