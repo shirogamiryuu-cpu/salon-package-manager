@@ -63,6 +63,7 @@ function CustomerDetail() {
   const promote = useServerFn(adminPromoteToStaff);
   const addDepositFn = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
+  const deleteCpFn = useServerFn(deleteCustomerPackage);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
