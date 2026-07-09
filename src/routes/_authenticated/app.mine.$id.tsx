@@ -117,13 +117,13 @@ function PackageDetail() {
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Total price</div>
-              <div className="text-base font-semibold">${price.toFixed(2)}</div>
+              <div className="text-base font-semibold">${totalPrice.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Deposit paid</div>
               <div className="text-base font-semibold">${depositAmount.toFixed(2)}</div>
               <div className="text-[10px] text-muted-foreground">
-                {depositSessions}/{cp.total_sessions} sessions
+                of ${totalPrice.toFixed(2)}
               </div>
             </div>
             <div className="rounded-lg border p-3">
@@ -135,22 +135,23 @@ function PackageDetail() {
           <div className="flex flex-col gap-1 rounded-lg border p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Payment status</span>
-              <Badge variant={depositSessions > 0 ? "default" : "secondary"}>
-                {depositSessions > 0
-                  ? `${depositSessions}/${cp.total_sessions} sessions paid`
+              <Badge variant={depositAmount > 0 ? "default" : "secondary"}>
+                {depositAmount > 0
+                  ? `$${depositAmount.toFixed(2)} paid`
                   : "Deposit unpaid"}
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              {depositSessions > 0
+              {depositAmount > 0
                 ? `Paid ${
                     cp.deposit_paid_at
                       ? new Date(cp.deposit_paid_at).toLocaleDateString()
                       : ""
-                  } · $${depositAmount.toFixed(2)} of $${price.toFixed(2)}`
-                : `Outstanding balance: $${price.toFixed(2)}`}
+                  } · $${depositAmount.toFixed(2)} of $${totalPrice.toFixed(2)}`
+                : `Outstanding balance: $${totalPrice.toFixed(2)}`}
             </div>
           </div>
+
 
           <div className="flex items-center gap-2 text-sm">
             <CalendarClock className="h-4 w-4 text-muted-foreground" />
