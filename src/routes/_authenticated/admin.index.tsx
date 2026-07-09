@@ -279,6 +279,58 @@ function AdminDash() {
         </TabsList>
 
         <TabsContent value="customers" className="space-y-3 pt-4">
+          <div className="flex justify-end">
+            <Dialog open={addCustomerOpen} onOpenChange={setAddCustomerOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Customer
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={onCreateCustomer}>
+                  <DialogHeader>
+                    <DialogTitle>Add customer manually</DialogTitle>
+                    <DialogDescription>
+                      For existing customers before the app launch. Provide email or phone (or both).
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cust-name">Name</Label>
+                      <Input id="cust-name" value={custName} onChange={(e) => setCustName(e.target.value)} placeholder="Full name" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cust-email">Email</Label>
+                      <Input id="cust-email" type="email" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} placeholder="name@example.com" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cust-phone">Phone</Label>
+                      <Input id="cust-phone" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="+1234567890" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cust-points">Starting points</Label>
+                      <Input id="cust-points" type="number" min={0} value={custPoints} onChange={(e) => setCustPoints(e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cust-pass">Temporary password</Label>
+                      <div className="flex gap-2">
+                        <Input id="cust-pass" required value={custPassword} onChange={(e) => setCustPassword(e.target.value)} />
+                        <Button type="button" variant="outline" onClick={() => setCustPassword(genTempPassword())}>
+                          New
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={savingCust}>
+                      {savingCust ? "Creating..." : "Create customer"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
           {customers.length === 0 && (
             <p className="text-sm text-muted-foreground">No customers yet.</p>
           )}
