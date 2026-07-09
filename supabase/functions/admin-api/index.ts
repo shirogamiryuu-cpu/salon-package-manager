@@ -94,7 +94,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, sessions, depositAmount, totalPrice, warrantyYears }, { userId }) {
+  async assignPackage({ customerId, packageId, sessions, depositAmount, totalPrice, warrantyYears, purchaseDate, warrantyExpiresAt }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
@@ -115,9 +115,13 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       : 0;
     const yrs = Math.max(0, Number(warrantyYears) || 0);
     const nowIso = new Date().toISOString();
-    const expiresAt = yrs > 0
-      ? new Date(Date.now() + yrs * 365 * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    const purchaseIso = purchaseDate ? new Date(purchaseDate).toISOString() : nowIso;
+    const explicitExp = warrantyExpiresAt ? new Date(warrantyExpiresAt).toISOString() : null;
+    const expiresAt = explicitExp
+      ? explicitExp
+      : (yrs > 0
+        ? new Date(new Date(purchaseIso).getTime() + yrs * 365 * 24 * 60 * 60 * 1000).toISOString()
+        : null);
 
     const { data: existing } = await sb
       .from("customer_packages")
@@ -160,9 +164,10 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         deposit_amount: addDep,
         deposit_sessions_paid: depSessionsEq,
         deposit_paid: addDep > 0,
-        deposit_paid_at: addDep > 0 ? nowIso : null,
+        deposit_paid_at: addDep > 0 ? purchaseIso : null,
         warranty_years: yrs,
         warranty_expires_at: expiresAt,
+        purchase_date: purchaseIso,
       });
       if (error) throw new Error(error.message);
     }
@@ -271,6 +276,21 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
       })
       .eq("id", customerPackageId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
+  async deleteCustomerPackage({ customerPackageId }, { userId }) {
+    await assertAdmin(userId);
+    const sb = admin();
+    await sb.from("session_deduction_requests").delete().eq("customer_package_id", customerPackageId);
+    const { data: logs } = await sb.from("usage_logs").select("id").eq("customer_package_id", customerPackageId);
+    const logIds = (logs ?? []).map((l: any) => l.id);
+    if (logIds.length) {
+      await sb.from("session_staff").delete().in("usage_log_id", logIds);
+      await sb.from("usage_logs").delete().in("id", logIds);
+    }
+    const { error } = await sb.from("customer_packages").delete().eq("id", customerPackageId);
     if (error) throw new Error(error.message);
     return { ok: true };
   },

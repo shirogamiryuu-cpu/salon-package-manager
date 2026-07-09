@@ -8,6 +8,7 @@ import {
   adminPromoteToStaff,
   assignPackage,
   addDepositAmount,
+  deleteCustomerPackage,
   useSession,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
@@ -62,6 +63,7 @@ function CustomerDetail() {
   const promote = useServerFn(adminPromoteToStaff);
   const addDepositFn = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
+  const deleteCpFn = useServerFn(deleteCustomerPackage);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
@@ -70,6 +72,8 @@ function CustomerDetail() {
   const [assignSessions, setAssignSessions] = useState<number>(1);
   const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
+  const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
+  const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
@@ -134,6 +138,8 @@ function CustomerDetail() {
           depositAmount: assignDepositAmount,
           totalPrice: totalAmount,
           warrantyYears: assignWarranty,
+          purchaseDate: assignPurchaseDate || undefined,
+          warrantyExpiresAt: assignWarrantyExpires || undefined,
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
@@ -141,11 +147,24 @@ function CustomerDetail() {
       setAssignSessions(1);
       setAssignDepositAmount(0);
       setAssignWarranty(0);
+      setAssignPurchaseDate("");
+      setAssignWarrantyExpires("");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
     }
   };
+
+  const doDelete = async (cpId: string) => {
+    try {
+      await deleteCpFn({ data: { customerPackageId: cpId } });
+      toast.success("Package removed");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
 
   const openAdd = (cp: any) => {
     setAddSessions(1);
@@ -349,6 +368,24 @@ function CustomerDetail() {
                   className="w-20 h-8"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Purchase date:</span>
+                <Input
+                  type="date"
+                  value={assignPurchaseDate}
+                  onChange={(e) => setAssignPurchaseDate(e.target.value)}
+                  className="w-40 h-8"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Warranty expires:</span>
+                <Input
+                  type="date"
+                  value={assignWarrantyExpires}
+                  onChange={(e) => setAssignWarrantyExpires(e.target.value)}
+                  className="w-40 h-8"
+                />
+              </div>
               <div className="w-full rounded-md border p-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
@@ -496,6 +533,25 @@ function CustomerDetail() {
                           </Button>
                         );
                       })()}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3 mr-1" /> Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this package?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Removes {cp.packages?.name} from this customer along with its session history. This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => doDelete(cp.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>
