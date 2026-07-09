@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
 import {
   adminAddSessions,
+  adminDeleteCustomer,
   adminGetCustomer,
   adminListStaff,
   adminPromoteToStaff,
