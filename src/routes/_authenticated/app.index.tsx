@@ -211,7 +211,7 @@ function MyPackages() {
                     <Progress value={pct} />
                     <div className="flex items-center justify-between gap-2">
                       <Badge variant={Number(r.deposit_amount ?? 0) > 0 ? "default" : "secondary"}>
-                        Deposit ${Number(r.deposit_amount ?? 0).toFixed(2)}/${Number(r.total_price ?? 0).toFixed(2)}
+                        {`Deposit $${Number(r.deposit_amount ?? 0).toFixed(2)} / $${Number(r.total_price ?? 0).toFixed(2)}`}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {used} used · {new Date(r.purchase_date).toLocaleDateString()}
