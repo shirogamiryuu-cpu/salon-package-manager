@@ -115,8 +115,8 @@ function AuthPage() {
             <TabsContent value="signin">
               <form onSubmit={signIn} className="space-y-3 mt-4">
                 <div>
-                  <Label htmlFor="si-email">Email</Label>
-                  <Input id="si-email" type="email" required value={siEmail} onChange={(e) => setSiEmail(e.target.value)} />
+                  <Label htmlFor="si-identifier">Email or phone</Label>
+                  <Input id="si-identifier" required value={siIdentifier} onChange={(e) => setSiIdentifier(e.target.value)} placeholder="you@example.com or +1234567890" />
                 </div>
                 <div>
                   <Label htmlFor="si-password">Password</Label>
