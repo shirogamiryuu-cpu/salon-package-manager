@@ -505,6 +505,38 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true, email };
   },
 
+  async adminCreateCustomer({ email, phone, name, password, points }, { userId }) {
+    await assertAdmin(userId);
+    const sb = admin();
+    const cleanEmail = (email ?? "").trim() || null;
+    const cleanPhone = (phone ?? "").trim().replace(/\s+/g, "") || null;
+    if (!cleanEmail && !cleanPhone) throw new Error("Email or phone is required");
+    // Supabase auth requires an email; synthesize one from phone if missing.
+    const finalEmail = cleanEmail ?? `phone_${cleanPhone!.replace(/[^0-9]/g, "")}@placeholder.local`;
+    const finalPassword = (password ?? "").trim() || (crypto.randomUUID().replace(/-/g, "") + "!9");
+    const { data: created, error } = await sb.auth.admin.createUser({
+      email: finalEmail,
+      password: finalPassword,
+      email_confirm: true,
+      phone: cleanPhone ?? undefined,
+      phone_confirm: cleanPhone ? true : undefined,
+      user_metadata: {
+        ...(name ? { name } : {}),
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
+      },
+    });
+    if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
+    const uid = created.user.id;
+    // handle_new_user trigger already inserts profile + customer role. Patch fields.
+    const patch: Record<string, unknown> = {};
+    if (name) patch.name = name;
+    if (cleanPhone) patch.phone = cleanPhone;
+    if (cleanEmail) patch.email = cleanEmail;
+    if (Number.isFinite(Number(points))) patch.points = Math.max(0, Math.floor(Number(points)));
+    if (Object.keys(patch).length) await sb.from("profiles").update(patch).eq("id", uid);
+    return { ok: true, id: uid, tempPassword: finalPassword };
+  },
+
   async adminListAdmins(_p, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
