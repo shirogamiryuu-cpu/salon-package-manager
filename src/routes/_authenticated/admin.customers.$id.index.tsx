@@ -138,6 +138,8 @@ function CustomerDetail() {
           depositAmount: assignDepositAmount,
           totalPrice: totalAmount,
           warrantyYears: assignWarranty,
+          purchaseDate: assignPurchaseDate || undefined,
+          warrantyExpiresAt: assignWarrantyExpires || undefined,
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
@@ -145,11 +147,24 @@ function CustomerDetail() {
       setAssignSessions(1);
       setAssignDepositAmount(0);
       setAssignWarranty(0);
+      setAssignPurchaseDate("");
+      setAssignWarrantyExpires("");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
     }
   };
+
+  const doDelete = async (cpId: string) => {
+    try {
+      await deleteCpFn({ data: { customerPackageId: cpId } });
+      toast.success("Package removed");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
 
   const openAdd = (cp: any) => {
     setAddSessions(1);
