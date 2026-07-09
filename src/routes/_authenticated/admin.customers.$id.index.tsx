@@ -60,7 +60,7 @@ function CustomerDetail() {
   const use = useServerFn(useSession);
   const listStaff = useServerFn(adminListStaff);
   const promote = useServerFn(adminPromoteToStaff);
-  const setDeposit = useServerFn(setDepositSessions);
+  const addDeposit = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
 
   const [data, setData] = useState<any>(null);
