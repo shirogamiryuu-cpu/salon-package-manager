@@ -524,7 +524,7 @@ function CustomerDetail() {
                       <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                         {idx + 1}
                       </span>
-                      <span className="truncate">{cp.packages?.name}</span>
+                      <span className="truncate">{cp.packages?.name}{cp.variant_label ? ` · ${cp.variant_label}` : ""}</span>
                     </Link>
                     <span className="text-sm text-muted-foreground shrink-0">
                       {cp.sessions_remaining}/{cp.total_sessions}
