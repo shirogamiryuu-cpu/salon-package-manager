@@ -423,10 +423,18 @@ function CustomerDetail() {
         <h2 className="text-lg font-semibold">Owned packages</h2>
         {customerPackages.length === 0 && <p className="text-muted-foreground">None yet.</p>}
         <div className="grid gap-3 md:grid-cols-2">
-          {customerPackages.map((cp: any, idx: number) => {
+          {[...customerPackages]
+            .sort((a: any, b: any) => {
+              const aZero = (a.sessions_remaining ?? 0) === 0 ? 1 : 0;
+              const bZero = (b.sessions_remaining ?? 0) === 0 ? 1 : 0;
+              return aZero - bZero;
+            })
+            .map((cp: any, idx: number) => {
             const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
+            const depleted = (cp.sessions_remaining ?? 0) === 0;
             return (
-              <Card key={cp.id}>
+              <Card key={cp.id} className={depleted ? "opacity-60 line-through" : ""}>
+
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-base gap-2">
                     <Link
