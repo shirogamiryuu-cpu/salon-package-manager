@@ -24,6 +24,8 @@ type CP = {
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_sessions_paid: number;
+  deposit_amount: number;
+  total_price: number;
   warranty_years: number;
   warranty_expires_at: string | null;
   packages: {
