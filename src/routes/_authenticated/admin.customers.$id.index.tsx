@@ -300,6 +300,16 @@ function CustomerDetail() {
     }
   };
 
+  const doDeleteCustomer = async () => {
+    try {
+      await deleteCustomerFn({ data: { customerId: id } });
+      toast.success("Customer deleted");
+      navigate({ to: "/admin/customers" });
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   if (!data) return <p className="text-muted-foreground">Loading...</p>;
   const { profile, customerPackages } = data;
   const isStaff = customerRoles.includes("staff");
