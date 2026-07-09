@@ -54,6 +54,9 @@ export const adminCreateCustomer = (a: {
   data: { email?: string; phone?: string; name?: string; password?: string; points?: number };
 }) => callAdminApi("adminCreateCustomer", payload(a));
 
+export const adminDeleteCustomer = (a: { data: { customerId: string } }) =>
+  callAdminApi("adminDeleteCustomer", payload(a));
+
 export const adminPromoteToStaff = (a: { data: { userId: string } }) =>
   callAdminApi("adminPromoteToStaff", payload(a));
 
