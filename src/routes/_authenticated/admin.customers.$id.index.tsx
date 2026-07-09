@@ -354,7 +354,7 @@ function CustomerDetail() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Select value={pickId} onValueChange={setPickId}>
+            <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
               <SelectTrigger className="max-w-xs">
                 <SelectValue placeholder="Choose a package" />
               </SelectTrigger>
@@ -366,7 +366,21 @@ function CustomerDetail() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={doAssign} disabled={!pickId}>
+            {availableVariants.length > 0 && (
+              <Select value={pickVariantId} onValueChange={setPickVariantId}>
+                <SelectTrigger className="max-w-xs">
+                  <SelectValue placeholder="Choose a variant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVariants.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.label} — ${v.price.toFixed(2)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={doAssign} disabled={!pickId || (availableVariants.length > 0 && !pickVariantId)}>
               Assign
             </Button>
           </div>
