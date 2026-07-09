@@ -368,6 +368,24 @@ function CustomerDetail() {
                   className="w-20 h-8"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Purchase date:</span>
+                <Input
+                  type="date"
+                  value={assignPurchaseDate}
+                  onChange={(e) => setAssignPurchaseDate(e.target.value)}
+                  className="w-40 h-8"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Warranty expires:</span>
+                <Input
+                  type="date"
+                  value={assignWarrantyExpires}
+                  onChange={(e) => setAssignWarrantyExpires(e.target.value)}
+                  className="w-40 h-8"
+                />
+              </div>
               <div className="w-full rounded-md border p-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
