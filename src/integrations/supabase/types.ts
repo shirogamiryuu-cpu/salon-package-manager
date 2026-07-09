@@ -17,6 +17,7 @@ export type Database = {
       customer_packages: {
         Row: {
           customer_id: string
+          deposit_amount: number
           deposit_paid: boolean
           deposit_paid_at: string | null
           deposit_sessions_paid: number
@@ -24,12 +25,14 @@ export type Database = {
           package_id: string
           purchase_date: string
           sessions_remaining: number
+          total_price: number
           total_sessions: number
           warranty_expires_at: string | null
           warranty_years: number
         }
         Insert: {
           customer_id: string
+          deposit_amount?: number
           deposit_paid?: boolean
           deposit_paid_at?: string | null
           deposit_sessions_paid?: number
@@ -37,12 +40,14 @@ export type Database = {
           package_id: string
           purchase_date?: string
           sessions_remaining: number
+          total_price?: number
           total_sessions: number
           warranty_expires_at?: string | null
           warranty_years?: number
         }
         Update: {
           customer_id?: string
+          deposit_amount?: number
           deposit_paid?: boolean
           deposit_paid_at?: string | null
           deposit_sessions_paid?: number
@@ -50,6 +55,7 @@ export type Database = {
           package_id?: string
           purchase_date?: string
           sessions_remaining?: number
+          total_price?: number
           total_sessions?: number
           warranty_expires_at?: string | null
           warranty_years?: number
