@@ -281,8 +281,10 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-    const dep = cp.deposit_sessions_paid ?? 0;
-    if (used + 1 > dep) throw new Error("Deposit exhausted — collect more deposit before deducting another session");
+    const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
+    const needed = unit * (used + 1);
+    if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
+      throw new Error("Deposit exhausted — collect more deposit before deducting another session");
 
     // Cancel any stale pending requests on this package before creating a new one.
     await sb.from("session_deduction_requests")
