@@ -13,16 +13,20 @@ export const adminGetCustomer = (a: { data: { id: string } }) =>
   callAdminApi("adminGetCustomer", payload(a));
 
 export const assignPackage = (a: {
-  data: { customerId: string; packageId: string; sessions?: number; depositSessionsPaid?: number; warrantyYears?: number };
+  data: { customerId: string; packageId: string; sessions?: number; depositAmount?: number; totalPrice?: number; warrantyYears?: number };
 }) => callAdminApi("assignPackage", payload(a));
 
 export const adminAddSessions = (a: {
-  data: { customerPackageId: string; sessions: number; depositSessionsPaid?: number; warrantyYears?: number };
+  data: { customerPackageId: string; sessions: number; depositAmount?: number; addedPrice?: number; warrantyYears?: number };
 }) => callAdminApi("adminAddSessions", payload(a));
 
-export const setDepositSessions = (a: {
-  data: { customerPackageId: string; sessions: number };
-}) => callAdminApi("setDepositSessions", payload(a));
+export const setDepositAmount = (a: {
+  data: { customerPackageId: string; amount: number };
+}) => callAdminApi("setDepositAmount", payload(a));
+
+export const addDepositAmount = (a: {
+  data: { customerPackageId: string; amount: number };
+}) => callAdminApi("addDepositAmount", payload(a));
 
 export const useSession = (a: {
   data: { customerPackageId: string; staffIds?: string[] };

@@ -90,27 +90,34 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, sessions, depositSessionsPaid, warrantyYears }, { userId }) {
+  async assignPackage({ customerId, packageId, sessions, depositAmount, totalPrice, warrantyYears }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: pkg, error: pErr } = await sb
       .from("packages")
-      .select("total_sessions,points_awarded")
+      .select("total_sessions,points_awarded,price")
       .eq("id", packageId)
       .maybeSingle();
     if (pErr || !pkg) throw new Error("Package not found");
     const totalSessions = Math.max(1, Number(sessions) || pkg.total_sessions || 1);
-    const addDep = Math.max(0, Math.min(Number(depositSessionsPaid) || 0, totalSessions));
+    const defaultUnit = (Number(pkg.price) || 0) / Math.max(1, pkg.total_sessions || 1);
+    const addPrice = Number.isFinite(Number(totalPrice))
+      ? Math.max(0, Number(totalPrice))
+      : Math.round(defaultUnit * totalSessions * 100) / 100;
+    const addDep = Math.max(0, Math.min(Number(depositAmount) || 0, addPrice));
+    const unitPrice = addPrice / totalSessions;
+    const depSessionsEq = unitPrice > 0
+      ? Math.max(0, Math.min(totalSessions, Math.round(addDep / unitPrice)))
+      : 0;
     const yrs = Math.max(0, Number(warrantyYears) || 0);
     const nowIso = new Date().toISOString();
     const expiresAt = yrs > 0
       ? new Date(Date.now() + yrs * 365 * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
-    // If the customer already owns this package, top it up instead of duplicating.
     const { data: existing } = await sb
       .from("customer_packages")
-      .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, warranty_years, warranty_expires_at")
+      .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at")
       .eq("customer_id", customerId)
       .eq("package_id", packageId)
       .order("purchase_date", { ascending: false })
@@ -120,7 +127,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (existing) {
       const newTotal = existing.total_sessions + totalSessions;
       const newRemaining = existing.sessions_remaining + totalSessions;
-      const newDep = Math.min(newTotal, (existing.deposit_sessions_paid ?? 0) + addDep);
+      const newTotalPrice = Number(existing.total_price ?? 0) + addPrice;
+      const newDepAmount = Math.min(newTotalPrice, Number(existing.deposit_amount ?? 0) + addDep);
+      const newDepSessions = Math.min(newTotal, (existing.deposit_sessions_paid ?? 0) + depSessionsEq);
       const newYears = (existing.warranty_years ?? 0) + yrs;
       const currentExp = existing.warranty_expires_at ? new Date(existing.warranty_expires_at).getTime() : 0;
       const candidateExp = expiresAt ? new Date(expiresAt).getTime() : 0;
@@ -128,9 +137,11 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       const { error } = await sb.from("customer_packages").update({
         total_sessions: newTotal,
         sessions_remaining: newRemaining,
-        deposit_sessions_paid: newDep,
-        deposit_paid: newDep > 0,
-        deposit_paid_at: newDep > 0 ? nowIso : null,
+        total_price: newTotalPrice,
+        deposit_amount: newDepAmount,
+        deposit_sessions_paid: newDepSessions,
+        deposit_paid: newDepAmount > 0,
+        deposit_paid_at: newDepAmount > 0 ? nowIso : null,
         warranty_years: newYears,
         warranty_expires_at: newExp ? new Date(newExp).toISOString() : null,
       }).eq("id", existing.id);
@@ -141,7 +152,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         package_id: packageId,
         sessions_remaining: totalSessions,
         total_sessions: totalSessions,
-        deposit_sessions_paid: addDep,
+        total_price: addPrice,
+        deposit_amount: addDep,
+        deposit_sessions_paid: depSessionsEq,
         deposit_paid: addDep > 0,
         deposit_paid_at: addDep > 0 ? nowIso : null,
         warranty_years: yrs,
@@ -160,20 +173,30 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true, merged: !!existing };
   },
 
-  async adminAddSessions({ customerPackageId, sessions, depositSessionsPaid, warrantyYears }, { userId }) {
+  async adminAddSessions({ customerPackageId, sessions, depositAmount, addedPrice, warrantyYears }, { userId }) {
     await assertAdmin(userId);
     const add = Math.max(1, Number(sessions) || 0);
-    const addDep = Math.max(0, Number(depositSessionsPaid) || 0);
     const yrs = Math.max(0, Number(warrantyYears) || 0);
     const sb = admin();
     const { data: cp, error: cErr } = await sb
       .from("customer_packages")
-      .select("total_sessions, sessions_remaining, deposit_sessions_paid, warranty_years, warranty_expires_at")
+      .select("package_id, total_sessions, sessions_remaining, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at, packages(price,total_sessions)")
       .eq("id", customerPackageId).maybeSingle();
     if (cErr || !cp) throw new Error("Not found");
+    const pkgPrice = Number((cp as any).packages?.price ?? 0);
+    const pkgTotal = Math.max(1, Number((cp as any).packages?.total_sessions ?? 1));
+    const defaultUnit = pkgPrice / pkgTotal;
+    const addPrice = Number.isFinite(Number(addedPrice))
+      ? Math.max(0, Number(addedPrice))
+      : Math.round(defaultUnit * add * 100) / 100;
+    const addDep = Math.max(0, Math.min(Number(depositAmount) || 0, addPrice));
+    const unitPrice = add > 0 ? addPrice / add : 0;
+    const depSessionsEq = unitPrice > 0 ? Math.round(addDep / unitPrice) : 0;
     const newTotal = cp.total_sessions + add;
     const newRemaining = cp.sessions_remaining + add;
-    const newDep = Math.min(newTotal, (cp.deposit_sessions_paid ?? 0) + addDep);
+    const newTotalPrice = Number(cp.total_price ?? 0) + addPrice;
+    const newDepAmount = Math.min(newTotalPrice, Number(cp.deposit_amount ?? 0) + addDep);
+    const newDepSessions = Math.min(newTotal, (cp.deposit_sessions_paid ?? 0) + depSessionsEq);
     const newYears = (cp.warranty_years ?? 0) + yrs;
     const currentExp = cp.warranty_expires_at ? new Date(cp.warranty_expires_at).getTime() : 0;
     const candidateExp = yrs > 0 ? Date.now() + yrs * 365 * 24 * 60 * 60 * 1000 : 0;
@@ -182,9 +205,11 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const { error } = await sb.from("customer_packages").update({
       total_sessions: newTotal,
       sessions_remaining: newRemaining,
-      deposit_sessions_paid: newDep,
-      deposit_paid: newDep > 0,
-      deposit_paid_at: newDep > 0 ? nowIso : null,
+      total_price: newTotalPrice,
+      deposit_amount: newDepAmount,
+      deposit_sessions_paid: newDepSessions,
+      deposit_paid: newDepAmount > 0,
+      deposit_paid_at: newDepAmount > 0 ? nowIso : null,
       warranty_years: newYears,
       warranty_expires_at: newExp ? new Date(newExp).toISOString() : null,
     }).eq("id", customerPackageId);
@@ -192,19 +217,52 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
+  async addDepositAmount({ customerPackageId, amount }, { userId }) {
+    await assertAdmin(userId);
+    const inc = Math.max(0, Number(amount) || 0);
+    if (inc <= 0) throw new Error("Amount must be greater than 0");
+    const sb = admin();
+    const { data: cp, error: cErr } = await sb
+      .from("customer_packages")
+      .select("total_sessions, total_price, deposit_amount, deposit_sessions_paid")
+      .eq("id", customerPackageId).maybeSingle();
+    if (cErr || !cp) throw new Error("Not found");
+    const total = Number(cp.total_price ?? 0);
+    const current = Number(cp.deposit_amount ?? 0);
+    const newDep = Math.min(total, current + inc);
+    const unit = cp.total_sessions > 0 ? total / cp.total_sessions : 0;
+    const depSessions = unit > 0
+      ? Math.max(0, Math.min(cp.total_sessions, Math.round(newDep / unit)))
+      : 0;
+    const nowIso = new Date().toISOString();
+    const { error } = await sb.from("customer_packages").update({
+      deposit_amount: newDep,
+      deposit_sessions_paid: depSessions,
+      deposit_paid: newDep > 0,
+      deposit_paid_at: newDep > 0 ? nowIso : null,
+    }).eq("id", customerPackageId);
+    if (error) throw new Error(error.message);
+    return { ok: true, deposit_amount: newDep };
+  },
 
-  async setDepositSessions({ customerPackageId, sessions }, { userId }) {
+  async setDepositAmount({ customerPackageId, amount }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error: cErr } = await sb
-      .from("customer_packages").select("total_sessions")
+      .from("customer_packages").select("total_sessions, total_price")
       .eq("id", customerPackageId).maybeSingle();
     if (cErr || !cp) throw new Error("Not found");
-    const dep = Math.max(0, Math.min(Number(sessions) || 0, cp.total_sessions));
+    const total = Number(cp.total_price ?? 0);
+    const dep = Math.max(0, Math.min(Number(amount) || 0, total));
+    const unit = cp.total_sessions > 0 ? total / cp.total_sessions : 0;
+    const depSessions = unit > 0
+      ? Math.max(0, Math.min(cp.total_sessions, Math.round(dep / unit)))
+      : 0;
     const { error } = await sb
       .from("customer_packages")
       .update({
-        deposit_sessions_paid: dep,
+        deposit_amount: dep,
+        deposit_sessions_paid: depSessions,
         deposit_paid: dep > 0,
         deposit_paid_at: dep > 0 ? new Date().toISOString() : null,
       })
@@ -218,13 +276,15 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { data: cp, error } = await sb
       .from("customer_packages")
-      .select("id, customer_id, sessions_remaining, total_sessions, deposit_sessions_paid")
+      .select("id, customer_id, sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-    const dep = cp.deposit_sessions_paid ?? 0;
-    if (used + 1 > dep) throw new Error("Deposit exhausted — collect more deposit before deducting another session");
+    const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
+    const needed = unit * (used + 1);
+    if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
+      throw new Error("Deposit exhausted — collect more deposit before deducting another session");
 
     // Cancel any stale pending requests on this package before creating a new one.
     await sb.from("session_deduction_requests")
@@ -300,13 +360,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     // Approve: run the actual deduction.
     const { data: cp, error: cpErr } = await sb
       .from("customer_packages")
-      .select("sessions_remaining, total_sessions, deposit_sessions_paid")
+      .select("sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", req.customer_package_id).maybeSingle();
     if (cpErr || !cp) throw new Error("Package not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-    const dep = cp.deposit_sessions_paid ?? 0;
-    if (used + 1 > dep) throw new Error("Deposit exhausted");
+    const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
+    const needed = unit * (used + 1);
+    if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
 
     const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
