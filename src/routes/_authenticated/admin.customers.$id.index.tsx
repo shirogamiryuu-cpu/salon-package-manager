@@ -526,10 +526,11 @@ function CustomerDetail() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Extra deposit sessions paid</span>
+              <span className="text-muted-foreground">Extra deposit ($)</span>
               <Input
                 type="number"
                 min={0}
+                step="0.01"
                 value={addDeposit}
                 onChange={(e) => setAddDeposit(Math.max(0, Number(e.target.value) || 0))}
                 className="w-24 h-8"
