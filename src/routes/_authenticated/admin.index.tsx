@@ -105,8 +105,7 @@ function AdminDash() {
   const setStaffCat = useServerFn(adminSetStaffCategory);
 
   const refresh = useCallback(async () => {
-    const [{ count: cCount }, { count: pCount }, { count: sCount }, a, s, c, u] = await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
+    const [{ count: pCount }, { count: sCount }, a, s, c, u] = await Promise.all([
       supabase.from("packages").select("*", { count: "exact", head: true }),
       supabase.from("customer_packages").select("*", { count: "exact", head: true }),
       listAdmins(),
@@ -114,10 +113,11 @@ function AdminDash() {
       listCustomers(),
       supabase.auth.getUser(),
     ]);
-    setStats({ customers: cCount ?? 0, packages: pCount ?? 0, sold: sCount ?? 0 });
+    const customerRows = (c as CustomerRow[]) ?? [];
+    setStats({ customers: customerRows.length, packages: pCount ?? 0, sold: sCount ?? 0 });
     setAdmins(a as PersonRow[]);
     setStaff(s as PersonRow[]);
-    setCustomers(c as CustomerRow[]);
+    setCustomers(customerRows);
     setMe(u.data.user?.id ?? null);
   }, [listAdmins, listStaff, listCustomers]);
 
