@@ -173,6 +173,40 @@ function AdminDash() {
     }
   }
 
+  async function onCreateCustomer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!custEmail.trim() && !custPhone.trim()) {
+      return toast.error("Email or phone is required");
+    }
+    setSavingCust(true);
+    try {
+      const res = await createCustomer({
+        data: {
+          email: custEmail.trim() || undefined,
+          phone: custPhone.trim() || undefined,
+          name: custName.trim() || undefined,
+          password: custPassword,
+          points: custPoints ? Number(custPoints) : undefined,
+        },
+      });
+      const tmp = (res as { tempPassword?: string })?.tempPassword ?? custPassword;
+      toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
+      setCustName("");
+      setCustEmail("");
+      setCustPhone("");
+      setCustPoints("");
+      setCustPassword(genTempPassword());
+      setAddCustomerOpen(false);
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create customer");
+    } finally {
+      setSavingCust(false);
+    }
+  }
+
+
+
 
   async function onReset(e: React.FormEvent) {
     e.preventDefault();
