@@ -39,6 +39,7 @@ import {
 import { toast } from "sonner";
 import {
   adminCreateAdmin,
+  adminCreateCustomer,
   adminCreateStaff,
   adminListAdmins,
   adminListCustomers,
