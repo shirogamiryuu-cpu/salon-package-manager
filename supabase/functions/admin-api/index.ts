@@ -164,9 +164,10 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         deposit_amount: addDep,
         deposit_sessions_paid: depSessionsEq,
         deposit_paid: addDep > 0,
-        deposit_paid_at: addDep > 0 ? nowIso : null,
+        deposit_paid_at: addDep > 0 ? purchaseIso : null,
         warranty_years: yrs,
         warranty_expires_at: expiresAt,
+        purchase_date: purchaseIso,
       });
       if (error) throw new Error(error.message);
     }
