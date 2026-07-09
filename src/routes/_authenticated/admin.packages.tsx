@@ -24,9 +24,10 @@ type Pkg = {
   total_sessions: number;
   points_awarded: number;
   image_url: string | null;
+  first_time_price: number | null;
 };
 
-const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "" };
+const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "" };
 
 
 function PackagesAdmin() {
@@ -60,6 +61,9 @@ function PackagesAdmin() {
         const { data: signed } = await supabase.storage.from("package-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
         image_url = signed?.signedUrl ?? null;
       }
+      const ftp = form.first_time_price === "" || form.first_time_price === null || form.first_time_price === undefined
+        ? null
+        : Number(form.first_time_price);
       const payload = {
         name: form.name,
         description: form.description || null,
@@ -67,6 +71,7 @@ function PackagesAdmin() {
         total_sessions: 1,
         points_awarded: Number(form.points_awarded),
         image_url,
+        first_time_price: ftp,
       };
       if (editing) {
         const { error } = await supabase.from("packages").update(payload).eq("id", editing.id);
@@ -107,6 +112,17 @@ function PackagesAdmin() {
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Price per session</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
                 <div><Label>Points</Label><Input type="number" value={form.points_awarded} onChange={(e) => setForm({ ...form, points_awarded: e.target.value })} /></div>
+              </div>
+              <div>
+                <Label>First-time session price (optional)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g. 200 — leave blank to use regular price"
+                  value={form.first_time_price ?? ""}
+                  onChange={(e) => setForm({ ...form, first_time_price: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Charged for a customer's very first session of this package.</p>
               </div>
               <div><Label>Image</Label><Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></div>
             </div>

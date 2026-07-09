@@ -66,7 +66,7 @@ function CustomerDetail() {
   const deleteCpFn = useServerFn(deleteCustomerPackage);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
@@ -103,7 +103,7 @@ function CustomerDetail() {
     refresh();
     supabase
       .from("packages")
-      .select("id,name,total_sessions,price")
+      .select("id,name,total_sessions,price,first_time_price")
       .eq("is_active", true)
       .then(async ({ data }) => {
         const list = (data ?? []) as any[];
@@ -121,7 +121,18 @@ function CustomerDetail() {
     ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
     : 0;
 
-  const totalAmount = selectedUnit * assignSessions;
+  // First-time price applies when this customer has no existing package of this type.
+  const ownsThisPackage = !!(data?.customerPackages ?? []).find(
+    (cp: any) => cp.package_id === pickId,
+  );
+  const firstTimePrice = selectedPkg && !ownsThisPackage && selectedPkg.first_time_price != null
+    ? Number(selectedPkg.first_time_price)
+    : null;
+  const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
+
+  const totalAmount = firstTimeApplies
+    ? firstTimePrice! + selectedUnit * Math.max(0, assignSessions - 1)
+    : selectedUnit * assignSessions;
   const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
   const depositSessionsEq = selectedUnit > 0
     ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
@@ -387,29 +398,58 @@ function CustomerDetail() {
                 />
               </div>
               <div className="w-full rounded-md border p-2 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {selectedPricing ? (
-                      <>
-                        <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
-                        <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
-                      </>
-                    ) : (
-                      <>${selectedUnit.toFixed(2)}</>
+                {firstTimeApplies ? (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        <Badge variant="secondary" className="mr-1">1st time</Badge>
+                        1st session
+                      </span>
+                      <span className="font-medium">${firstTimePrice!.toFixed(2)}</span>
+                    </div>
+                    {assignSessions > 1 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          ${selectedUnit.toFixed(2)} × {assignSessions - 1} more session{assignSessions - 1 === 1 ? "" : "s"}
+                        </span>
+                        <span className="font-medium">${(selectedUnit * (assignSessions - 1)).toFixed(2)}</span>
+                      </div>
                     )}
-                    {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
-                  </span>
-                  <span className="font-semibold">
-                    Total ${totalAmount.toFixed(2)}
-                  </span>
-                </div>
+                    <div className="flex items-center justify-between border-t pt-1">
+                      <span className="text-muted-foreground text-sm">Total</span>
+                      <span className="font-semibold">${totalAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {selectedPricing ? (
+                        <>
+                          <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
+                          <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <>${selectedUnit.toFixed(2)}</>
+                      )}
+                      {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
+                    </span>
+                    <span className="font-semibold">
+                      Total ${totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Deposit: ${assignDepositAmount.toFixed(2)}</span>
                   <span>Outstanding: ${outstandingAmount.toFixed(2)}</span>
                 </div>
-                {selectedPromo && (
+                {selectedPromo && !firstTimeApplies && (
                   <div className="text-xs">
                     <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
+                  </div>
+                )}
+                {selectedPkg?.first_time_price != null && ownsThisPackage && (
+                  <div className="text-xs text-muted-foreground">
+                    First-time price already used for this customer on this package.
                   </div>
                 )}
               </div>
