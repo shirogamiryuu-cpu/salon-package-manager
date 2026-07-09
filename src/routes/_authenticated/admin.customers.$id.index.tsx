@@ -67,8 +67,10 @@ function CustomerDetail() {
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
+  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number; first_time_price: number | null }[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
+  const [pickVariantId, setPickVariantId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
   const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
@@ -101,32 +103,49 @@ function CustomerDetail() {
 
   useEffect(() => {
     refresh();
-    supabase
-      .from("packages")
-      .select("id,name,total_sessions,price,first_time_price")
-      .eq("is_active", true)
-      .then(async ({ data }) => {
-        const list = (data ?? []) as any[];
-        setPackages(list);
-        setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("packages")
+        .select("id,name,total_sessions,price,first_time_price")
+        .eq("is_active", true);
+      const list = (data ?? []) as any[];
+      setPackages(list);
+      setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+      const { data: vs } = await supabase
+        .from("package_variants")
+        .select("id,package_id,label,price,first_time_price,sort_order")
+        .order("sort_order", { ascending: true });
+      const map: Record<string, any[]> = {};
+      for (const v of (vs ?? []) as any[]) {
+        (map[v.package_id] ||= []).push({
+          id: v.id, label: v.label,
+          price: Number(v.price),
+          first_time_price: v.first_time_price == null ? null : Number(v.first_time_price),
+        });
+      }
+      setVariantsByPkg(map);
+    })();
   }, [refresh]);
 
   const selectedPkg = packages.find((p) => p.id === pickId);
+  const availableVariants = pickId ? (variantsByPkg[pickId] ?? []) : [];
+  const selectedVariant = availableVariants.find((v) => v.id === pickVariantId) ?? null;
   const selectedPromo = selectedPkg ? promoMap.get(selectedPkg.id) : undefined;
-  const selectedPricing = selectedPkg && selectedPromo
-    ? applyPromotion(Number(selectedPkg.price), selectedPromo)
+  const basePrice = selectedVariant ? selectedVariant.price : (selectedPkg ? Number(selectedPkg.price) : 0);
+  const selectedPricing = selectedPkg && selectedPromo && !selectedVariant
+    ? applyPromotion(basePrice, selectedPromo)
     : null;
-  const selectedUnit = selectedPkg
-    ? (selectedPricing ? selectedPricing.final : Number(selectedPkg.price))
-    : 0;
+  const selectedUnit = selectedVariant ? basePrice : (selectedPricing ? selectedPricing.final : basePrice);
 
-  // First-time price applies when this customer has no existing package of this type.
+  // First-time price applies when this customer has no existing package of this (package, variant).
   const ownsThisPackage = !!(data?.customerPackages ?? []).find(
-    (cp: any) => cp.package_id === pickId,
+    (cp: any) => cp.package_id === pickId && (cp.variant_id ?? null) === (pickVariantId || null),
   );
-  const firstTimePrice = selectedPkg && !ownsThisPackage && selectedPkg.first_time_price != null
-    ? Number(selectedPkg.first_time_price)
+  const effectiveFirstTime = selectedVariant
+    ? (selectedVariant.first_time_price ?? selectedPkg?.first_time_price ?? null)
+    : (selectedPkg?.first_time_price ?? null);
+  const firstTimePrice = !ownsThisPackage && effectiveFirstTime != null
+    ? Number(effectiveFirstTime)
     : null;
   const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
 
@@ -140,11 +159,16 @@ function CustomerDetail() {
 
   const doAssign = async () => {
     if (!pickId) return;
+    if (availableVariants.length > 0 && !pickVariantId) {
+      toast.error("Please choose a variant");
+      return;
+    }
     try {
       const res: any = await assign({
         data: {
           customerId: id,
           packageId: pickId,
+          variantId: pickVariantId || null,
           sessions: assignSessions,
           depositAmount: assignDepositAmount,
           totalPrice: totalAmount,
@@ -155,6 +179,7 @@ function CustomerDetail() {
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
+      setPickVariantId("");
       setAssignSessions(1);
       setAssignDepositAmount(0);
       setAssignWarranty(0);
