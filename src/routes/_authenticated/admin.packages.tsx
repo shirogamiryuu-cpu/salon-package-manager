@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
@@ -27,16 +27,26 @@ type Pkg = {
   first_time_price: number | null;
 };
 
+type Variant = {
+  id?: string;
+  label: string;
+  price: number | string;
+  first_time_price: number | string | null;
+};
+
 const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "" };
 
 
 function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
+  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, Variant[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
   const [form, setForm] = useState<any>(empty);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [removedVariantIds, setRemovedVariantIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -44,11 +54,40 @@ function PackagesAdmin() {
     const list = (data ?? []) as Pkg[];
     setPkgs(list);
     setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+    const { data: vs } = await supabase
+      .from("package_variants")
+      .select("id,package_id,label,price,first_time_price,sort_order")
+      .order("sort_order", { ascending: true });
+    const map: Record<string, Variant[]> = {};
+    for (const v of (vs ?? []) as any[]) {
+      (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: v.price, first_time_price: v.first_time_price });
+    }
+    setVariantsByPkg(map);
   };
   useEffect(() => { load(); }, []);
 
-  const openNew = () => { setEditing(null); setForm(empty); setImageFile(null); setOpen(true); };
-  const openEdit = (p: Pkg) => { setEditing(p); setForm(p); setImageFile(null); setOpen(true); };
+  const openNew = () => {
+    setEditing(null); setForm(empty); setImageFile(null);
+    setVariants([]); setRemovedVariantIds([]);
+    setOpen(true);
+  };
+  const openEdit = (p: Pkg) => {
+    setEditing(p); setForm(p); setImageFile(null);
+    setVariants((variantsByPkg[p.id] ?? []).map((v) => ({ ...v })));
+    setRemovedVariantIds([]);
+    setOpen(true);
+  };
+
+  const addVariant = () => setVariants((vs) => [...vs, { label: "", price: "", first_time_price: "" }]);
+  const removeVariant = (idx: number) => {
+    setVariants((vs) => {
+      const v = vs[idx];
+      if (v.id) setRemovedVariantIds((r) => [...r, v.id!]);
+      return vs.filter((_, i) => i !== idx);
+    });
+  };
+  const updateVariant = (idx: number, patch: Partial<Variant>) =>
+    setVariants((vs) => vs.map((v, i) => (i === idx ? { ...v, ...patch } : v)));
 
   const save = async () => {
     setSaving(true);
@@ -73,13 +112,44 @@ function PackagesAdmin() {
         image_url,
         first_time_price: ftp,
       };
+      let pkgId = editing?.id;
       if (editing) {
         const { error } = await supabase.from("packages").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("packages").insert(payload);
+        const { data: ins, error } = await supabase.from("packages").insert(payload).select("id").single();
+        if (error) throw error;
+        pkgId = ins.id;
+      }
+
+      // Sync variants
+      if (removedVariantIds.length) {
+        const { error } = await supabase.from("package_variants").delete().in("id", removedVariantIds);
         if (error) throw error;
       }
+      const cleaned = variants
+        .map((v, i) => ({ ...v, sort_order: i }))
+        .filter((v) => v.label.trim() !== "" && v.price !== "" && v.price !== null);
+      for (const v of cleaned) {
+        const row = {
+          package_id: pkgId!,
+          label: v.label.trim(),
+          price: Number(v.price),
+          first_time_price:
+            v.first_time_price === "" || v.first_time_price === null || v.first_time_price === undefined
+              ? null
+              : Number(v.first_time_price),
+          sort_order: (v as any).sort_order,
+        };
+        if (v.id) {
+          const { error } = await supabase.from("package_variants").update(row).eq("id", v.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("package_variants").insert(row);
+          if (error) throw error;
+        }
+      }
+
       toast.success(editing ? "Package updated" : "Package created");
       setOpen(false);
       load();
@@ -104,7 +174,7 @@ function PackagesAdmin() {
           <DialogTrigger asChild>
             <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />New package</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} package</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -122,8 +192,50 @@ function PackagesAdmin() {
                   value={form.first_time_price ?? ""}
                   onChange={(e) => setForm({ ...form, first_time_price: e.target.value })}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Charged for a customer's very first session of this package.</p>
+                <p className="text-xs text-muted-foreground mt-1">Used when no matching variant first-time price is set.</p>
               </div>
+
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Length / size variants (optional)</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={addVariant}>
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  e.g. Short $408, Medium $428, Long $448. When set, admin picks a variant when assigning to a customer and its price overrides the base price.
+                </p>
+                {variants.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">No variants — package uses the base price above.</p>
+                )}
+                {variants.map((v, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_100px_110px_auto] gap-2 items-center">
+                    <Input
+                      placeholder="Label (e.g. Short hair)"
+                      value={v.label}
+                      onChange={(e) => updateVariant(i, { label: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Price"
+                      value={v.price as any}
+                      onChange={(e) => updateVariant(i, { price: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="1st-time $"
+                      value={(v.first_time_price ?? "") as any}
+                      onChange={(e) => updateVariant(i, { first_time_price: e.target.value })}
+                    />
+                    <Button type="button" size="icon" variant="ghost" onClick={() => removeVariant(i)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
               <div><Label>Image</Label><Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></div>
             </div>
             <DialogFooter>
@@ -137,13 +249,21 @@ function PackagesAdmin() {
         {pkgs.map((p) => {
           const promo = promoMap.get(p.id);
           const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
+          const vs = variantsByPkg[p.id] ?? [];
           return (
           <Card key={p.id}>
             {p.image_url && <img src={p.image_url} alt={p.name} className="h-32 w-full object-cover rounded-t-md" />}
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-2">
                 <span>{p.name}</span>
-                {pricing ? (
+                {vs.length > 0 ? (
+                  <span className="text-base">
+                    ${Math.min(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    {" – "}
+                    ${Math.max(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    <span className="text-xs text-muted-foreground font-normal"> / session</span>
+                  </span>
+                ) : pricing ? (
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground line-through">${pricing.original.toFixed(2)}</div>
                     <div className="text-base text-primary">${pricing.final.toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
@@ -155,6 +275,13 @@ function PackagesAdmin() {
             </CardHeader>
             <CardContent className="space-y-3">
               {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
+              {vs.length > 0 && (
+                <div className="flex flex-wrap gap-1 text-xs">
+                  {vs.map((v, i) => (
+                    <Badge key={i} variant="secondary">{v.label} ${Number(v.price).toFixed(2)}</Badge>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 text-xs">
                 {promo && <Badge className="bg-primary">{formatDiscountLabel(promo)} · {promo.name}</Badge>}
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
