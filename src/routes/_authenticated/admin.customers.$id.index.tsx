@@ -57,6 +57,7 @@ type StaffOpt = { id: string; email: string | null; name: string | null };
 
 function CustomerDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const get = useServerFn(adminGetCustomer);
   const assign = useServerFn(assignPackage);
   const use = useServerFn(useSession);
@@ -65,6 +66,7 @@ function CustomerDetail() {
   const addDepositFn = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
   const deleteCpFn = useServerFn(deleteCustomerPackage);
+  const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
   const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
