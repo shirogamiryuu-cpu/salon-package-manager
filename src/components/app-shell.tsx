@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Scissors, LogOut, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { SalonContactsButton } from "@/components/salon-contacts-button";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon };
 
@@ -59,7 +60,11 @@ export function AppShell({
               );
             })}
           </nav>
-          <div className="p-3 border-t">
+          <div className="p-3 border-t space-y-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs text-muted-foreground">Call the salon</span>
+              <SalonContactsButton />
+            </div>
             <Button variant="ghost" className="w-full justify-start gap-3" onClick={signOut}>
               <LogOut className="h-5 w-5" />
               Sign out
@@ -78,9 +83,12 @@ export function AppShell({
                 </span>
                 <span className="truncate">{title}</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <SalonContactsButton />
+                <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
           </header>
 
