@@ -316,12 +316,12 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
       .from("customer_packages")
-      .select("id, customer_id, sessions_remaining, total_sessions, deposit_amount, total_price")
+      .select("id, customer_id, package_id, sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
@@ -330,6 +330,20 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const needed = unit * (used + 1);
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
       throw new Error("Deposit exhausted — collect more deposit before deducting another session");
+
+    // Resolve variant (must belong to this package if given).
+    let variantLabel: string | null = null;
+    let resolvedVariantId: string | null = null;
+    if (variantId) {
+      const { data: v, error: vErr } = await sb
+        .from("package_variants")
+        .select("id,label,package_id")
+        .eq("id", variantId).maybeSingle();
+      if (vErr || !v) throw new Error("Variant not found");
+      if (v.package_id !== cp.package_id) throw new Error("Variant does not belong to this package");
+      resolvedVariantId = v.id;
+      variantLabel = v.label;
+    }
 
     // Cancel any stale pending requests on this package before creating a new one.
     await sb.from("session_deduction_requests")
@@ -344,6 +358,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         customer_id: cp.customer_id,
         admin_id: userId,
         staff_ids: staffArr,
+        variant_id: resolvedVariantId,
+        variant_label: variantLabel,
       })
       .select("id, expires_at").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
@@ -380,11 +396,12 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }));
   },
 
+
   async respondSessionRequest({ requestId, approve }, { userId }) {
     const sb = admin();
     const { data: req, error } = await sb
       .from("session_deduction_requests")
-      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id")
+      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id, variant_id, variant_label")
       .eq("id", requestId).maybeSingle();
     if (error || !req) throw new Error("Request not found");
     if (req.customer_id !== userId) throw new Error("Forbidden");
@@ -405,7 +422,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     // Approve: run the actual deduction.
     const { data: cp, error: cpErr } = await sb
       .from("customer_packages")
-      .select("sessions_remaining, total_sessions, deposit_amount, total_price")
+      .select("customer_id, package_id, sessions_remaining, total_sessions, deposit_amount, total_price, packages(price,first_time_price)")
       .eq("id", req.customer_package_id).maybeSingle();
     if (cpErr || !cp) throw new Error("Package not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
@@ -414,12 +431,56 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const needed = unit * (used + 1);
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
 
+    // Compute price for THIS session, based on the chosen variant + first-time eligibility.
+    let variantPrice: number | null = null;
+    let variantFirstTime: number | null = null;
+    if (req.variant_id) {
+      const { data: v } = await sb.from("package_variants")
+        .select("price,first_time_price").eq("id", req.variant_id).maybeSingle();
+      if (v) {
+        variantPrice = Number(v.price);
+        variantFirstTime = v.first_time_price == null ? null : Number(v.first_time_price);
+      }
+    }
+    const pkgPrice = Number((cp as any).packages?.price ?? 0);
+    const pkgFirstTime = (cp as any).packages?.first_time_price;
+    const basePrice = variantPrice != null ? variantPrice : pkgPrice;
+    const firstTimePrice = variantFirstTime != null
+      ? variantFirstTime
+      : (pkgFirstTime == null ? null : Number(pkgFirstTime));
+
+    // First-time eligibility: no session has ever been deducted on any customer_packages row
+    // this customer has for the same package_id (any variant).
+    let isFirstTimeEligible = false;
+    if (firstTimePrice != null) {
+      const { data: siblingCps } = await sb
+        .from("customer_packages").select("id")
+        .eq("customer_id", cp.customer_id).eq("package_id", cp.package_id);
+      const siblingIds = (siblingCps ?? []).map((r: any) => r.id);
+      if (siblingIds.length) {
+        const { count } = await sb.from("usage_logs")
+          .select("id", { count: "exact", head: true })
+          .in("customer_package_id", siblingIds);
+        isFirstTimeEligible = (count ?? 0) === 0;
+      }
+    }
+
+    const wasFirstTime = isFirstTimeEligible && firstTimePrice != null;
+    const priceApplied = wasFirstTime ? firstTimePrice! : basePrice;
+
     const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
       .eq("id", req.customer_package_id);
     if (uErr) throw new Error(uErr.message);
     const { data: log, error: lErr } = await sb.from("usage_logs")
-      .insert({ customer_package_id: req.customer_package_id, admin_id: req.admin_id })
+      .insert({
+        customer_package_id: req.customer_package_id,
+        admin_id: req.admin_id,
+        variant_id: req.variant_id,
+        variant_label: req.variant_label,
+        price_applied: priceApplied,
+        was_first_time: wasFirstTime,
+      })
       .select("id").single();
     if (lErr || !log) throw new Error(lErr?.message ?? "Failed to log");
     if (Array.isArray(req.staff_ids) && req.staff_ids.length) {
@@ -664,7 +725,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }
     let q = sb.from("usage_logs")
       .select(
-        "id, used_at, admin_id, customer_package_id, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email,name))",
+        "id, used_at, admin_id, customer_package_id, variant_label, price_applied, was_first_time, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email,name))",
       )
       .order("used_at", { ascending: false }).limit(500);
     if (p.from) q = q.gte("used_at", p.from);
@@ -715,6 +776,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         package_name: cp?.packages?.name ?? "Package",
         customer_package_id: l.customer_package_id,
         sessions_deducted: 1,
+        variant_label: l.variant_label ?? null,
+        price_applied: Number(l.price_applied ?? 0),
+        was_first_time: !!l.was_first_time,
         admin_id: l.admin_id,
         admin_email: a?.email ?? "",
         admin_name: a?.name ?? null,
@@ -736,7 +800,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     );
     const { data: logs, error } = await sb
       .from("usage_logs")
-      .select("id, used_at, customer_package_id")
+      .select("id, used_at, customer_package_id, variant_label, price_applied, was_first_time")
       .in("customer_package_id", cpIds)
       .order("used_at", { ascending: false }).limit(500);
     if (error) throw new Error(error.message);
@@ -759,6 +823,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       customer_package_id: l.customer_package_id,
       package_name: pkgByCp.get(l.customer_package_id) ?? "Package",
       sessions_deducted: 1,
+      variant_label: l.variant_label ?? null,
+      price_applied: Number(l.price_applied ?? 0),
+      was_first_time: !!l.was_first_time,
       staff: staffByLog.get(l.id) ?? [],
     }));
   },
@@ -769,7 +836,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const { data: links, error } = await sb
       .from("session_staff")
       .select(
-        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, customer_packages(customer_id, packages(name), profiles:customer_id(email,name)))",
+        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, was_first_time, customer_packages(customer_id, packages(name), profiles:customer_id(email,name)))",
       )
       .eq("staff_user_id", userId)
       .order("created_at", { ascending: false }).limit(500);
@@ -784,6 +851,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         customer_name: cp?.profiles?.name ?? null,
         package_name: cp?.packages?.name ?? "Package",
         sessions_deducted: 1,
+        variant_label: ul?.variant_label ?? null,
+        price_applied: Number(ul?.price_applied ?? 0),
+        was_first_time: !!ul?.was_first_time,
       };
     });
   },
