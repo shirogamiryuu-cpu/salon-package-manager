@@ -25,6 +25,9 @@ type Row = {
   customer_name: string | null;
   package_name: string;
   sessions_deducted: number;
+  variant_label?: string | null;
+  price_applied?: number;
+  was_first_time?: boolean;
 };
 
 
@@ -64,9 +67,12 @@ function StaffHistory() {
               <Card key={r.id}>
                 <CardContent className="p-4 space-y-1">
                   <div className="font-medium">{r.customer_name ?? r.customer_email}</div>
-                  <div className="text-sm">{r.package_name}</div>
+                  <div className="text-sm">
+                    {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
+                    {r.price_applied ? ` · $${r.price_applied.toFixed(2)}${r.was_first_time ? " (1st)" : ""}` : ""}
                   </div>
                 </CardContent>
               </Card>
@@ -90,7 +96,14 @@ function StaffHistory() {
                         {new Date(r.used_at).toLocaleString()}
                       </TableCell>
                       <TableCell>{r.customer_name ?? r.customer_email}</TableCell>
-                      <TableCell>{r.package_name}</TableCell>
+                      <TableCell>
+                        {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
+                        {r.price_applied ? (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ${r.price_applied.toFixed(2)}{r.was_first_time ? " (1st)" : ""}
+                          </span>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="text-center">{r.sessions_deducted}</TableCell>
                     </TableRow>
                   ))}
