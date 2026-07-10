@@ -757,23 +757,70 @@ function CustomerDetail() {
 
             </DialogDescription>
           </DialogHeader>
-          <div className="py-2 space-y-2 max-h-72 overflow-y-auto">
-            {staffOpts.length === 0 && (
-              <p className="text-sm text-muted-foreground">No staff members yet.</p>
-            )}
-            {staffOpts.map((s) => (
-              <label
-                key={s.id}
-                className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50"
-              >
-                <Checkbox
-                  checked={selectedStaff.has(s.id)}
-                  onCheckedChange={() => toggleStaff(s.id)}
-                />
-                <span className="text-sm">{s.name ?? s.email}</span>
-              </label>
-            ))}
-          </div>
+          {(() => {
+            if (!deductFor) return null;
+            const vs = variantsByPkg[deductFor.package_id] ?? [];
+            const sel = vs.find((v) => v.id === deductVariantId) ?? null;
+            // First-time eligibility mirrors server: no session ever deducted on any of this
+            // customer's copies of this package (any variant).
+            const sameCps = (data?.customerPackages ?? []).filter((c: any) => c.package_id === deductFor.package_id);
+            const anyUsed = sameCps.some((c: any) => (c.total_sessions ?? 0) - (c.sessions_remaining ?? 0) > 0);
+            const isFirstTimeEligible = !anyUsed;
+            const basePrice = sel ? sel.price : 0;
+            const effectiveFirstTime = sel?.first_time_price ?? null;
+            const wasFirstTime = isFirstTimeEligible && effectiveFirstTime != null;
+            const applied = wasFirstTime ? effectiveFirstTime! : basePrice;
+            return (
+              <div className="py-2 space-y-3">
+                {vs.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Variant for this session</div>
+                    <Select value={deductVariantId} onValueChange={setDeductVariantId}>
+                      <SelectTrigger><SelectValue placeholder="Choose a variant" /></SelectTrigger>
+                      <SelectContent>
+                        {vs.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.label} — ${v.price.toFixed(2)}
+                            {v.first_time_price != null ? ` (1st: $${v.first_time_price.toFixed(2)})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {sel && (
+                  <div className="rounded-md border p-2 text-sm flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {wasFirstTime ? (
+                        <><Badge variant="secondary" className="mr-1">1st time</Badge>Price this session</>
+                      ) : "Price this session"}
+                    </span>
+                    <span className="font-semibold">${applied.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  Select the staff who performed the service (optional).
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {staffOpts.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No staff members yet.</p>
+                  )}
+                  {staffOpts.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        checked={selectedStaff.has(s.id)}
+                        onCheckedChange={() => toggleStaff(s.id)}
+                      />
+                      <span className="text-sm">{s.name ?? s.email}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeductFor(null)}>
               Cancel
