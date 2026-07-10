@@ -752,9 +752,7 @@ function CustomerDetail() {
           <DialogHeader>
             <DialogTitle>Deduct a session</DialogTitle>
             <DialogDescription>
-              {profile?.name ?? profile?.email} · {deductFor?.packages?.name}. Select the staff who performed the
-              service (optional).
-
+              {profile?.name ?? profile?.email} · {deductFor?.packages?.name}
             </DialogDescription>
           </DialogHeader>
           {(() => {
