@@ -305,6 +305,36 @@ export type Database = {
         }
         Relationships: []
       }
+      salon_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          phone: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          phone: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          phone?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_deduction_requests: {
         Row: {
           admin_id: string
