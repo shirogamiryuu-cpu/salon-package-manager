@@ -84,6 +84,7 @@ function CustomerDetail() {
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
+  const [deductVariantId, setDeductVariantId] = useState<string>("");
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
 
@@ -258,6 +259,10 @@ function CustomerDetail() {
 
   const openDeduct = (cp: any) => {
     setSelectedStaff(new Set());
+    const vs = variantsByPkg[cp.package_id] ?? [];
+    // Default to the assigned variant if valid, else the first available variant.
+    const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
+    setDeductVariantId(defaultVariant);
     setDeductFor(cp);
   };
 
@@ -272,17 +277,22 @@ function CustomerDetail() {
 
   const confirmDeduct = async () => {
     if (!deductFor) return;
+    const availableForDeduct = variantsByPkg[deductFor.package_id] ?? [];
+    if (availableForDeduct.length > 0 && !deductVariantId) {
+      toast.error("Please choose a variant");
+      return;
+    }
     setDeducting(true);
     try {
       await use({
         data: {
           customerPackageId: deductFor.id,
           staffIds: Array.from(selectedStaff),
+          variantId: deductVariantId || null,
         },
       });
       toast.success("Approval request sent to customer (expires in 15 min)");
       setDeductFor(null);
-      refresh();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
