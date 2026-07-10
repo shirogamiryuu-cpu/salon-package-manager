@@ -725,7 +725,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }
     let q = sb.from("usage_logs")
       .select(
-        "id, used_at, admin_id, customer_package_id, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email,name))",
+        "id, used_at, admin_id, customer_package_id, variant_label, price_applied, was_first_time, customer_packages!inner(id, customer_id, package_id, packages(id,name), profiles:customer_id(id,email,name))",
       )
       .order("used_at", { ascending: false }).limit(500);
     if (p.from) q = q.gte("used_at", p.from);
@@ -776,6 +776,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         package_name: cp?.packages?.name ?? "Package",
         customer_package_id: l.customer_package_id,
         sessions_deducted: 1,
+        variant_label: l.variant_label ?? null,
+        price_applied: Number(l.price_applied ?? 0),
+        was_first_time: !!l.was_first_time,
         admin_id: l.admin_id,
         admin_email: a?.email ?? "",
         admin_name: a?.name ?? null,
@@ -797,7 +800,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     );
     const { data: logs, error } = await sb
       .from("usage_logs")
-      .select("id, used_at, customer_package_id")
+      .select("id, used_at, customer_package_id, variant_label, price_applied, was_first_time")
       .in("customer_package_id", cpIds)
       .order("used_at", { ascending: false }).limit(500);
     if (error) throw new Error(error.message);
@@ -820,6 +823,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       customer_package_id: l.customer_package_id,
       package_name: pkgByCp.get(l.customer_package_id) ?? "Package",
       sessions_deducted: 1,
+      variant_label: l.variant_label ?? null,
+      price_applied: Number(l.price_applied ?? 0),
+      was_first_time: !!l.was_first_time,
       staff: staffByLog.get(l.id) ?? [],
     }));
   },
@@ -830,7 +836,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const { data: links, error } = await sb
       .from("session_staff")
       .select(
-        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, customer_packages(customer_id, packages(name), profiles:customer_id(email,name)))",
+        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, was_first_time, customer_packages(customer_id, packages(name), profiles:customer_id(email,name)))",
       )
       .eq("staff_user_id", userId)
       .order("created_at", { ascending: false }).limit(500);
@@ -845,6 +851,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         customer_name: cp?.profiles?.name ?? null,
         package_name: cp?.packages?.name ?? "Package",
         sessions_deducted: 1,
+        variant_label: ul?.variant_label ?? null,
+        price_applied: Number(ul?.price_applied ?? 0),
+        was_first_time: !!ul?.was_first_time,
       };
     });
   },
