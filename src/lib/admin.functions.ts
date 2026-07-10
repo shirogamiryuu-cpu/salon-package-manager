@@ -33,7 +33,7 @@ export const addDepositAmount = (a: {
 }) => callAdminApi("addDepositAmount", payload(a));
 
 export const useSession = (a: {
-  data: { customerPackageId: string; staffIds?: string[] };
+  data: { customerPackageId: string; staffIds?: string[]; variantId?: string | null };
 }) => callAdminApi("useSession", payload(a));
 
 export const customerListPendingRequests = (_a?: Arg<undefined>) =>

@@ -316,12 +316,12 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
       .from("customer_packages")
-      .select("id, customer_id, sessions_remaining, total_sessions, deposit_amount, total_price")
+      .select("id, customer_id, package_id, sessions_remaining, total_sessions, deposit_amount, total_price")
       .eq("id", customerPackageId).maybeSingle();
     if (error || !cp) throw new Error("Not found");
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
@@ -330,6 +330,20 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const needed = unit * (used + 1);
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
       throw new Error("Deposit exhausted — collect more deposit before deducting another session");
+
+    // Resolve variant (must belong to this package if given).
+    let variantLabel: string | null = null;
+    let resolvedVariantId: string | null = null;
+    if (variantId) {
+      const { data: v, error: vErr } = await sb
+        .from("package_variants")
+        .select("id,label,package_id")
+        .eq("id", variantId).maybeSingle();
+      if (vErr || !v) throw new Error("Variant not found");
+      if (v.package_id !== cp.package_id) throw new Error("Variant does not belong to this package");
+      resolvedVariantId = v.id;
+      variantLabel = v.label;
+    }
 
     // Cancel any stale pending requests on this package before creating a new one.
     await sb.from("session_deduction_requests")
@@ -344,6 +358,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         customer_id: cp.customer_id,
         admin_id: userId,
         staff_ids: staffArr,
+        variant_id: resolvedVariantId,
+        variant_label: variantLabel,
       })
       .select("id, expires_at").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
