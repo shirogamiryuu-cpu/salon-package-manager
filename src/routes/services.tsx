@@ -15,7 +15,7 @@ export const Route = createFileRoute("/services")({
       },
     ],
   }),
-  component: Services;
+  component: Services,
 });
 
 type Service = {
