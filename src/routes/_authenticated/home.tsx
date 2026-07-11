@@ -548,10 +548,10 @@ type CircleProgressProps = {
 function CircleProgress({ value, total }: CircleProgressProps) {
   const percentage = total === 0 ? 0 : (value / total) * 100;
 
-  const size = 130;
-  const stroke = 10;
+  const size = 140;
+  const stroke = 2;
   const radius = size / 2;
-  const normalizedRadius = radius - stroke / 2;
+  const normalizedRadius = radius - stroke / 2 - 6;
 
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset =
@@ -559,13 +559,11 @@ function CircleProgress({ value, total }: CircleProgressProps) {
 
   return (
     <div className="flex flex-col items-center">
-      {/* Circle */}
-      <div className="relative w-32.5 h-32.5">
+      <div className="relative" style={{ width: size, height: size }}>
         <svg
           viewBox={`0 0 ${size} ${size}`}
           className="absolute inset-0 w-full h-full -rotate-90"
         >
-          {/* Background */}
           <circle
             cx={radius}
             cy={radius}
@@ -573,10 +571,8 @@ function CircleProgress({ value, total }: CircleProgressProps) {
             fill="none"
             stroke="currentColor"
             strokeWidth={stroke}
-            className="text-muted"
+            className="text-foreground/20"
           />
-
-          {/* Progress */}
           <circle
             cx={radius}
             cy={radius}
@@ -591,18 +587,26 @@ function CircleProgress({ value, total }: CircleProgressProps) {
           />
         </svg>
 
-        {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-4xl font-bold leading-none">{value}</div>
-          <div className="mt-1 text-xs leading-none text-muted-foreground">
-            Used
+          <div
+            className="font-serif text-4xl leading-none"
+            style={{ letterSpacing: "0.02em" }}
+          >
+            {total - value}
+          </div>
+          <div
+            className="mt-2 text-[10px] uppercase text-foreground/60 leading-none"
+            style={{ letterSpacing: "0.24em" }}
+          >
+            Remaining
           </div>
         </div>
       </div>
-
-      {/* Percentage */}
-      <div className="mt-3 text-sm text-muted-foreground">
-        {Math.round(percentage)}%
+      <div
+        className="mt-4 text-[10px] uppercase text-foreground/50"
+        style={{ letterSpacing: "0.22em" }}
+      >
+        {Math.round(percentage)}% used
       </div>
     </div>
   );
