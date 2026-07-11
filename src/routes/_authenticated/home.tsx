@@ -130,8 +130,8 @@ function Home() {
           .maybeSingle(),
         supabase
           .from("usage_logs")
-          .select("used_at, customer_package_id")
-          .eq("customer_id", userData.user.id)
+          .select("used_at, customer_package_id, customer_packages!inner(customer_id)")
+          .eq("customer_packages.customer_id", userData.user.id)
           .order("used_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
