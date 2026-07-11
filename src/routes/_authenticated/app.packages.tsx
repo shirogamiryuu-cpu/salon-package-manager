@@ -81,25 +81,6 @@ function Available() {
                 key={p.id}
                 className="group border border-foreground/25 bg-background transition-colors hover:border-primary"
               >
-                {p.image_url ? (
-                  <div className="aspect-[4/3] overflow-hidden border-b border-foreground/25">
-                    <img
-                      src={p.image_url}
-                      alt={p.name}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-[4/3] border-b border-foreground/25 flex items-center justify-center">
-                    <span
-                      className="font-serif italic text-3xl text-foreground/20"
-                      style={{ letterSpacing: "0.1em" }}
-                    >
-                      Empire Charme
-                    </span>
-                  </div>
-                )}
-
                 <div className="p-6 md:p-8 space-y-5">
                   <div>
                     <h2
