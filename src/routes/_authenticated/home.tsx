@@ -111,26 +111,49 @@ function Home() {
 
       setProfile(profileData);
 
-      const { data: packageData } = await supabase
-        .from("customer_packages")
-        .select(`
-          id,
-          purchase_date,
-          sessions_remaining,
-          total_sessions,
-          warranty_expires_at,
-          packages(
-            name,
-            description,
-            price
-          )
-        `)
-        .eq("customer_id", userData.user.id)
-        .order("purchase_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const cpSelect = `
+        id,
+        purchase_date,
+        sessions_remaining,
+        total_sessions,
+        warranty_expires_at,
+        packages(name, description, price)
+      `;
 
-      setPkg(packageData as any);
+      const [{ data: latestPurchased }, { data: latestUsage }] = await Promise.all([
+        supabase
+          .from("customer_packages")
+          .select(cpSelect)
+          .eq("customer_id", userData.user.id)
+          .order("purchase_date", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("usage_logs")
+          .select("used_at, customer_package_id, customer_packages!inner(customer_id)")
+          .eq("customer_packages.customer_id", userData.user.id)
+          .order("used_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      let chosen: any = latestPurchased ?? null;
+      if (latestUsage?.customer_package_id) {
+        const usedAt = new Date(latestUsage.used_at).getTime();
+        const purchasedAt = latestPurchased?.purchase_date
+          ? new Date(latestPurchased.purchase_date).getTime()
+          : 0;
+        if (!latestPurchased || usedAt > purchasedAt) {
+          const { data: usedPkg } = await supabase
+            .from("customer_packages")
+            .select(cpSelect)
+            .eq("id", latestUsage.customer_package_id)
+            .maybeSingle();
+          if (usedPkg) chosen = usedPkg;
+        }
+      }
+
+      setPkg(chosen as any);
 
       const h = await historyFn();
       setHistory(h as HistoryRow[]);
