@@ -1,13 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@/lib/server-fn";
 import { customerListPendingRequests, respondSessionRequest } from "@/lib/admin.functions";
-import { Check, X, Clock } from "lucide-react";
+import { Check, X, Clock, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app/")({
@@ -140,14 +137,50 @@ function MyPackages() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My packages</h1>
+    <div className="mx-auto max-w-4xl space-y-10">
+      {/* Header */}
+      <header className="border-b border-foreground/25 pb-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p
+              className="text-xs uppercase text-primary"
+              style={{ letterSpacing: "0.28em" }}
+            >
+              Your collection
+            </p>
+            <h1
+              className="mt-3 font-serif text-4xl md:text-5xl italic"
+              style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
+            >
+              My packages
+            </h1>
+          </div>
+          <div className="text-right shrink-0">
+            <div
+              className="text-[10px] uppercase text-foreground/60"
+              style={{ letterSpacing: "0.22em" }}
+            >
+              Points
+            </div>
+            <div
+              className="mt-1 font-serif text-3xl text-primary"
+              style={{ letterSpacing: "0.04em" }}
+            >
+              {points}
+            </div>
+          </div>
+        </div>
+      </header>
 
-      </div>
-
+      {/* Pending */}
       {pending.length > 0 && (
-        <div className="space-y-2">
+        <section className="space-y-3">
+          <h2
+            className="text-xs uppercase text-foreground/70"
+            style={{ letterSpacing: "0.28em" }}
+          >
+            Awaiting your approval
+          </h2>
           {pending.map((r) => {
             const mins = Math.max(
               0,
@@ -158,173 +191,152 @@ function MyPackages() {
               .filter(Boolean)
               .join(", ");
             return (
-              <Card key={r.id} className="border-primary/40 bg-primary/5">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-medium">Approve session deduction?</div>
-                      <div className="text-sm text-muted-foreground truncate">
-                        {r.package_name} · {r.remaining}/{r.total} left
-                        {staffNames ? ` · with ${staffNames}` : ""}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                      <Clock className="h-3 w-3" /> {mins}m left
+              <div
+                key={r.id}
+                className="border border-primary/60 bg-primary/5 p-5 space-y-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-serif text-lg">Approve your session?</div>
+                    <div className="mt-1 text-sm text-foreground/70">
+                      {r.package_name} · {r.remaining}/{r.total} left
+                      {staffNames ? ` · with ${staffNames}` : ""}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      disabled={busyId === r.id}
-                      onClick={() => decide(r.id, true)}
-                    >
-                      <Check className="h-3.5 w-3.5 mr-1" /> Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      disabled={busyId === r.id}
-                      onClick={() => decide(r.id, false)}
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" /> Reject
-                    </Button>
+                  <div
+                    className="text-[10px] uppercase text-foreground/60 flex items-center gap-1 shrink-0"
+                    style={{ letterSpacing: "0.18em" }}
+                  >
+                    <Clock className="h-3 w-3" /> {mins}m
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 uppercase"
+                    style={{ letterSpacing: "0.18em" }}
+                    disabled={busyId === r.id}
+                    onClick={() => decide(r.id, true)}
+                  >
+                    <Check className="h-4 w-4 mr-2" /> Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 uppercase border-foreground/40"
+                    style={{ letterSpacing: "0.18em" }}
+                    disabled={busyId === r.id}
+                    onClick={() => decide(r.id, false)}
+                  >
+                    <X className="h-4 w-4 mr-2" /> Decline
+                  </Button>
+                </div>
+              </div>
             );
           })}
-        </div>
+        </section>
       )}
 
+      {/* Packages list */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
-          Loading...
-        </div>
+        <div className="py-16 text-center text-foreground/60 italic">Loading…</div>
       ) : rows.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            No packages yet. Ask the salon to assign one!
-          </CardContent>
-        </Card>
+        <div className="border border-foreground/25 p-12 text-center">
+          <Sparkles className="mx-auto h-6 w-6 text-primary" />
+          <p className="mt-4 font-serif italic text-lg">No packages yet.</p>
+          <p className="mt-2 text-sm text-foreground/60">
+            Ask the salon to add your first package.
+          </p>
+          <Button
+            asChild
+            variant="outline"
+            className="mt-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground uppercase"
+            style={{ letterSpacing: "0.18em" }}
+          >
+            <Link to="/app/packages">Browse the menu</Link>
+          </Button>
+        </div>
       ) : (
-        <Card className="overflow-hidden border-border bg-card">
-          {/* Header */}
-          <div className="border-b border-border px-4 py-5 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-xl font-semibold sm:text-2xl">Purchased Services</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Your purchased treatment sessions
-                </p>
-              </div>
+        <ul className="divide-y divide-foreground/20 border-y border-foreground/25">
+          {rows.map((r, index) => {
+            const remaining = r.sessions_remaining;
+            const total = r.total_sessions;
+            const used = total - remaining;
+            const pct = total > 0 ? (remaining / total) * 100 : 0;
+            return (
+              <li key={r.id}>
+                <Link
+                  to="/app/mine/$id"
+                  params={{ id: r.id }}
+                  className="group block py-6 transition-colors hover:bg-primary/[0.03]"
+                >
+                  <div className="flex items-start gap-5">
+                    <span
+                      className="mt-1 font-serif text-2xl text-foreground/40"
+                      style={{ letterSpacing: "0.04em" }}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
 
-              <Badge variant="secondary" className="w-fit text-sm">
-                ⭐ {points} points
-              </Badge>
-            </div>
-          </div>
-
-          {/* Desktop Header */}
-          <div className="hidden md:grid grid-cols-[70px_1fr_100px_100px] border-b border-border bg-muted/40 px-6 py-3 text-sm font-semibold">
-            <div>No</div>
-            <div>Service</div>
-            <div className="text-center">Remain</div>
-            <div className="text-center">Total</div>
-          </div>
-
-          <div>
-            {rows.map((r, index) => (
-              <Link
-                key={r.id}
-                to="/app/mine/$id"
-                params={{ id: r.id }}
-                className={`block transition-colors hover:bg-muted/60 ${
-                  index % 2 === 0 ? "bg-background" : "bg-muted/20"
-                }`}
-              >
-                {/* Desktop */}
-                <div className="hidden md:grid grid-cols-[70px_1fr_100px_100px] items-center px-6 py-5">
-                  <div className="text-lg font-semibold text-muted-foreground">{index + 1}.</div>
-
-                  <div className="min-w-0">
-                    <div className="truncate text-lg font-semibold">
-                      {r.packages?.name ?? "Package"}
-                    </div>
-
-                    {r.packages?.description && (
-                      <div className="mt-1 truncate text-sm text-muted-foreground">
-                        {r.packages.description}
-                      </div>
-                    )}
-
-                    <div className="mt-3">
-                      <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                        <span>{r.total_sessions - r.sessions_remaining} used</span>
-
-                        <span>{new Date(r.purchase_date).toLocaleDateString()}</span>
+                    <div className="flex-1 min-w-0 space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3
+                            className="font-serif text-xl md:text-2xl truncate"
+                            style={{ letterSpacing: "0.05em" }}
+                          >
+                            {r.packages?.name ?? "Package"}
+                          </h3>
+                          {r.packages?.description && (
+                            <p className="mt-1 text-sm text-foreground/60 italic line-clamp-1">
+                              {r.packages.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div
+                            className="text-[10px] uppercase text-foreground/60"
+                            style={{ letterSpacing: "0.22em" }}
+                          >
+                            Left
+                          </div>
+                          <div
+                            className="mt-1 font-serif text-3xl text-primary"
+                            style={{ letterSpacing: "0.04em" }}
+                          >
+                            {remaining}
+                            <span className="text-base text-foreground/40">/{total}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <Progress
-                        value={(r.sessions_remaining / r.total_sessions) * 100}
-                        className="h-2"
-                      />
+                      {/* Hairline progress */}
+                      <div className="relative h-px w-full bg-foreground/15">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-primary"
+                          style={{ width: `${pct}%`, height: "1px" }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[10px] uppercase text-foreground/50"
+                          style={{ letterSpacing: "0.22em" }}
+                        >
+                          {used} used · Purchased{" "}
+                          {new Date(r.purchase_date).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-foreground/40 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="text-center text-2xl font-bold text-green-500">
-                    {r.sessions_remaining}
-                  </div>
-
-                  <div className="text-center text-2xl font-semibold">{r.total_sessions}</div>
-                </div>
-
-                {/* Mobile */}
-                <div className="space-y-3 p-4 md:hidden">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">#{index + 1}</p>
-
-                      <h3 className="truncate text-base font-semibold">
-                        {r.packages?.name ?? "Package"}
-                      </h3>
-
-                      {r.packages?.description && (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {r.packages.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Remaining</p>
-
-                      <p className="text-2xl font-bold text-green-500">{r.sessions_remaining}</p>
-                    </div>
-                  </div>
-
-                  <Progress
-                    value={(r.sessions_remaining / r.total_sessions) * 100}
-                    className="h-2"
-                  />
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total Sessions</span>
-
-                    <span className="font-semibold">{r.total_sessions}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{r.total_sessions - r.sessions_remaining} used</span>
-
-                    <span>{new Date(r.purchase_date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </Card>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
