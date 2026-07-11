@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/app/packages")({
@@ -49,64 +47,150 @@ function Available() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Available packages</h1>
-        <p className="text-sm text-muted-foreground">Ask the salon staff to add one of these to your account.</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {pkgs.map((p) => {
-          const promo = promoMap.get(p.id);
-          const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
-          const vs = variantsByPkg[p.id] ?? [];
-          return (
-            <Card key={p.id} className="overflow-hidden">
-              {p.image_url && <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" />}
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-2">
-                  <span>{p.name}</span>
-                  {vs.length > 0 ? (
-                    <span className="text-base font-semibold">
-                      MMK {Math.min(...vs.map((v) => v.price)).toFixed(2)}
-                      {" – "}
-                      MMK {Math.max(...vs.map((v) => v.price)).toFixed(2)}
+    <div className="mx-auto max-w-4xl space-y-10">
+      <header className="border-b border-foreground/25 pb-6">
+        <p
+          className="text-xs uppercase text-primary"
+          style={{ letterSpacing: "0.28em" }}
+        >
+          Our Menu
+        </p>
+        <h1
+          className="mt-3 font-serif text-4xl md:text-5xl italic"
+          style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
+        >
+          Available packages
+        </h1>
+        <p className="mt-4 text-sm text-foreground/70 italic max-w-lg">
+          Discover our curated treatments. Ask any staff member to add a package to your account.
+        </p>
+      </header>
+
+      {pkgs.length === 0 ? (
+        <div className="py-16 text-center text-foreground/60 italic">
+          No packages available at the moment.
+        </div>
+      ) : (
+        <div className="grid gap-8 sm:grid-cols-2">
+          {pkgs.map((p) => {
+            const promo = promoMap.get(p.id);
+            const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
+            const vs = variantsByPkg[p.id] ?? [];
+            return (
+              <article
+                key={p.id}
+                className="group border border-foreground/25 bg-background transition-colors hover:border-primary"
+              >
+                {p.image_url ? (
+                  <div className="aspect-[4/3] overflow-hidden border-b border-foreground/25">
+                    <img
+                      src={p.image_url}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-[4/3] border-b border-foreground/25 flex items-center justify-center">
+                    <span
+                      className="font-serif italic text-3xl text-foreground/20"
+                      style={{ letterSpacing: "0.1em" }}
+                    >
+                      Empire Charme
                     </span>
-                  ) : pricing ? (
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground line-through">
-                        MMK {pricing.original.toFixed(2)}
-                      </div>
-                      <div className="text-base font-semibold text-primary">
-                        MMK {pricing.final.toFixed(2)}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-base font-semibold">MMK {Number(p.price).toFixed(2)}</span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
-                {vs.length > 0 && (
-                  <div className="space-y-1 text-sm">
-                    {vs.map((v) => (
-                      <div key={v.id} className="flex items-center justify-between border-b last:border-0 py-1">
-                        <span className="text-muted-foreground">{v.label}</span>
-                        <span className="font-medium">MMK {v.price.toFixed(2)}</span>
-                      </div>
-                    ))}
                   </div>
                 )}
-                <div className="flex flex-wrap gap-2 text-xs pt-1">
-                  {promo && vs.length === 0 && <Badge className="bg-primary">{formatDiscountLabel(promo)}</Badge>}
-                  <Badge variant="outline">+{p.points_awarded} points</Badge>
+
+                <div className="p-6 md:p-8 space-y-5">
+                  <div>
+                    <h2
+                      className="font-serif text-2xl md:text-3xl"
+                      style={{ letterSpacing: "0.06em", lineHeight: 1.25 }}
+                    >
+                      {p.name}
+                    </h2>
+                    {p.description && (
+                      <p className="mt-3 text-sm text-foreground/70 italic line-clamp-3">
+                        {p.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="border-t border-foreground/20 pt-5">
+                    {vs.length > 0 ? (
+                      <div className="space-y-2">
+                        <div
+                          className="text-[10px] uppercase text-foreground/60"
+                          style={{ letterSpacing: "0.22em" }}
+                        >
+                          From
+                        </div>
+                        <div
+                          className="font-serif text-3xl text-primary"
+                          style={{ letterSpacing: "0.04em" }}
+                        >
+                          MMK {Math.min(...vs.map((v) => v.price)).toLocaleString()}
+                        </div>
+                        <ul className="divide-y divide-foreground/15 pt-2">
+                          {vs.map((v) => (
+                            <li
+                              key={v.id}
+                              className="flex items-center justify-between py-2 text-sm"
+                            >
+                              <span className="text-foreground/70">{v.label}</span>
+                              <span className="font-serif text-base">
+                                MMK {v.price.toLocaleString()}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : pricing ? (
+                      <div className="space-y-1">
+                        <div
+                          className="text-xs uppercase text-foreground/50 line-through"
+                          style={{ letterSpacing: "0.18em" }}
+                        >
+                          MMK {pricing.original.toLocaleString()}
+                        </div>
+                        <div
+                          className="font-serif text-3xl text-primary"
+                          style={{ letterSpacing: "0.04em" }}
+                        >
+                          MMK {pricing.final.toLocaleString()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="font-serif text-3xl text-primary"
+                        style={{ letterSpacing: "0.04em" }}
+                      >
+                        MMK {Number(p.price).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {promo && vs.length === 0 && (
+                      <span
+                        className="inline-flex items-center border border-primary bg-primary/10 px-3 py-1 text-[10px] uppercase text-primary"
+                        style={{ letterSpacing: "0.2em" }}
+                      >
+                        {formatDiscountLabel(promo)}
+                      </span>
+                    )}
+                    <span
+                      className="inline-flex items-center border border-foreground/30 px-3 py-1 text-[10px] uppercase text-foreground/70"
+                      style={{ letterSpacing: "0.2em" }}
+                    >
+                      +{p.points_awarded} points
+                    </span>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        {pkgs.length === 0 && <p className="text-muted-foreground">No packages available yet.</p>}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -256,252 +256,286 @@ function Home() {
   if (loading) {
     return (
       <AppShell title="Home" nav={customerNav}>
-        <div className="py-20 text-center text-muted-foreground">
-          Loading...
+        <div className="py-20 text-center text-foreground/60 italic">
+          Loading your salon…
         </div>
       </AppShell>
     );
   }
 
   const used = pkg ? pkg.total_sessions - pkg.sessions_remaining : 0;
-  const percent = pkg ? (used / pkg.total_sessions) * 100 : 0;
 
   return (
     <AppShell title="Home" nav={customerNav}>
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Greeting */}
-        <Card className="overflow-hidden">
-          <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-5">
-              <Avatar className="h-20 w-20">
-                <AvatarFallback className="text-2xl">
-                  {profile?.name?.charAt(0).toUpperCase() ?? "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-muted-foreground">Hello,</p>
-                <h1 className="text-3xl font-bold">
-                  {profile?.name ?? "Customer"}
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {profile?.email}
-                </p>
-              </div>
-            </div>
-            <Button asChild>
-              <Link
-                to="/app/mine/$id"
-                params={{ id: pkg?.id ?? "" }}
+      <div className="mx-auto max-w-4xl space-y-12">
+        {/* Greeting — editorial masthead */}
+        <section className="border-b border-foreground/25 pb-8">
+          <p
+            className="text-xs uppercase text-primary"
+            style={{ letterSpacing: "0.28em" }}
+          >
+            Welcome
+          </p>
+          <h1
+            className="mt-3 font-serif text-4xl md:text-5xl italic text-foreground"
+            style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
+          >
+            {profile?.name ?? "Beautiful"}
+          </h1>
+          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-foreground/70">
+              {profile?.email ?? "Your Empire Charme space."}
+            </p>
+            {pkg && (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground sm:w-auto uppercase"
+                style={{ letterSpacing: "0.18em" }}
               >
-                My Active Package
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+                <Link to="/app/mine/$id" params={{ id: pkg.id }}>
+                  View my package →
+                </Link>
+              </Button>
+            )}
+          </div>
+        </section>
 
         {/* Pending Session Approval Requests */}
         {pending.length > 0 && (
-          <div className="space-y-2">
+          <section className="space-y-3">
+            <SectionLabel>Awaiting your approval</SectionLabel>
             {pending.map((r) => {
               const mins = Math.max(
                 0,
-                Math.round(
-                  (new Date(r.expires_at).getTime() - Date.now()) / 60000
-                )
+                Math.round((new Date(r.expires_at).getTime() - Date.now()) / 60000),
               );
-
-              const staffNames = r.staff
-                .map((s) => s.name ?? s.email)
-                .filter(Boolean)
-                .join(", ");
+              const staffNames = r.staff.map((s) => s.name ?? s.email).filter(Boolean).join(", ");
 
               return (
-                <Card
+                <div
                   key={r.id}
-                  className="border-primary/40 bg-primary/5"
+                  className="border border-primary/60 bg-primary/5 p-5 space-y-4"
                 >
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium">
-                          Approve session deduction?
-                        </div>
-
-                        <div className="text-sm text-muted-foreground">
-                          {r.package_name} · {r.remaining}/{r.total} left
-                          {staffNames ? ` · ${staffNames}` : ""}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {mins}m left
-                      </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-serif text-lg">Approve your session?</div>
+                      <p className="mt-1 text-sm text-foreground/70">
+                        {r.package_name} · {r.remaining}/{r.total} left
+                        {staffNames ? ` · with ${staffNames}` : ""}
+                      </p>
                     </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1"
-                        disabled={busyId === r.id}
-                        onClick={() => decide(r.id, true)}
-                      >
-                        <Check className="mr-1 h-4 w-4" />
-                        Approve
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        disabled={busyId === r.id}
-                        onClick={() => decide(r.id, false)}
-                      >
-                        <X className="mr-1 h-4 w-4" />
-                        Reject
-                      </Button>
+                    <div
+                      className="flex items-center gap-1.5 text-[10px] uppercase text-foreground/60 shrink-0"
+                      style={{ letterSpacing: "0.18em" }}
+                    >
+                      <Clock className="h-3 w-3" /> {mins}m
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 uppercase"
+                      style={{ letterSpacing: "0.18em" }}
+                      disabled={busyId === r.id}
+                      onClick={() => decide(r.id, true)}
+                    >
+                      <Check className="mr-2 h-4 w-4" /> Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 uppercase border-foreground/40"
+                      style={{ letterSpacing: "0.18em" }}
+                      disabled={busyId === r.id}
+                      onClick={() => decide(r.id, false)}
+                    >
+                      <X className="mr-2 h-4 w-4" /> Decline
+                    </Button>
+                  </div>
+                </div>
               );
             })}
-          </div>
+          </section>
         )}
 
-        {/* Active Package */}
-        {pkg && (
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold">
+        {/* Active Package — editorial hero */}
+        {pkg ? (
+          <section className="space-y-6">
+            <SectionLabel>Your active package</SectionLabel>
+            <div className="border border-foreground/25 p-6 md:p-10">
+              <div className="flex flex-col-reverse items-start gap-8 md:flex-row md:items-center md:justify-between">
+                <div className="flex-1">
+                  <span
+                    className="text-[10px] uppercase text-primary"
+                    style={{ letterSpacing: "0.28em" }}
+                  >
+                    Active
+                  </span>
+                  <h2
+                    className="mt-2 font-serif text-3xl md:text-4xl"
+                    style={{ letterSpacing: "0.06em", lineHeight: 1.2 }}
+                  >
                     {pkg.packages?.name}
                   </h2>
-                  <p className="mt-2 text-muted-foreground">
-                    {pkg.packages?.description}
-                  </p>
-                  <Badge className="mt-4">ACTIVE</Badge>
+                  {pkg.packages?.description && (
+                    <p className="mt-4 max-w-md text-sm text-foreground/70 italic">
+                      {pkg.packages.description}
+                    </p>
+                  )}
                 </div>
                 <CircleProgress value={used} total={pkg.total_sessions} />
               </div>
 
-              <div className="mt-8 grid grid-cols-3 gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Sessions</p>
-                  <h3 className="mt-1 text-3xl font-bold">{pkg.total_sessions}</h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Used Sessions</p>
-                  <h3 className="mt-1 text-3xl font-bold">{used}</h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Remaining</p>
-                  <h3 className="mt-1 text-3xl font-bold">{pkg.sessions_remaining}</h3>
-                </div>
+              <div className="mt-10 grid grid-cols-3 gap-6 border-t border-foreground/20 pt-8">
+                <Stat label="Total" value={pkg.total_sessions} />
+                <Stat label="Used" value={used} />
+                <Stat label="Remaining" value={pkg.sessions_remaining} accent />
               </div>
 
-              {/* Purchase & Expiry */}
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardContent className="p-5">
-                    <p className="text-sm text-muted-foreground">Purchase Date</p>
-                    <h4 className="mt-2 text-lg font-semibold">
-                      {new Date(pkg.purchase_date).toLocaleDateString()}
-                    </h4>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-5">
-                    <p className="text-sm text-muted-foreground">Expire Date</p>
-                    <h4 className="mt-2 text-lg font-semibold">
-                      {pkg.warranty_expires_at
-                        ? new Date(pkg.warranty_expires_at).toLocaleDateString()
-                        : "No Expiry"}
-                    </h4>
-                  </CardContent>
-                </Card>
+              <div className="mt-8 grid gap-6 border-t border-foreground/20 pt-8 md:grid-cols-2">
+                <MetaField
+                  label="Purchased"
+                  value={new Date(pkg.purchase_date).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                />
+                <MetaField
+                  label="Expires"
+                  value={
+                    pkg.warranty_expires_at
+                      ? new Date(pkg.warranty_expires_at).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "No expiry"
+                  }
+                />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+        ) : (
+          <section className="border border-foreground/25 p-10 text-center">
+            <p className="font-serif italic text-lg text-foreground/80">
+              No active package yet.
+            </p>
+            <p className="mt-2 text-sm text-foreground/60">
+              Ask our staff to add a package to your account.
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              className="mt-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground uppercase"
+              style={{ letterSpacing: "0.18em" }}
+            >
+              <Link to="/app/packages">Browse packages</Link>
+            </Button>
+          </section>
         )}
 
         {/* Treatment History */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Treatment History</h2>
-              <Button variant="outline" asChild>
-                <Link to="/app/history">View All</Link>
-              </Button>
-            </div>
+        <section className="space-y-4">
+          <div className="flex items-center justify-between border-b border-foreground/25 pb-4">
+            <SectionLabel>Treatment history</SectionLabel>
+            <Link
+              to="/app/history"
+              className="text-xs uppercase text-primary hover:opacity-70"
+              style={{ letterSpacing: "0.2em" }}
+            >
+              View all →
+            </Link>
+          </div>
 
-            {history.length === 0 ? (
-              <div className="py-10 text-center text-muted-foreground">
-                No treatment history.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {history.slice(0, 5).map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="font-semibold">Session {index + 1}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {item.package_name}
-                      </div>
+          {history.length === 0 ? (
+            <div className="py-12 text-center text-foreground/60 italic">
+              Your journey begins with your first visit.
+            </div>
+          ) : (
+            <ul className="divide-y divide-foreground/15">
+              {history.slice(0, 5).map((item, index) => (
+                <li
+                  key={item.id}
+                  className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div
+                      className="text-[10px] uppercase text-primary"
+                      style={{ letterSpacing: "0.22em" }}
+                    >
+                      Session {String(index + 1).padStart(2, "0")}
                     </div>
-                    <div className="text-sm">
-                      {new Date(item.used_at).toLocaleDateString()}
-                    </div>
-                    <div className="text-sm">-{item.sessions_deducted}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="mt-1 font-serif text-lg">{item.package_name}</div>
+                    <div className="text-xs text-foreground/60">
                       {item.staff.length ? item.staff.join(", ") : "—"}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Package Details */}
-        {pkg && (
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="mb-6 text-2xl font-bold">Package Details</h2>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Package Name</p>
-                  <h3 className="mt-2 text-xl font-semibold">{pkg.packages?.name}</h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Price</p>
-                  <h3 className="mt-2 text-xl font-semibold">
-                    MMK {Number(pkg.packages?.price ?? 0).toFixed(2)}
-                  </h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge className="mt-2">Active</Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Remaining Sessions</p>
-                  <h3 className="mt-2 text-xl font-semibold">{pkg.sessions_remaining}</h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Sessions</p>
-                  <h3 className="mt-2 text-xl font-semibold">{pkg.total_sessions}</h3>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Used Sessions</p>
-                  <h3 className="mt-2 text-xl font-semibold">{used}</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="text-right">
+                    <div className="text-sm text-foreground/80">
+                      {new Date(item.used_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </div>
+                    <div
+                      className="text-[10px] uppercase text-foreground/50"
+                      style={{ letterSpacing: "0.18em" }}
+                    >
+                      −{item.sessions_deducted} session
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </AppShell>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2
+      className="text-xs uppercase text-foreground/70"
+      style={{ letterSpacing: "0.28em" }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div>
+      <div
+        className="text-[10px] uppercase text-foreground/60"
+        style={{ letterSpacing: "0.22em" }}
+      >
+        {label}
+      </div>
+      <div
+        className={`mt-2 font-serif text-3xl md:text-4xl ${accent ? "text-primary" : ""}`}
+        style={{ letterSpacing: "0.02em" }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function MetaField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div
+        className="text-[10px] uppercase text-foreground/60"
+        style={{ letterSpacing: "0.22em" }}
+      >
+        {label}
+      </div>
+      <div className="mt-2 font-serif text-lg">{value}</div>
+    </div>
   );
 }
 
@@ -514,10 +548,10 @@ type CircleProgressProps = {
 function CircleProgress({ value, total }: CircleProgressProps) {
   const percentage = total === 0 ? 0 : (value / total) * 100;
 
-  const size = 130;
-  const stroke = 10;
+  const size = 140;
+  const stroke = 2;
   const radius = size / 2;
-  const normalizedRadius = radius - stroke / 2;
+  const normalizedRadius = radius - stroke / 2 - 6;
 
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset =
@@ -525,13 +559,11 @@ function CircleProgress({ value, total }: CircleProgressProps) {
 
   return (
     <div className="flex flex-col items-center">
-      {/* Circle */}
-      <div className="relative w-32.5 h-32.5">
+      <div className="relative" style={{ width: size, height: size }}>
         <svg
           viewBox={`0 0 ${size} ${size}`}
           className="absolute inset-0 w-full h-full -rotate-90"
         >
-          {/* Background */}
           <circle
             cx={radius}
             cy={radius}
@@ -539,10 +571,8 @@ function CircleProgress({ value, total }: CircleProgressProps) {
             fill="none"
             stroke="currentColor"
             strokeWidth={stroke}
-            className="text-muted"
+            className="text-foreground/20"
           />
-
-          {/* Progress */}
           <circle
             cx={radius}
             cy={radius}
@@ -557,18 +587,26 @@ function CircleProgress({ value, total }: CircleProgressProps) {
           />
         </svg>
 
-        {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-4xl font-bold leading-none">{value}</div>
-          <div className="mt-1 text-xs leading-none text-muted-foreground">
-            Used
+          <div
+            className="font-serif text-4xl leading-none"
+            style={{ letterSpacing: "0.02em" }}
+          >
+            {total - value}
+          </div>
+          <div
+            className="mt-2 text-[10px] uppercase text-foreground/60 leading-none"
+            style={{ letterSpacing: "0.24em" }}
+          >
+            Remaining
           </div>
         </div>
       </div>
-
-      {/* Percentage */}
-      <div className="mt-3 text-sm text-muted-foreground">
-        {Math.round(percentage)}%
+      <div
+        className="mt-4 text-[10px] uppercase text-foreground/50"
+        style={{ letterSpacing: "0.22em" }}
+      >
+        {Math.round(percentage)}% used
       </div>
     </div>
   );
