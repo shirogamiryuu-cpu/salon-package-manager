@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      commission_entries: {
+        Row: {
+          commission_amount: number
+          commission_rule_id: string | null
+          commission_type: string
+          commission_value: number
+          created_at: string
+          earned_at: string
+          id: string
+          package_id: string | null
+          payroll_item_id: string | null
+          session_deduction_request_id: string | null
+          session_revenue: number
+          staff_user_id: string
+          status: string
+          updated_at: string
+          usage_log_id: string | null
+        }
+        Insert: {
+          commission_amount?: number
+          commission_rule_id?: string | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          earned_at?: string
+          id?: string
+          package_id?: string | null
+          payroll_item_id?: string | null
+          session_deduction_request_id?: string | null
+          session_revenue?: number
+          staff_user_id: string
+          status?: string
+          updated_at?: string
+          usage_log_id?: string | null
+        }
+        Update: {
+          commission_amount?: number
+          commission_rule_id?: string | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          earned_at?: string
+          id?: string
+          package_id?: string | null
+          payroll_item_id?: string | null
+          session_deduction_request_id?: string | null
+          session_revenue?: number
+          staff_user_id?: string
+          status?: string
+          updated_at?: string
+          usage_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_entries_commission_rule_id_fkey"
+            columns: ["commission_rule_id"]
+            isOneToOne: false
+            referencedRelation: "commission_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_payroll_item_fk"
+            columns: ["payroll_item_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_session_deduction_request_id_fkey"
+            columns: ["session_deduction_request_id"]
+            isOneToOne: false
+            referencedRelation: "session_deduction_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_staff_user_id_fkey"
+            columns: ["staff_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_usage_log_id_fkey"
+            columns: ["usage_log_id"]
+            isOneToOne: false
+            referencedRelation: "usage_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_rules: {
+        Row: {
+          commission_type: string
+          commission_value: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          package_id: string | null
+          priority: number
+          staff_role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string
+        }
+        Insert: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          package_id?: string | null
+          priority?: number
+          staff_role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+        }
+        Update: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          package_id?: string | null
+          priority?: number
+          staff_role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_packages: {
         Row: {
           customer_id: string
@@ -233,6 +395,120 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_items: {
+        Row: {
+          adjustments: number
+          created_at: string
+          entries_count: number
+          gross_amount: number
+          id: string
+          net_amount: number
+          notes: string | null
+          payroll_run_id: string
+          staff_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          adjustments?: number
+          created_at?: string
+          entries_count?: number
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          payroll_run_id: string
+          staff_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          adjustments?: number
+          created_at?: string
+          entries_count?: number
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          payroll_run_id?: string
+          staff_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_items_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_items_staff_user_id_fkey"
+            columns: ["staff_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_runs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -438,6 +714,77 @@ export type Database = {
           },
         ]
       }
+      staff_payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          paid_at: string
+          payment_method: string | null
+          payroll_item_id: string | null
+          payroll_run_id: string | null
+          recorded_by: string | null
+          reference: string | null
+          staff_user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          payment_method?: string | null
+          payroll_item_id?: string | null
+          payroll_run_id?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+          staff_user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          payment_method?: string | null
+          payroll_item_id?: string | null
+          payroll_run_id?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+          staff_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_payment_history_payroll_item_id_fkey"
+            columns: ["payroll_item_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_payment_history_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_payment_history_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_payment_history_staff_user_id_fkey"
+            columns: ["staff_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_logs: {
         Row: {
           admin_id: string
@@ -519,13 +866,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "customer" | "staff" | "stylist"
