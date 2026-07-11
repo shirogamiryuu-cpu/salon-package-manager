@@ -245,7 +245,7 @@ function CustomerDetail() {
     if (!amount || amount <= 0) return;
     try {
       await addDepositFn({ data: { customerPackageId: cp.id, amount } });
-      toast.success(`Added $${amount.toFixed(2)} deposit`);
+      toast.success(`Added MMK ${amount.toFixed(2)} deposit`);
       setDepositDrafts((d) => {
         const n = { ...d };
         delete n[cp.id];
@@ -422,7 +422,7 @@ function CustomerDetail() {
                 <SelectContent>
                   {availableVariants.map((v) => (
                     <SelectItem key={v.id} value={v.id}>
-                      {v.label} — ${v.price.toFixed(2)}
+                      {v.label} — MMK {v.price.toFixed(2)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -445,11 +445,11 @@ function CustomerDetail() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Deposit amount ($):</span>
+                <span className="text-muted-foreground">Deposit amount (MMK):</span>
                 <Input
                   type="number"
                   min={0}
-                  step="0.01"
+                  step="1000"
                   max={totalAmount || undefined}
                   value={assignDepositAmount}
                   onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
@@ -492,19 +492,19 @@ function CustomerDetail() {
                         <Badge variant="secondary" className="mr-1">1st time</Badge>
                         1st session
                       </span>
-                      <span className="font-medium">${firstTimePrice!.toFixed(2)}</span>
+                      <span className="font-medium">MMK {firstTimePrice!.toFixed(2)}</span>
                     </div>
                     {assignSessions > 1 && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">
-                          ${selectedUnit.toFixed(2)} × {assignSessions - 1} more session{assignSessions - 1 === 1 ? "" : "s"}
+                          MMK {selectedUnit.toFixed(2)} × {assignSessions - 1} more session{assignSessions - 1 === 1 ? "" : "s"}
                         </span>
-                        <span className="font-medium">${(selectedUnit * (assignSessions - 1)).toFixed(2)}</span>
+                        <span className="font-medium">MMK {(selectedUnit * (assignSessions - 1)).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between border-t pt-1">
                       <span className="text-muted-foreground text-sm">Total</span>
-                      <span className="font-semibold">${totalAmount.toFixed(2)}</span>
+                      <span className="font-semibold">MMK {totalAmount.toFixed(2)}</span>
                     </div>
                   </>
                 ) : (
@@ -512,22 +512,22 @@ function CustomerDetail() {
                     <span className="text-muted-foreground">
                       {selectedPricing ? (
                         <>
-                          <span className="line-through mr-1">${selectedPricing.original.toFixed(2)}</span>
-                          <span className="text-foreground font-medium">${selectedUnit.toFixed(2)}</span>
+                          <span className="line-through mr-1">MMK {selectedPricing.original.toFixed(2)}</span>
+                          <span className="text-foreground font-medium">MMK {selectedUnit.toFixed(2)}</span>
                         </>
                       ) : (
-                        <>${selectedUnit.toFixed(2)}</>
+                        <>MMK {selectedUnit.toFixed(2)}</>
                       )}
                       {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
                     </span>
                     <span className="font-semibold">
-                      Total ${totalAmount.toFixed(2)}
+                      Total MMK {totalAmount.toFixed(2)}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Deposit: ${assignDepositAmount.toFixed(2)}</span>
-                  <span>Outstanding: ${outstandingAmount.toFixed(2)}</span>
+                  <span>Deposit: MMK {assignDepositAmount.toFixed(2)}</span>
+                  <span>Outstanding: MMK {outstandingAmount.toFixed(2)}</span>
                 </div>
                 {selectedPromo && !firstTimeApplies && (
                   <div className="text-xs">
@@ -596,21 +596,21 @@ function CustomerDetail() {
                           <div>
                             <div className="text-muted-foreground">Deposit</div>
                             <div className="font-semibold text-sm">
-                              ${deposited.toFixed(2)} / ${totalPrice.toFixed(2)}
+                              MMK {deposited.toFixed(2)} / MMK {totalPrice.toFixed(2)}
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-muted-foreground">Outstanding</div>
-                            <div className="font-semibold text-sm">${outstanding.toFixed(2)}</div>
+                            <div className="font-semibold text-sm">MMK {outstanding.toFixed(2)}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
                             min={0}
-                            step="0.01"
+                            step="1000"
                             max={outstanding || undefined}
-                            placeholder="Add deposit ($)"
+                            placeholder="Add deposit (MMK)"
                             value={draft || ""}
                             onChange={(e) => {
                               const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
@@ -717,11 +717,11 @@ function CustomerDetail() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Extra deposit ($)</span>
+              <span className="text-muted-foreground">Extra deposit (MMK)</span>
               <Input
                 type="number"
                 min={0}
-                step="0.01"
+                step="1000"
                 value={addDeposit}
                 onChange={(e) => setAddDeposit(Math.max(0, Number(e.target.value) || 0))}
                 className="w-24 h-8"
@@ -778,8 +778,8 @@ function CustomerDetail() {
                       <SelectContent>
                         {vs.map((v) => (
                           <SelectItem key={v.id} value={v.id}>
-                            {v.label} — ${v.price.toFixed(2)}
-                            {v.first_time_price != null ? ` (1st: $${v.first_time_price.toFixed(2)})` : ""}
+                            {v.label} — MMK {v.price.toFixed(2)}
+                            {v.first_time_price != null ? ` (1st: MMK ${v.first_time_price.toFixed(2)})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -793,7 +793,7 @@ function CustomerDetail() {
                         <><Badge variant="secondary" className="mr-1">1st time</Badge>Price this session</>
                       ) : "Price this session"}
                     </span>
-                    <span className="font-semibold">${applied.toFixed(2)}</span>
+                    <span className="font-semibold">MMK {applied.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground">

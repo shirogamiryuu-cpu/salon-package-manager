@@ -35,11 +35,23 @@ function Customers() {
   }, [rows, q]);
 
   return (
-    <div className="space-y-4">
+  <div className="space-y-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h1 className="text-2xl font-semibold">Customers</h1>
-      <Input placeholder="Search by name, email or phone" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
-      <Card>
-        <CardContent className="p-0">
+
+      <Input
+        placeholder="Search by name, email or phone"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        className="w-full sm:max-w-sm"
+      />
+    </div>
+
+    <Card>
+      <CardContent className="p-0">
+
+        {/* Desktop Table */}
+        <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -51,31 +63,101 @@ function Customers() {
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {filtered.map((c) => (
                 <TableRow
                   key={c.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
+                  onClick={() =>
+                    navigate({
+                      to: "/admin/customers/$id",
+                      params: { id: c.id },
+                    })
+                  }
                 >
-                  <TableCell className="font-medium">{c.name ?? "—"}</TableCell>
+                  <TableCell className="font-medium">
+                    {c.name ?? "—"}
+                  </TableCell>
+
                   <TableCell>{c.email}</TableCell>
+
                   <TableCell>{c.phone ?? "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{c.points}</Badge></TableCell>
-                  <TableCell>{new Date(c.created_at).toLocaleDateString()}</TableCell>
+
+                  <TableCell>
+                    <Badge variant="secondary">{c.points}</Badge>
+                  </TableCell>
+
+                  <TableCell>
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <ChevronRight className="h-4 w-4 text-muted-foreground inline" />
                   </TableCell>
                 </TableRow>
               ))}
+
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No customers</TableCell></TableRow>
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    No customers
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y">
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              onClick={() =>
+                navigate({
+                  to: "/admin/customers/$id",
+                  params: { id: c.id },
+                })
+              }
+              className="p-4 active:bg-muted/50 cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">
+                    {c.name ?? "—"}
+                  </p>
+
+                  {/* phone only on mobile */}
+                  <p className="text-sm text-muted-foreground">
+                    {c.phone ?? "—"}
+                  </p>
+                </div>
+
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </div>
+
+              <div className="mt-3 flex items-center justify-between">
+                <Badge variant="secondary">{c.points} pts</Badge>
+
+                {/* email hidden on mobile? (not shown, per request) */}
+              </div>
+            </div>
+          ))}
+
+          {filtered.length === 0 && (
+            <div className="text-center text-muted-foreground py-8">
+              No customers
+            </div>
+          )}
+        </div>
+
+      </CardContent>
+    </Card>
+  </div>
+);
 }
 

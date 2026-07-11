@@ -67,21 +67,21 @@ function Available() {
                   <span>{p.name}</span>
                   {vs.length > 0 ? (
                     <span className="text-base font-semibold">
-                      ${Math.min(...vs.map((v) => v.price)).toFixed(2)}
+                      MMK {Math.min(...vs.map((v) => v.price)).toFixed(2)}
                       {" – "}
-                      ${Math.max(...vs.map((v) => v.price)).toFixed(2)}
+                      MMK {Math.max(...vs.map((v) => v.price)).toFixed(2)}
                     </span>
                   ) : pricing ? (
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground line-through">
-                        ${pricing.original.toFixed(2)}
+                        MMK {pricing.original.toFixed(2)}
                       </div>
                       <div className="text-base font-semibold text-primary">
-                        ${pricing.final.toFixed(2)}
+                        MMK {pricing.final.toFixed(2)}
                       </div>
                     </div>
                   ) : (
-                    <span className="text-base font-semibold">${Number(p.price).toFixed(2)}</span>
+                    <span className="text-base font-semibold">MMK {Number(p.price).toFixed(2)}</span>
                   )}
                 </CardTitle>
               </CardHeader>
@@ -92,7 +92,7 @@ function Available() {
                     {vs.map((v) => (
                       <div key={v.id} className="flex items-center justify-between border-b last:border-0 py-1">
                         <span className="text-muted-foreground">{v.label}</span>
-                        <span className="font-medium">${v.price.toFixed(2)}</span>
+                        <span className="font-medium">MMK {v.price.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

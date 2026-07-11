@@ -117,18 +117,18 @@ function PackageDetail() {
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Total price</div>
-              <div className="text-base font-semibold">${totalPrice.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {totalPrice.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Deposit paid</div>
-              <div className="text-base font-semibold">${depositAmount.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {depositAmount.toFixed(2)}</div>
               <div className="text-[10px] text-muted-foreground">
-                of ${totalPrice.toFixed(2)}
+                of MMK {totalPrice.toFixed(2)}
               </div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Outstanding</div>
-              <div className="text-base font-semibold">${outstanding.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {outstanding.toFixed(2)}</div>
             </div>
           </div>
 
@@ -137,7 +137,7 @@ function PackageDetail() {
               <span className="text-sm font-medium">Payment status</span>
               <Badge variant={depositAmount > 0 ? "default" : "secondary"}>
                 {depositAmount > 0
-                  ? `$${depositAmount.toFixed(2)} paid`
+                  ? `MMK ${depositAmount.toFixed(2)} paid`
                   : "Deposit unpaid"}
               </Badge>
             </div>
@@ -147,8 +147,8 @@ function PackageDetail() {
                     cp.deposit_paid_at
                       ? new Date(cp.deposit_paid_at).toLocaleDateString()
                       : ""
-                  } · $${depositAmount.toFixed(2)} of $${totalPrice.toFixed(2)}`
-                : `Outstanding balance: $${totalPrice.toFixed(2)}`}
+                  } · MMK ${depositAmount.toFixed(2)} of MMK ${totalPrice.toFixed(2)}`
+                : `Outstanding balance: MMK ${totalPrice.toFixed(2)}`}
             </div>
           </div>
 

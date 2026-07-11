@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, CalendarClock, Users } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute(
-  "/_authenticated/admin/customers/$id/packages/$cpId",
-)({
+export const Route = createFileRoute("/_authenticated/admin/customers/$id/packages/$cpId")({
   component: AdminPackageDetail,
 });
 
@@ -24,8 +22,6 @@ type CP = {
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_sessions_paid: number;
-  deposit_amount: number;
-  total_price: number;
   warranty_years: number;
   warranty_expires_at: string | null;
   packages: {
@@ -43,7 +39,12 @@ type HistoryRow = {
   customer_package_id: string;
   package_name: string;
   sessions_deducted: number;
-  staff: string[];
+  staff: {
+    id?: string;
+    name?: string | null;
+    full_name?: string | null;
+    email?: string | null;
+  }[];
   customer_name?: string | null;
   customer_email?: string | null;
 };
@@ -59,7 +60,7 @@ function AdminPackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
         )
         .eq("id", cpId)
         .maybeSingle();
@@ -68,9 +69,7 @@ function AdminPackageDetail() {
     })();
     listHistory({ data: { customerId: id } })
       .then((rows) =>
-        setHistory(
-          (rows as HistoryRow[]).filter((r) => r.customer_package_id === cpId),
-        ),
+        setHistory((rows as HistoryRow[]).filter((r) => r.customer_package_id === cpId)),
       )
       .catch((e) => {
         toast.error(e instanceof Error ? e.message : "Failed to load history");
@@ -80,9 +79,11 @@ function AdminPackageDetail() {
 
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
 
-  const totalPrice = Number(cp.total_price ?? 0) || Number(cp.packages?.price ?? 0);
-  const depositAmount = Number(cp.deposit_amount ?? 0);
-  const outstanding = Math.max(0, totalPrice - depositAmount);
+  const price = Number(cp.packages?.price ?? 0);
+  const pricePer = cp.total_sessions > 0 ? price / cp.total_sessions : 0;
+  const depositSessions = cp.deposit_sessions_paid ?? 0;
+  const depositAmount = pricePer * depositSessions;
+  const outstanding = Math.max(0, price - depositAmount);
   const used = cp.total_sessions - cp.sessions_remaining;
   const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
   const lastUsed = history && history.length ? history[0].used_at : null;
@@ -126,18 +127,18 @@ function AdminPackageDetail() {
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Total price</div>
-              <div className="text-base font-semibold">${totalPrice.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {price.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Deposit paid</div>
-              <div className="text-base font-semibold">${depositAmount.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {depositAmount.toFixed(2)}</div>
               <div className="text-[10px] text-muted-foreground">
-                of ${totalPrice.toFixed(2)}
+                {depositSessions}/{cp.total_sessions} sessions
               </div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Outstanding</div>
-              <div className="text-base font-semibold">${outstanding.toFixed(2)}</div>
+              <div className="text-base font-semibold">MMK {outstanding.toFixed(2)}</div>
             </div>
           </div>
 
@@ -173,11 +174,23 @@ function AdminPackageDetail() {
                       </span>
                       {new Date(r.used_at).toLocaleString()}
                     </div>
-                    <Badge variant="outline">−{r.sessions_deducted} session</Badge>
+
+                    <Badge variant="outline">
+                      −{r.sessions_deducted} {r.sessions_deducted === 1 ? "session" : "sessions"}
+                    </Badge>
                   </div>
+
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Users className="h-3.5 w-3.5" />
-                    Staff attended: {r.staff.length ? r.staff.join(", ") : "—"}
+                    Staff attended:{" "}
+                    {r.staff?.length
+                      ? r.staff
+                          .map((s: any) => {
+                            if (typeof s === "string") return s;
+                            return s.name ?? s.full_name ?? s.email ?? "Unknown Staff";
+                          })
+                          .join(", ")
+                      : "—"}
                   </div>
                 </CardContent>
               </Card>

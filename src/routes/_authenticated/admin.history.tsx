@@ -223,7 +223,7 @@ function AdminHistory() {
                         {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
                         {r.price_applied ? (
                           <span className="text-xs text-muted-foreground ml-2">
-                            ${r.price_applied.toFixed(2)}{r.was_first_time ? " (1st)" : ""}
+                            MMK {r.price_applied.toFixed(2)}{r.was_first_time ? " (1st)" : ""}
                           </span>
                         ) : null}
                       </TableCell>

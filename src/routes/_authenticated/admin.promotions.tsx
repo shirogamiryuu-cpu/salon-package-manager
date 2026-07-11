@@ -162,18 +162,27 @@ function PromotionsAdmin() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Promotions</h1>
-          <p className="text-sm text-muted-foreground">Create discounts and assign them to packages.</p>
-        </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Create Promotion</Button>
+  <div className="space-y-6">
+    {/* Header */}
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold">Promotions</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Create discounts and assign them to packages.
+        </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
+      <Button className="w-full sm:w-auto" onClick={openNew}>
+        <Plus className="h-4 w-4 mr-2" />
+        Create Promotion
+      </Button>
+    </div>
+
+    {/* Table Card */}
+    <Card className="overflow-hidden">
+      <CardContent className="p-0">
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[900px] sm:min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -186,33 +195,70 @@ function PromotionsAdmin() {
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {rows.map((r) => {
                 const status = promotionStatus(r);
+
                 return (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell className="capitalize">{r.discount_type}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {r.name}
+                    </TableCell>
+
+                    <TableCell className="capitalize whitespace-nowrap">
+                      {r.discount_type}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
                       {r.discount_type === "percentage"
                         ? `${Number(r.discount_value)}%`
                         : Number(r.discount_value).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-xs">{new Date(r.start_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-xs">{new Date(r.end_date).toLocaleDateString()}</TableCell>
-                    <TableCell><Badge variant={statusVariant[status]}>{status}</Badge></TableCell>
-                    <TableCell>
-                      <span className="text-sm">{r.package_promotions.length}</span>
+
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {new Date(r.start_date).toLocaleDateString()}
                     </TableCell>
+
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {new Date(r.end_date).toLocaleDateString()}
+                    </TableCell>
+
+                    <TableCell>
+                      <Badge variant={statusVariant[status]}>
+                        {status}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      <span className="text-sm">
+                        {r.package_promotions.length}
+                      </span>
+                    </TableCell>
+
                     <TableCell className="text-right">
-                      <div className="inline-flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit">
+                      <div className="flex justify-end gap-1 flex-wrap sm:flex-nowrap">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openEdit(r)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => toggleActive(r)} title={r.is_active ? "Disable" : "Enable"}>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => toggleActive(r)}
+                        >
                           <Power className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => remove(r)} title="Delete">
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => remove(r)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -220,105 +266,183 @@ function PromotionsAdmin() {
                   </TableRow>
                 );
               })}
+
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center text-muted-foreground py-8"
+                  >
                     No promotions yet.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit promotion" : "Create promotion"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+    {/* Dialog */}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {editing ? "Edit promotion" : "Create promotion"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Promotion Name</Label>
+            <Input
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Discount Type</Label>
+            <RadioGroup
+              className="flex flex-col sm:flex-row gap-3 mt-2"
+              value={form.discount_type}
+              onValueChange={(v) =>
+                setForm({ ...form, discount_type: v as any })
+              }
+            >
+              <label className="flex items-center gap-2">
+                <RadioGroupItem value="percentage" />
+                Percentage
+              </label>
+
+              <label className="flex items-center gap-2">
+                <RadioGroupItem value="fixed" />
+                Fixed Amount
+              </label>
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label>
+              Discount Value{" "}
+              {form.discount_type === "percentage" ? "(%)" : ""}
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.discount_value}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  discount_value: Number(e.target.value),
+                })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Promotion Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div>
-              <Label>Discount Type</Label>
-              <RadioGroup
-                className="flex gap-4 mt-2"
-                value={form.discount_type}
-                onValueChange={(v) => setForm({ ...form, discount_type: v as any })}
-              >
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="percentage" /> Percentage
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="fixed" /> Fixed Amount
-                </label>
-              </RadioGroup>
-            </div>
-            <div>
-              <Label>Discount Value {form.discount_type === "percentage" ? "(%)" : ""}</Label>
+              <Label>Start Date</Label>
               <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.discount_value}
-                onChange={(e) => setForm({ ...form, discount_value: Number(e.target.value) })}
+                type="datetime-local"
+                value={form.start_date}
+                onChange={(e) =>
+                  setForm({ ...form, start_date: e.target.value })
+                }
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Start Date</Label>
-                <Input type="datetime-local" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
-              </div>
-              <div>
-                <Label>End Date</Label>
-                <Input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-              </div>
-            </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label>Active</Label>
-                <p className="text-xs text-muted-foreground">Only active promotions in date range apply.</p>
-              </div>
-              <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-            </div>
+
             <div>
-              <Label>Assign to Packages</Label>
-              <div className="mt-2 rounded-md border divide-y max-h-56 overflow-y-auto">
-                {pkgs.length === 0 && (
-                  <p className="p-3 text-sm text-muted-foreground">No packages yet.</p>
-                )}
-                {pkgs.map((p) => (
-                  <label key={p.id} className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50">
-                    <Checkbox
-                      checked={form.package_ids.includes(p.id)}
-                      onCheckedChange={() => togglePkg(p.id)}
-                    />
-                    <span className="text-sm">{p.name}</span>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                A package can only be part of one active promotion in the same date range.
-              </p>
+              <Label>End Date</Label>
+              <Input
+                type="datetime-local"
+                value={form.end_date}
+                onChange={(e) =>
+                  setForm({ ...form, end_date: e.target.value })
+                }
+              />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {editing && (
-        <p className="sr-only">{pkgMap.size}</p>
-      )}
-    </div>
-  );
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label>Active</Label>
+              <p className="text-xs text-muted-foreground">
+                Only active promotions in date range apply.
+              </p>
+            </div>
+
+            <Switch
+              checked={form.is_active}
+              onCheckedChange={(v) =>
+                setForm({ ...form, is_active: v })
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Assign to Packages</Label>
+
+            <div className="mt-2 rounded-md border divide-y max-h-56 overflow-y-auto">
+              {pkgs.length === 0 && (
+                <p className="p-3 text-sm text-muted-foreground">
+                  No packages yet.
+                </p>
+              )}
+
+              {pkgs.map((p) => (
+                <label
+                  key={p.id}
+                  className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50"
+                >
+                  <Checkbox
+                    checked={form.package_ids.includes(p.id)}
+                    onCheckedChange={() => togglePkg(p.id)}
+                  />
+                  <span className="text-sm">{p.name}</span>
+                </label>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              A package can only be part of one active promotion in the
+              same date range.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            className="w-full sm:w-auto"
+            onClick={save}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>
+);
 }

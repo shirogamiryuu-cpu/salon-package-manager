@@ -180,14 +180,14 @@ function PackagesAdmin() {
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-2">
-                <div><Label>Price per session</Label><Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
+                <div><Label>Price per session</Label><Input type="number" step="1000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
                 <div><Label>Points</Label><Input type="number" value={form.points_awarded} onChange={(e) => setForm({ ...form, points_awarded: e.target.value })} /></div>
               </div>
               <div>
                 <Label>First-time session price (optional)</Label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="1000"
                   placeholder="e.g. 200 — leave blank to use regular price"
                   value={form.first_time_price ?? ""}
                   onChange={(e) => setForm({ ...form, first_time_price: e.target.value })}
@@ -203,7 +203,7 @@ function PackagesAdmin() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  e.g. Short $408, Medium $428, Long $448. When set, admin picks a variant when assigning to a customer and its price overrides the base price.
+                  e.g. Short MMK 408, Medium MMK 428, Long MMK 448. When set, admin picks a variant when assigning to a customer and its price overrides the base price.
                 </p>
                 {variants.length === 0 && (
                   <p className="text-xs text-muted-foreground italic">No variants — package uses the base price above.</p>
@@ -217,15 +217,15 @@ function PackagesAdmin() {
                     />
                     <Input
                       type="number"
-                      step="0.01"
+                      step="1000"
                       placeholder="Price"
                       value={v.price as any}
                       onChange={(e) => updateVariant(i, { price: e.target.value })}
                     />
                     <Input
                       type="number"
-                      step="0.01"
-                      placeholder="1st-time $"
+                      step="1000"
+                      placeholder="1st-time MMK"
                       value={(v.first_time_price ?? "") as any}
                       onChange={(e) => updateVariant(i, { first_time_price: e.target.value })}
                     />
@@ -258,18 +258,18 @@ function PackagesAdmin() {
                 <span>{p.name}</span>
                 {vs.length > 0 ? (
                   <span className="text-base">
-                    ${Math.min(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    MMK {Math.min(...vs.map((v) => Number(v.price))).toFixed(2)}
                     {" – "}
-                    ${Math.max(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    MMK {Math.max(...vs.map((v) => Number(v.price))).toFixed(2)}
                     <span className="text-xs text-muted-foreground font-normal"> / session</span>
                   </span>
                 ) : pricing ? (
                   <div className="text-right">
-                    <div className="text-xs text-muted-foreground line-through">${pricing.original.toFixed(2)}</div>
-                    <div className="text-base text-primary">${pricing.final.toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
+                    <div className="text-xs text-muted-foreground line-through">MMK {pricing.original.toFixed(2)}</div>
+                    <div className="text-base text-primary">MMK {pricing.final.toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
                   </div>
                 ) : (
-                  <span className="text-base">${Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
+                  <span className="text-base">MMK {Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
                 )}
               </CardTitle>
             </CardHeader>
@@ -278,7 +278,7 @@ function PackagesAdmin() {
               {vs.length > 0 && (
                 <div className="flex flex-wrap gap-1 text-xs">
                   {vs.map((v, i) => (
-                    <Badge key={i} variant="secondary">{v.label} ${Number(v.price).toFixed(2)}</Badge>
+                    <Badge key={i} variant="secondary">{v.label} MMK {Number(v.price).toFixed(2)}</Badge>
                   ))}
                 </div>
               )}

@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Scissors } from "lucide-react";
+import logo from "@/public/EmpireCharme.png";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — Salon Manager" }] }),
+  head: () => ({
+    meta: [{ title: "Sign in — EmpireCharme" }],
+  }),
   component: AuthPage,
 });
 
@@ -18,136 +20,224 @@ function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // sign in — accepts email or phone
+  // Sign in
   const [siIdentifier, setSiIdentifier] = useState("");
   const [siPassword, setSiPassword] = useState("");
 
-  // sign up
+  // Sign up
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suPhone, setSuPhone] = useState("");
   const [suName, setSuName] = useState("");
 
-
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
+
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.session.user.id);
+
       const isAdmin = roles?.some((r) => r.role === "admin");
-      navigate({ to: isAdmin ? "/admin" : "/app" });
+
+      navigate({
+        to: isAdmin ? "/admin" : "/app",
+      });
     });
   }, [navigate]);
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     let email = siIdentifier.trim();
-    const isEmail = email.includes("@");
-    if (!isEmail) {
-      // Treat as phone → resolve to email via edge function
-      const phone = email.replace(/\s+/g, "");
-      const { data: resolved, error: resolveErr } = await supabase.functions.invoke(
-        "resolve-login",
-        { body: { phone } },
-      );
-      if (resolveErr || !resolved?.email) {
-        setLoading(false);
-        return toast.error("No account found for that phone number");
-      }
-      email = resolved.email;
+
+    if (!email.includes("@")) {
+      email = email.replace(/\s+/g, "");
     }
+
+    // If user entered phone number, find the email first
+    if (!email.includes("@")) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("phone", email)
+        .maybeSingle();
+
+      if (profileError) {
+        setLoading(false);
+        toast.error(profileError.message);
+        return;
+      }
+
+      if (!profile) {
+        setLoading(false);
+        toast.error("Phone number not found");
+        return;
+      }
+
+      email = profile.email;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: siPassword,
     });
+
     setLoading(false);
-    if (error) return toast.error(error.message);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user.id);
-    const isAdmin = roles?.some((r) => r.role === "admin");
-    navigate({ to: isAdmin ? "/admin" : "/app" });
-  };
 
+    const isAdmin = roles?.some((r) => r.role === "admin");
+
+    navigate({
+      to: isAdmin ? "/admin" : "/home",
+    });
+  };
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     const { error } = await supabase.auth.signUp({
       email: suEmail,
       password: suPassword,
       options: {
-        emailRedirectTo: `${window.location.origin}/app`,
-        data: { phone: suPhone, name: suName.trim() || undefined },
+        emailRedirectTo: `${window.location.origin}/home`,
+        data: {
+          phone: suPhone.trim() || null,
+          name: suName.trim(),
+        },
       },
     });
 
     setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Account created — signing you in...");
-    const { error: e2 } = await supabase.auth.signInWithPassword({
-      email: suEmail,
-      password: suPassword,
-    });
-    if (e2) return toast.error(e2.message);
-    navigate({ to: "/app" });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Account created successfully!");
+
+    navigate({ to: "/home" });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted p-4">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Scissors className="h-5 w-5" />
+          <div className="mx-auto mb-4">
+            <img src={logo} alt="EmpireCharme" className="h-16 w-auto mx-auto" />
           </div>
-          <CardTitle>Salon Manager</CardTitle>
-          <CardDescription>Sign in or create a customer account</CardDescription>
+
+          <CardTitle className="text-2xl">Welcome to Empire Charme</CardTitle>
+
+          <CardDescription>Sign in or create your salon account</CardDescription>
         </CardHeader>
+
         <CardContent>
-          <Tabs defaultValue="signin">
+          <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign in</TabsTrigger>
+
               <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
+
+            {/* SIGN IN */}
             <TabsContent value="signin">
-              <form onSubmit={signIn} className="space-y-3 mt-4">
-                <div>
-                  <Label htmlFor="si-identifier">Email or phone</Label>
-                  <Input id="si-identifier" required value={siIdentifier} onChange={(e) => setSiIdentifier(e.target.value)} placeholder="you@example.com or +1234567890" />
+              <form onSubmit={signIn} className="space-y-4 mt-5">
+                <div className="space-y-2">
+                  <Label htmlFor="si-identifier">Email or Phone</Label>
+
+                  <Input
+                    id="si-identifier"
+                    required
+                    placeholder="Enter email or phone number"
+                    value={siIdentifier}
+                    onChange={(e) => setSiIdentifier(e.target.value)}
+                  />
                 </div>
-                <div>
+
+                <div className="space-y-2">
                   <Label htmlFor="si-password">Password</Label>
-                  <Input id="si-password" type="password" required value={siPassword} onChange={(e) => setSiPassword(e.target.value)} />
+
+                  <Input
+                    id="si-password"
+                    type="password"
+                    required
+                    value={siPassword}
+                    onChange={(e) => setSiPassword(e.target.value)}
+                  />
                 </div>
+
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "..." : "Sign in"}
+                  {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
             </TabsContent>
+
+            {/* SIGN UP */}
             <TabsContent value="signup">
-              <form onSubmit={signUp} className="space-y-3 mt-4">
-                <div>
+              <form onSubmit={signUp} className="space-y-4 mt-5">
+                <div className="space-y-2">
                   <Label htmlFor="su-name">Name</Label>
-                  <Input id="su-name" required value={suName} onChange={(e) => setSuName(e.target.value)} placeholder="Your name" />
-                </div>
-                <div>
-                  <Label htmlFor="su-email">Email</Label>
-                  <Input id="su-email" type="email" required value={suEmail} onChange={(e) => setSuEmail(e.target.value)} />
+
+                  <Input
+                    id="su-name"
+                    required
+                    value={suName}
+                    onChange={(e) => setSuName(e.target.value)}
+                    placeholder="Your name"
+                  />
                 </div>
 
-                <div>
+                <div className="space-y-2">
+                  <Label htmlFor="su-email">Email</Label>
+
+                  <Input
+                    id="su-email"
+                    type="email"
+                    required
+                    value={suEmail}
+                    onChange={(e) => setSuEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="su-phone">Phone</Label>
-                  <Input id="su-phone" type="tel" value={suPhone} onChange={(e) => setSuPhone(e.target.value)} />
+
+                  <Input
+                    id="su-phone"
+                    type="tel"
+                    value={suPhone}
+                    onChange={(e) => setSuPhone(e.target.value)}
+                  />
                 </div>
-                <div>
+
+                <div className="space-y-2">
                   <Label htmlFor="su-password">Password</Label>
-                  <Input id="su-password" type="password" required minLength={6} value={suPassword} onChange={(e) => setSuPassword(e.target.value)} />
+
+                  <Input
+                    id="su-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={suPassword}
+                    onChange={(e) => setSuPassword(e.target.value)}
+                  />
                 </div>
+
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "..." : "Create account"}
+                  {loading ? "Creating account..." : "Create account"}
                 </Button>
               </form>
             </TabsContent>

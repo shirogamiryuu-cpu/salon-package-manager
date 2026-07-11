@@ -21,8 +21,6 @@ type Row = {
   purchase_date: string;
   deposit_paid: boolean;
   deposit_sessions_paid: number;
-  deposit_amount: number;
-  total_price: number;
   packages: { name: string; description: string | null; points_awarded: number } | null;
 };
 
@@ -60,7 +58,9 @@ function MyPackages() {
     const [{ data: cp }, { data: p }] = await Promise.all([
       supabase
         .from("customer_packages")
-        .select("id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,deposit_amount,total_price,packages(name,description,points_awarded)")
+        .select(
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name,description,points_awarded)",
+        )
         .eq("customer_id", u.user.id)
         .order("purchase_date", { ascending: false }),
       supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
@@ -126,7 +126,6 @@ function MyPackages() {
     };
   }, [loadPackages, loadPending]);
 
-
   const decide = async (id: string, approve: boolean) => {
     setBusyId(id);
     try {
@@ -144,14 +143,20 @@ function MyPackages() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">My packages</h1>
-        <Badge variant="secondary" className="text-sm">⭐ {points} points</Badge>
+
       </div>
 
       {pending.length > 0 && (
         <div className="space-y-2">
           {pending.map((r) => {
-            const mins = Math.max(0, Math.round((new Date(r.expires_at).getTime() - Date.now()) / 60000));
-            const staffNames = r.staff.map((s) => s.name ?? s.email).filter(Boolean).join(", ");
+            const mins = Math.max(
+              0,
+              Math.round((new Date(r.expires_at).getTime() - Date.now()) / 60000),
+            );
+            const staffNames = r.staff
+              .map((s) => s.name ?? s.email)
+              .filter(Boolean)
+              .join(", ");
             return (
               <Card key={r.id} className="border-primary/40 bg-primary/5">
                 <CardContent className="p-4 space-y-3">
@@ -168,10 +173,21 @@ function MyPackages() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="flex-1" disabled={busyId === r.id} onClick={() => decide(r.id, true)}>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      disabled={busyId === r.id}
+                      onClick={() => decide(r.id, true)}
+                    >
                       <Check className="h-3.5 w-3.5 mr-1" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1" disabled={busyId === r.id} onClick={() => decide(r.id, false)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      disabled={busyId === r.id}
+                      onClick={() => decide(r.id, false)}
+                    >
                       <X className="h-3.5 w-3.5 mr-1" /> Reject
                     </Button>
                   </div>
@@ -183,46 +199,132 @@ function MyPackages() {
       )}
 
       {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
-      ) : rows.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">No packages yet. Ask the salon to assign one!</CardContent></Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {rows.map((r) => {
-            const used = r.total_sessions - r.sessions_remaining;
-            const pct = (r.sessions_remaining / r.total_sessions) * 100;
-            return (
-              <Card key={r.id} className="transition hover:shadow-md">
-                <Link
-                  to="/app/mine/$id"
-                  params={{ id: r.id }}
-                  className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-xl"
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{r.packages?.name ?? "Package"}</span>
-                      <span className="text-sm font-normal text-muted-foreground">
-                        {r.sessions_remaining}/{r.total_sessions} left
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {r.packages?.description && <p className="text-sm text-muted-foreground">{r.packages.description}</p>}
-                    <Progress value={pct} />
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge variant={Number(r.deposit_amount ?? 0) > 0 ? "default" : "secondary"}>
-                        {`Deposit $${Number(r.deposit_amount ?? 0).toFixed(2)} / $${Number(r.total_price ?? 0).toFixed(2)}`}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {used} used · {new Date(r.purchase_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
-            );
-          })}
+        <div className="flex items-center justify-center py-16 text-muted-foreground">
+          Loading...
         </div>
+      ) : rows.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No packages yet. Ask the salon to assign one!
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden border-border bg-card">
+          {/* Header */}
+          <div className="border-b border-border px-4 py-5 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-xl font-semibold sm:text-2xl">Purchased Services</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your purchased treatment sessions
+                </p>
+              </div>
+
+              <Badge variant="secondary" className="w-fit text-sm">
+                ⭐ {points} points
+              </Badge>
+            </div>
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden md:grid grid-cols-[70px_1fr_100px_100px] border-b border-border bg-muted/40 px-6 py-3 text-sm font-semibold">
+            <div>No</div>
+            <div>Service</div>
+            <div className="text-center">Remain</div>
+            <div className="text-center">Total</div>
+          </div>
+
+          <div>
+            {rows.map((r, index) => (
+              <Link
+                key={r.id}
+                to="/app/mine/$id"
+                params={{ id: r.id }}
+                className={`block transition-colors hover:bg-muted/60 ${
+                  index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                }`}
+              >
+                {/* Desktop */}
+                <div className="hidden md:grid grid-cols-[70px_1fr_100px_100px] items-center px-6 py-5">
+                  <div className="text-lg font-semibold text-muted-foreground">{index + 1}.</div>
+
+                  <div className="min-w-0">
+                    <div className="truncate text-lg font-semibold">
+                      {r.packages?.name ?? "Package"}
+                    </div>
+
+                    {r.packages?.description && (
+                      <div className="mt-1 truncate text-sm text-muted-foreground">
+                        {r.packages.description}
+                      </div>
+                    )}
+
+                    <div className="mt-3">
+                      <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                        <span>{r.total_sessions - r.sessions_remaining} used</span>
+
+                        <span>{new Date(r.purchase_date).toLocaleDateString()}</span>
+                      </div>
+
+                      <Progress
+                        value={(r.sessions_remaining / r.total_sessions) * 100}
+                        className="h-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-center text-2xl font-bold text-green-500">
+                    {r.sessions_remaining}
+                  </div>
+
+                  <div className="text-center text-2xl font-semibold">{r.total_sessions}</div>
+                </div>
+
+                {/* Mobile */}
+                <div className="space-y-3 p-4 md:hidden">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">#{index + 1}</p>
+
+                      <h3 className="truncate text-base font-semibold">
+                        {r.packages?.name ?? "Package"}
+                      </h3>
+
+                      {r.packages?.description && (
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {r.packages.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Remaining</p>
+
+                      <p className="text-2xl font-bold text-green-500">{r.sessions_remaining}</p>
+                    </div>
+                  </div>
+
+                  <Progress
+                    value={(r.sessions_remaining / r.total_sessions) * 100}
+                    className="h-2"
+                  />
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Sessions</span>
+
+                    <span className="font-semibold">{r.total_sessions}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{r.total_sessions - r.sessions_remaining} used</span>
+
+                    <span>{new Date(r.purchase_date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   );

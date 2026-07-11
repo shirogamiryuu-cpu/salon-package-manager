@@ -16,11 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
 export const Route = createFileRoute("/_authenticated/admin/contacts")({
   component: ContactsAdmin,
 });
-
 type Contact = {
   id: string;
   label: string;
@@ -28,16 +26,13 @@ type Contact = {
   sort_order: number;
   is_active: boolean;
 };
-
 const empty = { label: "", phone: "", sort_order: 0, is_active: true };
-
 function ContactsAdmin() {
   const [rows, setRows] = useState<Contact[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState<any>(empty);
   const [saving, setSaving] = useState(false);
-
   const load = async () => {
     const { data, error } = await supabase
       .from("salon_contacts")
@@ -49,7 +44,6 @@ function ContactsAdmin() {
   useEffect(() => {
     load();
   }, []);
-
   const openNew = () => {
     setEditing(null);
     setForm({ ...empty, sort_order: rows.length });
@@ -60,7 +54,6 @@ function ContactsAdmin() {
     setForm(c);
     setOpen(true);
   };
-
   const save = async () => {
     if (!form.label.trim() || !form.phone.trim()) {
       return toast.error("Label and phone required");
@@ -81,7 +74,6 @@ function ContactsAdmin() {
     setOpen(false);
     load();
   };
-
   const remove = async (id: string) => {
     if (!confirm("Delete this contact?")) return;
     const { error } = await supabase.from("salon_contacts").delete().eq("id", id);
@@ -89,7 +81,6 @@ function ContactsAdmin() {
     toast.success("Deleted");
     load();
   };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -154,7 +145,6 @@ function ContactsAdmin() {
           </DialogContent>
         </Dialog>
       </div>
-
       <div className="grid gap-3">
         {rows.map((c) => (
           <Card key={c.id}>
