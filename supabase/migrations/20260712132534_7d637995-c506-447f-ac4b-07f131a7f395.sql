@@ -1,0 +1,1 @@
+ALTER TABLE public.session_deduction_requests ADD COLUMN IF NOT EXISTS manual_price NUMERIC(10,2) NULL;

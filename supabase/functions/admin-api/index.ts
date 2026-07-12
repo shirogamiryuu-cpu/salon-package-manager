@@ -463,7 +463,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds, variantId }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId, manualPrice }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
@@ -474,7 +474,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
     const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
-    const needed = unit * (used + 1);
+    let mp: number | null = null;
+    if (manualPrice !== undefined && manualPrice !== null && manualPrice !== "") {
+      const n = Number(manualPrice);
+      if (!Number.isFinite(n) || n < 0) throw new Error("Manual price must be a non-negative number");
+      mp = Math.round(n * 100) / 100;
+    }
+    const thisNeed = mp != null ? mp : unit;
+    const needed = unit * used + thisNeed;
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
       throw new Error("Deposit exhausted — collect more deposit before deducting another session");
 
