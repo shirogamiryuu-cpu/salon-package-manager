@@ -394,11 +394,11 @@ function Home() {
                     className="mt-2 font-serif text-3xl md:text-4xl"
                     style={{ letterSpacing: "0.06em", lineHeight: 1.2 }}
                   >
-                    {pkg.packages?.name}
+                    {pkg.packages?.name ?? pkg.package_name}
                   </h2>
-                  {pkg.packages?.description && (
+                  {(pkg.packages?.description ?? pkg.package_description) && (
                     <p className="mt-4 max-w-md text-sm text-foreground/70 italic">
-                      {pkg.packages.description}
+                      {pkg.packages?.description ?? pkg.package_description}
                     </p>
                   )}
                 </div>
