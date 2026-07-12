@@ -118,8 +118,11 @@ function Home() {
         sessions_remaining,
         total_sessions,
         warranty_expires_at,
+        package_name,
+        package_description,
         packages(name, description, price)
       `;
+
 
       const [latestPurchasedResult, historyRows] = await Promise.all([
         supabase
