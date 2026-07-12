@@ -156,9 +156,12 @@ function CustomerDetail() {
     : null;
   const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
 
-  const totalAmount = firstTimeApplies
+  const computedTotal = firstTimeApplies
     ? firstTimePrice! + selectedUnit * Math.max(0, assignSessions - 1)
     : selectedUnit * assignSessions;
+  const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
+  const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
+  const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
   const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
   const depositSessionsEq = selectedUnit > 0
     ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
@@ -192,6 +195,7 @@ function CustomerDetail() {
       setAssignWarranty(0);
       setAssignPurchaseDate("");
       setAssignWarrantyExpires("");
+      setAssignManualPrice("");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
