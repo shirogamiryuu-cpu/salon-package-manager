@@ -48,6 +48,8 @@ type CustomerPackage = {
   sessions_remaining: number;
   total_sessions: number;
   warranty_expires_at: string | null;
+  package_name: string | null;
+  package_description: string | null;
   packages: {
     name: string;
     description: string | null;
