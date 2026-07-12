@@ -100,6 +100,8 @@
 			);
 			name = App;
 			packageProductDependencies = (
+				4A7D01002C00000100FCM001 /* FirebaseCore */,
+				4A7D01022C00000100FCM001 /* FirebaseMessaging */,
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
 			);
 			productName = App;

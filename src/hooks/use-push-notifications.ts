@@ -31,10 +31,23 @@ export function usePushNotifications() {
         }
         if (perm.receive !== "granted") return;
 
-        // 2. Register with APNs / FCM
+        // 2. Ensure Android has the channel referenced by server-sent FCM payloads
+        if (Capacitor.getPlatform() === "android") {
+          await PushNotifications.createChannel({
+            id: "session_requests",
+            name: "Session Requests",
+            description: "Session approval requests from the salon",
+            importance: 5,
+            visibility: 1,
+            lights: true,
+            vibration: true,
+          });
+        }
+
+        // 3. Register with APNs / FCM
         await PushNotifications.register();
 
-        // 3. Persist token
+        // 4. Persist token
         const regListener = await PushNotifications.addListener("registration", async (t) => {
           try {
             const { data: u } = await supabase.auth.getUser();
@@ -55,7 +68,7 @@ export function usePushNotifications() {
           console.error("[push] registration error", err);
         });
 
-        // 4. Foreground notifications
+        // 5. Foreground notifications
         const recvListener = await PushNotifications.addListener(
           "pushNotificationReceived",
           (notif) => {
@@ -69,7 +82,7 @@ export function usePushNotifications() {
           },
         );
 
-        // 5. Tap handler
+        // 6. Tap handler
         const actionListener = await PushNotifications.addListener(
           "pushNotificationActionPerformed",
           () => {
