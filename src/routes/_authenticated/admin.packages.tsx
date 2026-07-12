@@ -277,8 +277,8 @@ function PackagesAdmin() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <div className="flex flex-wrap gap-2 items-center">
+
         <Input
           type="search"
           placeholder="Search packages…"
