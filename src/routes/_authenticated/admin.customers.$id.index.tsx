@@ -69,7 +69,10 @@ function CustomerDetail() {
   const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null; category_id: string | null }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [pkgSearch, setPkgSearch] = useState<string>("");
+  const [pkgCategoryFilter, setPkgCategoryFilter] = useState<string>("all");
   const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number; first_time_price: number | null }[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
@@ -111,12 +114,19 @@ function CustomerDetail() {
   useEffect(() => {
     refresh();
     (async () => {
-      const { data } = await supabase
-        .from("packages")
-        .select("id,name,total_sessions,price,first_time_price")
-        .eq("is_active", true);
+      const [{ data }, { data: cats }] = await Promise.all([
+        supabase
+          .from("packages")
+          .select("id,name,total_sessions,price,first_time_price,category_id")
+          .eq("is_active", true),
+        supabase
+          .from("package_categories")
+          .select("id,name")
+          .order("sort_order", { ascending: true }),
+      ]);
       const list = (data ?? []) as any[];
       setPackages(list);
+      setCategories((cats ?? []) as any[]);
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
       const { data: vs } = await supabase
         .from("package_variants")
@@ -425,18 +435,56 @@ function CustomerDetail() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
-              <SelectTrigger className="max-w-xs">
-                <SelectValue placeholder="Choose a package" />
-              </SelectTrigger>
-              <SelectContent>
-                {packages.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="search"
+              placeholder="Search packages…"
+              value={pkgSearch}
+              onChange={(e) => setPkgSearch(e.target.value)}
+              className="w-full sm:w-56 h-9"
+            />
+            {categories.length > 0 && (
+              <Select value={pkgCategoryFilter} onValueChange={setPkgCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-48 h-9">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  <SelectItem value="none">Uncategorised</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const q = pkgSearch.trim().toLowerCase();
+              const filtered = packages.filter((p) => {
+                if (pkgCategoryFilter === "none" && p.category_id) return false;
+                if (pkgCategoryFilter !== "all" && pkgCategoryFilter !== "none" && p.category_id !== pkgCategoryFilter) return false;
+                if (q && !p.name.toLowerCase().includes(q)) return false;
+                return true;
+              });
+              return (
+                <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder={filtered.length === 0 ? "No packages match" : "Choose a package"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filtered.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No packages match your filter.</div>
+                    ) : (
+                      filtered.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              );
+            })()}
             {availableVariants.length > 0 && (
               <Select value={pickVariantId} onValueChange={setPickVariantId}>
                 <SelectTrigger className="max-w-xs">
