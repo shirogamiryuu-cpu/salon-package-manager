@@ -279,6 +279,41 @@ export type Database = {
         }
         Relationships: []
       }
+      package_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "package_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_promotions: {
         Row: {
           created_at: string
@@ -358,6 +393,7 @@ export type Database = {
       }
       packages: {
         Row: {
+          category_id: string | null
           created_at: string
           description: string | null
           first_time_price: number | null
@@ -370,6 +406,7 @@ export type Database = {
           total_sessions: number
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           first_time_price?: number | null
@@ -382,6 +419,7 @@ export type Database = {
           total_sessions?: number
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           first_time_price?: number | null
@@ -393,7 +431,15 @@ export type Database = {
           price?: number
           total_sessions?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "packages_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "package_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payroll_items: {
         Row: {

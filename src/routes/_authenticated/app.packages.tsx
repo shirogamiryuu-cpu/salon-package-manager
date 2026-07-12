@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
@@ -15,14 +15,20 @@ type Pkg = {
   total_sessions: number;
   points_awarded: number;
   image_url: string | null;
+  category_id: string | null;
 };
 
 type Variant = { id: string; label: string; price: number };
+type Category = { id: string; name: string; parent_id: string | null; sort_order: number };
+
+const UNCAT_ID = "__uncat__";
 
 function Available() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [variantsByPkg, setVariantsByPkg] = useState<Record<string, Variant[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
+  const [cats, setCats] = useState<Category[]>([]);
+  const [activeParent, setActiveParent] = useState<string>("__all__");
 
   useEffect(() => {
     (async () => {
@@ -34,6 +40,7 @@ function Available() {
       const list = (data ?? []) as Pkg[];
       setPkgs(list);
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
+
       const { data: vs } = await supabase
         .from("package_variants")
         .select("id,package_id,label,price,sort_order")
@@ -43,8 +50,59 @@ function Available() {
         (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: Number(v.price) });
       }
       setVariantsByPkg(map);
+
+      const { data: cs } = await supabase
+        .from("package_categories")
+        .select("id,name,parent_id,sort_order")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+      setCats((cs ?? []) as Category[]);
     })();
   }, []);
+
+  const parents = useMemo(() => cats.filter((c) => !c.parent_id), [cats]);
+  const catById = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats]);
+
+  // Which top-level parent bucket a package belongs to
+  const parentIdForPackage = (p: Pkg): string => {
+    if (!p.category_id) return UNCAT_ID;
+    const c = catById.get(p.category_id);
+    if (!c) return UNCAT_ID;
+    return c.parent_id ?? c.id;
+  };
+
+  const filteredPkgs = useMemo(() => {
+    if (activeParent === "__all__") return pkgs;
+    return pkgs.filter((p) => parentIdForPackage(p) === activeParent);
+  }, [pkgs, activeParent, cats]);
+
+  // Group filtered packages by subcategory (or the parent itself when no sub)
+  const grouped = useMemo(() => {
+    const groups = new Map<string, { title: string; parentTitle?: string; items: Pkg[] }>();
+    for (const p of filteredPkgs) {
+      let groupId: string;
+      let title: string;
+      let parentTitle: string | undefined;
+      if (!p.category_id) {
+        groupId = UNCAT_ID;
+        title = "Other";
+      } else {
+        const c = catById.get(p.category_id);
+        if (!c) {
+          groupId = UNCAT_ID;
+          title = "Other";
+        } else {
+          groupId = c.id;
+          title = c.name;
+          if (c.parent_id) parentTitle = catById.get(c.parent_id)?.name;
+        }
+      }
+      const g = groups.get(groupId) ?? { title, parentTitle, items: [] };
+      g.items.push(p);
+      groups.set(groupId, g);
+    }
+    return Array.from(groups.entries()).map(([id, g]) => ({ id, ...g }));
+  }, [filteredPkgs, catById]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-10">
@@ -66,110 +124,174 @@ function Available() {
         </p>
       </header>
 
+      {parents.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveParent("__all__")}
+            className={`border px-4 py-2 text-xs uppercase transition-colors ${
+              activeParent === "__all__"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-foreground/25 text-foreground/70 hover:border-primary hover:text-primary"
+            }`}
+            style={{ letterSpacing: "0.2em" }}
+          >
+            All
+          </button>
+          {parents.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setActiveParent(p.id)}
+              className={`border px-4 py-2 text-xs uppercase transition-colors ${
+                activeParent === p.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-foreground/25 text-foreground/70 hover:border-primary hover:text-primary"
+              }`}
+              style={{ letterSpacing: "0.2em" }}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {pkgs.length === 0 ? (
         <div className="py-16 text-center text-foreground/60 italic">
           No packages available at the moment.
         </div>
+      ) : filteredPkgs.length === 0 ? (
+        <div className="py-16 text-center text-foreground/60 italic">
+          No services in this category yet.
+        </div>
       ) : (
-        <div className="grid gap-8 sm:grid-cols-2">
-          {pkgs.map((p) => {
-            const promo = promoMap.get(p.id);
-            const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
-            const vs = variantsByPkg[p.id] ?? [];
-            return (
-              <article
-                key={p.id}
-                className="group border border-foreground/25 bg-background transition-colors hover:border-primary"
-              >
-                <div className="p-6 md:p-8 space-y-5">
-                  <div>
-                    <h2
-                      className="font-serif text-2xl md:text-3xl"
-                      style={{ letterSpacing: "0.06em", lineHeight: 1.25 }}
+        <div className="space-y-14">
+          {grouped.map((g) => (
+            <section key={g.id} className="space-y-6">
+              <div className="flex items-baseline justify-between border-b border-foreground/20 pb-3">
+                <div>
+                  {g.parentTitle && (
+                    <div
+                      className="text-[10px] uppercase text-foreground/50"
+                      style={{ letterSpacing: "0.28em" }}
                     >
-                      {p.name}
-                    </h2>
-                    {p.description && (
-                      <p className="mt-3 text-sm text-foreground/70 italic line-clamp-3">
-                        {p.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="border-t border-foreground/20 pt-5">
-                    {vs.length > 0 ? (
-                      <div className="space-y-2">
-                        <div
-                          className="text-[10px] uppercase text-foreground/60"
-                          style={{ letterSpacing: "0.22em" }}
-                        >
-                          From
-                        </div>
-                        <div
-                          className="font-serif text-3xl text-primary"
-                          style={{ letterSpacing: "0.04em" }}
-                        >
-                          MMK {Math.min(...vs.map((v) => v.price)).toLocaleString()}
-                        </div>
-                        <ul className="divide-y divide-foreground/15 pt-2">
-                          {vs.map((v) => (
-                            <li
-                              key={v.id}
-                              className="flex items-center justify-between py-2 text-sm"
-                            >
-                              <span className="text-foreground/70">{v.label}</span>
-                              <span className="font-serif text-base">
-                                MMK {v.price.toLocaleString()}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : pricing ? (
-                      <div className="space-y-1">
-                        <div
-                          className="text-xs uppercase text-foreground/50 line-through"
-                          style={{ letterSpacing: "0.18em" }}
-                        >
-                          MMK {pricing.original.toLocaleString()}
-                        </div>
-                        <div
-                          className="font-serif text-3xl text-primary"
-                          style={{ letterSpacing: "0.04em" }}
-                        >
-                          MMK {pricing.final.toLocaleString()}
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className="font-serif text-3xl text-primary"
-                        style={{ letterSpacing: "0.04em" }}
-                      >
-                        MMK {Number(p.price).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    {promo && vs.length === 0 && (
-                      <span
-                        className="inline-flex items-center border border-primary bg-primary/10 px-3 py-1 text-[10px] uppercase text-primary"
-                        style={{ letterSpacing: "0.2em" }}
-                      >
-                        {formatDiscountLabel(promo)}
-                      </span>
-                    )}
-                    <span
-                      className="inline-flex items-center border border-foreground/30 px-3 py-1 text-[10px] uppercase text-foreground/70"
-                      style={{ letterSpacing: "0.2em" }}
-                    >
-                      +{p.points_awarded} points
-                    </span>
-                  </div>
+                      {g.parentTitle}
+                    </div>
+                  )}
+                  <h2
+                    className="font-serif text-2xl md:text-3xl italic"
+                    style={{ letterSpacing: "0.04em" }}
+                  >
+                    {g.title}
+                  </h2>
                 </div>
-              </article>
-            );
-          })}
+                <span
+                  className="text-[10px] uppercase text-foreground/50"
+                  style={{ letterSpacing: "0.28em" }}
+                >
+                  {g.items.length} service{g.items.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="grid gap-8 sm:grid-cols-2">
+                {g.items.map((p) => {
+                  const promo = promoMap.get(p.id);
+                  const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
+                  const vs = variantsByPkg[p.id] ?? [];
+                  return (
+                    <article
+                      key={p.id}
+                      className="group border border-foreground/25 bg-background transition-colors hover:border-primary"
+                    >
+                      <div className="p-6 md:p-8 space-y-5">
+                        <div>
+                          <h3
+                            className="font-serif text-2xl md:text-3xl"
+                            style={{ letterSpacing: "0.06em", lineHeight: 1.25 }}
+                          >
+                            {p.name}
+                          </h3>
+                          {p.description && (
+                            <p className="mt-3 text-sm text-foreground/70 italic line-clamp-3">
+                              {p.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="border-t border-foreground/20 pt-5">
+                          {vs.length > 0 ? (
+                            <div className="space-y-2">
+                              <div
+                                className="text-[10px] uppercase text-foreground/60"
+                                style={{ letterSpacing: "0.22em" }}
+                              >
+                                From
+                              </div>
+                              <div
+                                className="font-serif text-3xl text-primary"
+                                style={{ letterSpacing: "0.04em" }}
+                              >
+                                MMK {Math.min(...vs.map((v) => v.price)).toLocaleString()}
+                              </div>
+                              <ul className="divide-y divide-foreground/15 pt-2">
+                                {vs.map((v) => (
+                                  <li
+                                    key={v.id}
+                                    className="flex items-center justify-between py-2 text-sm"
+                                  >
+                                    <span className="text-foreground/70">{v.label}</span>
+                                    <span className="font-serif text-base">
+                                      MMK {v.price.toLocaleString()}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : pricing ? (
+                            <div className="space-y-1">
+                              <div
+                                className="text-xs uppercase text-foreground/50 line-through"
+                                style={{ letterSpacing: "0.18em" }}
+                              >
+                                MMK {pricing.original.toLocaleString()}
+                              </div>
+                              <div
+                                className="font-serif text-3xl text-primary"
+                                style={{ letterSpacing: "0.04em" }}
+                              >
+                                MMK {pricing.final.toLocaleString()}
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="font-serif text-3xl text-primary"
+                              style={{ letterSpacing: "0.04em" }}
+                            >
+                              MMK {Number(p.price).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
+                          {promo && vs.length === 0 && (
+                            <span
+                              className="inline-flex items-center border border-primary bg-primary/10 px-3 py-1 text-[10px] uppercase text-primary"
+                              style={{ letterSpacing: "0.2em" }}
+                            >
+                              {formatDiscountLabel(promo)}
+                            </span>
+                          )}
+                          <span
+                            className="inline-flex items-center border border-foreground/30 px-3 py-1 text-[10px] uppercase text-foreground/70"
+                            style={{ letterSpacing: "0.2em" }}
+                          >
+                            +{p.points_awarded} points
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>
