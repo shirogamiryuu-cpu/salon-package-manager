@@ -313,6 +313,13 @@ function PackagesAdmin() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2 text-xs">
+                {(() => {
+                  const c = p.category_id ? cats.find((x) => x.id === p.category_id) : null;
+                  const parent = c?.parent_id ? cats.find((x) => x.id === c.parent_id) : null;
+                  return c ? (
+                    <Badge variant="secondary">{parent ? `${parent.name} / ${c.name}` : c.name}</Badge>
+                  ) : null;
+                })()}
                 {promo && <Badge className="bg-primary">{formatDiscountLabel(promo)} · {promo.name}</Badge>}
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
               </div>
