@@ -217,6 +217,7 @@ function CustomerDetail() {
     setAddSessions(1);
     setAddDeposit(0);
     setAddWarranty(0);
+    setAddManualPrice("");
     setAddFor(cp);
   };
 
@@ -227,7 +228,11 @@ function CustomerDetail() {
       const unit = addFor.total_sessions > 0
         ? Number(addFor.total_price ?? 0) / addFor.total_sessions
         : 0;
-      const addedPrice = Math.round(unit * addSessions * 100) / 100;
+      const manualNum = addManualPrice === "" ? null : Number(addManualPrice);
+      const manualValid = manualNum != null && Number.isFinite(manualNum) && manualNum >= 0;
+      const addedPrice = manualValid
+        ? Math.round(manualNum! * 100) / 100
+        : Math.round(unit * addSessions * 100) / 100;
       await addSessionsFn({
         data: {
           customerPackageId: addFor.id,
