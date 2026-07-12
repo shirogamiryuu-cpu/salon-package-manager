@@ -375,8 +375,9 @@ function PackagesAdmin() {
             </CardContent>
           </Card>
           );
-        })}
-        {pkgs.length === 0 && <p className="text-muted-foreground">No packages yet.</p>}
+        });
+        })()}
+
       </div>
     </div>
   );
