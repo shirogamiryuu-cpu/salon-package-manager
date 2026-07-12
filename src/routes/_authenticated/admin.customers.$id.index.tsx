@@ -114,12 +114,19 @@ function CustomerDetail() {
   useEffect(() => {
     refresh();
     (async () => {
-      const { data } = await supabase
-        .from("packages")
-        .select("id,name,total_sessions,price,first_time_price")
-        .eq("is_active", true);
+      const [{ data }, { data: cats }] = await Promise.all([
+        supabase
+          .from("packages")
+          .select("id,name,total_sessions,price,first_time_price,category_id")
+          .eq("is_active", true),
+        supabase
+          .from("package_categories")
+          .select("id,name")
+          .order("sort_order", { ascending: true }),
+      ]);
       const list = (data ?? []) as any[];
       setPackages(list);
+      setCategories((cats ?? []) as any[]);
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
       const { data: vs } = await supabase
         .from("package_variants")
