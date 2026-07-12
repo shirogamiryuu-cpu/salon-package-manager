@@ -48,6 +48,8 @@ type CustomerPackage = {
   sessions_remaining: number;
   total_sessions: number;
   warranty_expires_at: string | null;
+  package_name: string | null;
+  package_description: string | null;
   packages: {
     name: string;
     description: string | null;
@@ -118,8 +120,11 @@ function Home() {
         sessions_remaining,
         total_sessions,
         warranty_expires_at,
+        package_name,
+        package_description,
         packages(name, description, price)
       `;
+
 
       const [latestPurchasedResult, historyRows] = await Promise.all([
         supabase
@@ -391,11 +396,11 @@ function Home() {
                     className="mt-2 font-serif text-3xl md:text-4xl"
                     style={{ letterSpacing: "0.06em", lineHeight: 1.2 }}
                   >
-                    {pkg.packages?.name}
+                    {pkg.packages?.name ?? pkg.package_name}
                   </h2>
-                  {pkg.packages?.description && (
+                  {(pkg.packages?.description ?? pkg.package_description) && (
                     <p className="mt-4 max-w-md text-sm text-foreground/70 italic">
-                      {pkg.packages.description}
+                      {pkg.packages?.description ?? pkg.package_description}
                     </p>
                   )}
                 </div>
