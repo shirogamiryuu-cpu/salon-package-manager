@@ -522,6 +522,7 @@ function CustomerDetail() {
                 {manualTotalValid && (
                   <Badge variant="secondary" className="text-[10px]">override</Badge>
                 )}
+              </div>
               <div className="w-full rounded-md border p-2 space-y-1">
                 {firstTimeApplies ? (
                   <>
