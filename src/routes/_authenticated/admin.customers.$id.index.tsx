@@ -79,12 +79,14 @@ function CustomerDetail() {
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
   const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
+  const [assignManualPrice, setAssignManualPrice] = useState<string>("");
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
+  const [deductManualPrice, setDeductManualPrice] = useState<string>("");
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
 
@@ -92,6 +94,7 @@ function CustomerDetail() {
   const [addSessions, setAddSessions] = useState<number>(1);
   const [addDeposit, setAddDeposit] = useState<number>(0);
   const [addWarranty, setAddWarranty] = useState<number>(0);
+  const [addManualPrice, setAddManualPrice] = useState<string>("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
