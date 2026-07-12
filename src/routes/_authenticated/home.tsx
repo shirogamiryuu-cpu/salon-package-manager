@@ -139,21 +139,15 @@ function Home() {
 
       let chosen: any = latestPurchased ?? null;
       if (latestUsage?.customer_package_id) {
-        const usedAt = new Date(latestUsage.used_at).getTime();
-        const purchasedAt = latestPurchased?.purchase_date
-          ? new Date(latestPurchased.purchase_date).getTime()
-          : 0;
-        if (!latestPurchased || usedAt >= purchasedAt) {
-          if (latestUsage.customer_package_id === latestPurchased?.id) {
-            chosen = latestPurchased;
-          } else {
-            const { data: usedPkg } = await supabase
-              .from("customer_packages")
-              .select(cpSelect)
-              .eq("id", latestUsage.customer_package_id)
-              .maybeSingle();
-            if (usedPkg) chosen = usedPkg;
-          }
+        if (latestUsage.customer_package_id === latestPurchased?.id) {
+          chosen = latestPurchased;
+        } else {
+          const { data: usedPkg } = await supabase
+            .from("customer_packages")
+            .select(cpSelect)
+            .eq("id", latestUsage.customer_package_id)
+            .maybeSingle();
+          if (usedPkg) chosen = usedPkg;
         }
       }
 
@@ -253,7 +247,7 @@ function Home() {
             const oldStatus = payload.old?.status;
             const newStatus = payload.new?.status;
 
-            if (oldStatus === "pending" && newStatus !== "pending") {
+            if (newStatus && newStatus !== "pending") {
               if (newStatus === "approved")
                 toast.success("Session approved");
               else if (newStatus === "rejected")
