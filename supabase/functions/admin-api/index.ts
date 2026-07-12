@@ -565,7 +565,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { data: req, error } = await sb
       .from("session_deduction_requests")
-      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id, variant_id, variant_label")
+      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id, variant_id, variant_label, manual_price")
       .eq("id", requestId).maybeSingle();
     if (error || !req) throw new Error("Request not found");
     if (req.customer_id !== userId) throw new Error("Forbidden");
