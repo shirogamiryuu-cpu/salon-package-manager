@@ -345,9 +345,14 @@ function Home() {
                     <div>
                       <div className="font-serif text-lg">Approve your session?</div>
                       <p className="mt-1 text-sm text-foreground/70">
-                        {r.package_name} · {r.remaining}/{r.total} left
+                        {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""} · {r.remaining}/{r.total} left
                         {staffNames ? ` · with ${staffNames}` : ""}
                       </p>
+                      {r.manual_price != null && (
+                        <p className="mt-1 text-sm font-medium text-primary">
+                          Custom price this session: MMK {r.manual_price.toLocaleString()}
+                        </p>
+                      )}
                     </div>
                     <div
                       className="flex items-center gap-1.5 text-[10px] uppercase text-foreground/60 shrink-0"
