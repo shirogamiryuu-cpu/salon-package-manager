@@ -507,6 +507,21 @@ function CustomerDetail() {
                   className="w-40 h-8"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Manual total price (MMK):</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1000"
+                  placeholder={`auto ${computedTotal.toFixed(0)}`}
+                  value={assignManualPrice}
+                  onChange={(e) => setAssignManualPrice(e.target.value)}
+                  className="w-32 h-8"
+                  title="Leave blank to use the calculated price. Set a custom total for one-off discounts."
+                />
+                {manualTotalValid && (
+                  <Badge variant="secondary" className="text-[10px]">override</Badge>
+                )}
               <div className="w-full rounded-md border p-2 space-y-1">
                 {firstTimeApplies ? (
                   <>
