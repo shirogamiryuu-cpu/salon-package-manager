@@ -275,6 +275,7 @@ function CustomerDetail() {
     // Default to the assigned variant if valid, else the first available variant.
     const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
     setDeductVariantId(defaultVariant);
+    setDeductManualPrice("");
     setDeductFor(cp);
   };
 
@@ -294,6 +295,15 @@ function CustomerDetail() {
       toast.error("Please choose a variant");
       return;
     }
+    let manualPrice: number | null = null;
+    if (deductManualPrice !== "") {
+      const n = Number(deductManualPrice);
+      if (!Number.isFinite(n) || n < 0) {
+        toast.error("Custom price must be a non-negative number");
+        return;
+      }
+      manualPrice = Math.round(n * 100) / 100;
+    }
     setDeducting(true);
     try {
       await use({
@@ -301,6 +311,7 @@ function CustomerDetail() {
           customerPackageId: deductFor.id,
           staffIds: Array.from(selectedStaff),
           variantId: deductVariantId || null,
+          manualPrice,
         },
       });
       toast.success("Approval request sent to customer (expires in 15 min)");
