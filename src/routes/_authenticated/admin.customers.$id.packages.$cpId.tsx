@@ -56,7 +56,8 @@ function AdminPackageDetail() {
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    const loadCp = async () => {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
@@ -64,17 +65,57 @@ function AdminPackageDetail() {
         )
         .eq("id", cpId)
         .maybeSingle();
+      if (cancelled) return;
       if (error) toast.error(error.message);
       setCp((data as any) ?? null);
-    })();
-    listHistory({ data: { customerId: id } })
-      .then((rows) =>
-        setHistory((rows as HistoryRow[]).filter((r) => r.customer_package_id === cpId)),
+    };
+    const loadHistory = () =>
+      listHistory({ data: { customerId: id } })
+        .then((rows) => {
+          if (cancelled) return;
+          setHistory((rows as HistoryRow[]).filter((r) => r.customer_package_id === cpId));
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          toast.error(e instanceof Error ? e.message : "Failed to load history");
+          setHistory([]);
+        });
+
+    loadCp();
+    loadHistory();
+
+    const channel = supabase
+      .channel(`admin-cp-${cpId}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "customer_packages", filter: `id=eq.${cpId}` },
+        () => {
+          loadCp();
+          loadHistory();
+        },
       )
-      .catch((e) => {
-        toast.error(e instanceof Error ? e.message : "Failed to load history");
-        setHistory([]);
-      });
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "usage_logs", filter: `customer_package_id=eq.${cpId}` },
+        () => {
+          loadCp();
+          loadHistory();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "session_deduction_requests", filter: `customer_package_id=eq.${cpId}` },
+        () => {
+          loadCp();
+          loadHistory();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [id, cpId, listHistory]);
 
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
