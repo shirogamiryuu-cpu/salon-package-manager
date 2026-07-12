@@ -46,6 +46,7 @@ function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [variantsByPkg, setVariantsByPkg] = useState<Record<string, Variant[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
+  const [cats, setCats] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
   const [form, setForm] = useState<any>(empty);
@@ -68,6 +69,12 @@ function PackagesAdmin() {
       (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: v.price, first_time_price: v.first_time_price });
     }
     setVariantsByPkg(map);
+    const { data: cs } = await supabase
+      .from("package_categories")
+      .select("id,name,parent_id")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    setCats((cs ?? []) as Category[]);
   };
   useEffect(() => { load(); }, []);
 
@@ -77,7 +84,7 @@ function PackagesAdmin() {
     setOpen(true);
   };
   const openEdit = (p: Pkg) => {
-    setEditing(p); setForm(p); setImageFile(null);
+    setEditing(p); setForm({ ...p, category_id: p.category_id ?? NONE }); setImageFile(null);
     setVariants((variantsByPkg[p.id] ?? []).map((v) => ({ ...v })));
     setRemovedVariantIds([]);
     setOpen(true);
@@ -116,6 +123,7 @@ function PackagesAdmin() {
         points_awarded: Number(form.points_awarded),
         image_url,
         first_time_price: ftp,
+        category_id: form.category_id && form.category_id !== NONE ? form.category_id : null,
       };
       let pkgId = editing?.id;
       if (editing) {
