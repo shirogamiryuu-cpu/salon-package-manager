@@ -69,7 +69,10 @@ function CustomerDetail() {
   const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null; category_id: string | null }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [pkgSearch, setPkgSearch] = useState<string>("");
+  const [pkgCategoryFilter, setPkgCategoryFilter] = useState<string>("all");
   const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number; first_time_price: number | null }[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
