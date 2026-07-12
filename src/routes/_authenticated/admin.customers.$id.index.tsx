@@ -850,6 +850,23 @@ function CustomerDetail() {
                     <span className="font-semibold">MMK {applied.toFixed(2)}</span>
                   </div>
                 )}
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">
+                    Custom price for this session (optional, MMK)
+                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="1000"
+                    placeholder={sel ? `auto ${applied.toFixed(0)}` : "auto"}
+                    value={deductManualPrice}
+                    onChange={(e) => setDeductManualPrice(e.target.value)}
+                    className="h-9"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Leave blank to charge the normal rate. Overrides first-time pricing.
+                  </p>
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Select the staff who performed the service (optional).
                 </div>
