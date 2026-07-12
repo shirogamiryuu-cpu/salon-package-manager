@@ -54,6 +54,8 @@ function PackagesAdmin() {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [removedVariantIds, setRemovedVariantIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const load = async () => {
     const { data } = await supabase.from("packages").select("*").order("created_at", { ascending: false });
