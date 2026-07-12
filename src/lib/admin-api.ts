@@ -6,9 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 export async function callAdminApi<T = any>(action: string, payload: any = {}): Promise<T> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
+  if (!token) {
+    // No signed-in user — don't fire the request (the anon key would be sent
+    // as bearer and the edge function would 401 in a loop).
+    throw new Error("Not authenticated");
+  }
   const { data, error } = await supabase.functions.invoke("admin-api", {
     body: { action, payload },
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (error) {
     const msg = (data as any)?.error ?? error.message ?? "Request failed";
