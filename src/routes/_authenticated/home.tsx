@@ -58,6 +58,7 @@ type CustomerPackage = {
 type HistoryRow = {
   id: string;
   used_at: string;
+  customer_package_id: string;
   package_name: string;
   sessions_deducted: number;
   staff: string[];
@@ -120,7 +121,7 @@ function Home() {
         packages(name, description, price)
       `;
 
-      const [{ data: latestPurchased }, { data: latestUsage }] = await Promise.all([
+      const [latestPurchasedResult, historyRows] = await Promise.all([
         supabase
           .from("customer_packages")
           .select(cpSelect)
@@ -128,39 +129,28 @@ function Home() {
           .order("purchase_date", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        supabase
-          .from("usage_logs")
-          .select("used_at, customer_package_id, customer_packages!inner(customer_id)")
-          .eq("customer_packages.customer_id", userData.user.id)
-          .order("used_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        historyFn(),
       ]);
 
+      const latestPurchased = latestPurchasedResult.data;
+      const h = (historyRows as HistoryRow[]) ?? [];
+      const latestHistoryPackageId = h[0]?.customer_package_id;
       let chosen: any = latestPurchased ?? null;
-      if (latestUsage?.customer_package_id) {
-        const usedAt = new Date(latestUsage.used_at).getTime();
-        const purchasedAt = latestPurchased?.purchase_date
-          ? new Date(latestPurchased.purchase_date).getTime()
-          : 0;
-        if (!latestPurchased || usedAt >= purchasedAt) {
-          if (latestUsage.customer_package_id === latestPurchased?.id) {
-            chosen = latestPurchased;
-          } else {
-            const { data: usedPkg } = await supabase
-              .from("customer_packages")
-              .select(cpSelect)
-              .eq("id", latestUsage.customer_package_id)
-              .maybeSingle();
-            if (usedPkg) chosen = usedPkg;
-          }
+      if (latestHistoryPackageId) {
+        if (latestHistoryPackageId === latestPurchased?.id) {
+          chosen = latestPurchased;
+        } else {
+          const { data: usedPkg } = await supabase
+            .from("customer_packages")
+            .select(cpSelect)
+            .eq("id", latestHistoryPackageId)
+            .maybeSingle();
+          if (usedPkg) chosen = usedPkg;
         }
       }
 
       setPkg(chosen as any);
-
-      const h = await historyFn();
-      setHistory(h as HistoryRow[]);
+      setHistory(h);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to load."
@@ -253,7 +243,7 @@ function Home() {
             const oldStatus = payload.old?.status;
             const newStatus = payload.new?.status;
 
-            if (oldStatus === "pending" && newStatus !== "pending") {
+            if (newStatus && newStatus !== "pending") {
               if (newStatus === "approved")
                 toast.success("Session approved");
               else if (newStatus === "rejected")
