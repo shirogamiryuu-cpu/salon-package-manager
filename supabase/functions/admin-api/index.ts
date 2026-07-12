@@ -539,7 +539,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("customer_id", userId).eq("status", "pending").lt("expires_at", nowIso);
     const { data, error } = await sb
       .from("session_deduction_requests")
-      .select("id, created_at, expires_at, staff_ids, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, packages(name))")
+      .select("id, created_at, expires_at, staff_ids, customer_package_id, manual_price, variant_label, customer_packages(id, sessions_remaining, total_sessions, packages(name))")
       .eq("customer_id", userId).eq("status", "pending")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -554,6 +554,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       created_at: r.created_at,
       expires_at: r.expires_at,
       package_name: r.customer_packages?.packages?.name ?? "Package",
+      variant_label: r.variant_label ?? null,
+      manual_price: r.manual_price == null ? null : Number(r.manual_price),
       remaining: r.customer_packages?.sessions_remaining ?? 0,
       total: r.customer_packages?.total_sessions ?? 0,
       staff: (r.staff_ids ?? []).map((id: string) => staffMap.get(id) ?? { name: null, email: null }),
