@@ -790,6 +790,7 @@ function CustomerDetail() {
                 className="w-32 h-8"
                 title="Leave blank to charge the normal per-session rate."
               />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
