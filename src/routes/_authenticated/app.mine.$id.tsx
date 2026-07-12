@@ -108,12 +108,12 @@ function PackageDetail() {
           className="mt-3 font-serif text-4xl md:text-5xl italic"
           style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
         >
-          {cp.packages?.name ?? "Package"}
+          {cp.packages?.name ?? cp.package_name ?? "Package"}
           {cp.variant_label ? ` · ${cp.variant_label}` : ""}
         </h1>
-        {cp.packages?.description && (
+        {(cp.packages?.description ?? cp.package_description) && (
           <p className="mt-4 text-sm text-foreground/70 italic max-w-lg">
-            {cp.packages.description}
+            {cp.packages?.description ?? cp.package_description}
           </p>
         )}
       </header>
