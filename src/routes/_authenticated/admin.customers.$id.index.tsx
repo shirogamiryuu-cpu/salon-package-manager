@@ -776,6 +776,20 @@ function CustomerDetail() {
                 className="w-24 h-8"
               />
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Manual added price (MMK)</span>
+              <Input
+                type="number"
+                min={0}
+                step="1000"
+                placeholder={addFor && addFor.total_sessions > 0
+                  ? `auto ${(Number(addFor.total_price ?? 0) / addFor.total_sessions * addSessions).toFixed(0)}`
+                  : "auto"}
+                value={addManualPrice}
+                onChange={(e) => setAddManualPrice(e.target.value)}
+                className="w-32 h-8"
+                title="Leave blank to charge the normal per-session rate."
+              />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
