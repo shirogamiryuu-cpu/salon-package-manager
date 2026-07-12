@@ -24,6 +24,8 @@ type CP = {
   warranty_years: number;
   warranty_expires_at: string | null;
   variant_label?: string | null;
+  package_name?: string | null;
+  package_description?: string | null;
   packages: {
     name: string;
     description: string | null;
