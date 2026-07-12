@@ -463,7 +463,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds, variantId }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId, manualPrice }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
@@ -474,7 +474,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
     const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
-    const needed = unit * (used + 1);
+    let mp: number | null = null;
+    if (manualPrice !== undefined && manualPrice !== null && manualPrice !== "") {
+      const n = Number(manualPrice);
+      if (!Number.isFinite(n) || n < 0) throw new Error("Manual price must be a non-negative number");
+      mp = Math.round(n * 100) / 100;
+    }
+    const thisNeed = mp != null ? mp : unit;
+    const needed = unit * used + thisNeed;
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed)
       throw new Error("Deposit exhausted — collect more deposit before deducting another session");
 
@@ -507,6 +514,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         staff_ids: staffArr,
         variant_id: resolvedVariantId,
         variant_label: variantLabel,
+        manual_price: mp,
       })
       .select("id, expires_at").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
@@ -531,7 +539,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .eq("customer_id", userId).eq("status", "pending").lt("expires_at", nowIso);
     const { data, error } = await sb
       .from("session_deduction_requests")
-      .select("id, created_at, expires_at, staff_ids, customer_package_id, customer_packages(id, sessions_remaining, total_sessions, packages(name))")
+      .select("id, created_at, expires_at, staff_ids, customer_package_id, manual_price, variant_label, customer_packages(id, sessions_remaining, total_sessions, packages(name))")
       .eq("customer_id", userId).eq("status", "pending")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -546,6 +554,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       created_at: r.created_at,
       expires_at: r.expires_at,
       package_name: r.customer_packages?.packages?.name ?? "Package",
+      variant_label: r.variant_label ?? null,
+      manual_price: r.manual_price == null ? null : Number(r.manual_price),
       remaining: r.customer_packages?.sessions_remaining ?? 0,
       total: r.customer_packages?.total_sessions ?? 0,
       staff: (r.staff_ids ?? []).map((id: string) => staffMap.get(id) ?? { name: null, email: null }),
@@ -557,7 +567,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const sb = admin();
     const { data: req, error } = await sb
       .from("session_deduction_requests")
-      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id, variant_id, variant_label")
+      .select("id, customer_id, customer_package_id, staff_ids, status, expires_at, admin_id, variant_id, variant_label, manual_price")
       .eq("id", requestId).maybeSingle();
     if (error || !req) throw new Error("Request not found");
     if (req.customer_id !== userId) throw new Error("Forbidden");
@@ -584,7 +594,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
     const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
-    const needed = unit * (used + 1);
+    const manualPrice = (req as any).manual_price == null ? null : Number((req as any).manual_price);
+    const thisSessionCost = manualPrice != null ? manualPrice : unit;
+    const needed = unit * used + thisSessionCost;
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
 
     // Compute price for THIS session, based on the chosen variant + first-time eligibility.
@@ -621,8 +633,11 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       }
     }
 
-    const wasFirstTime = isFirstTimeEligible && firstTimePrice != null;
-    const priceApplied = wasFirstTime ? firstTimePrice! : basePrice;
+    // Manual price overrides first-time pricing entirely.
+    const wasFirstTime = manualPrice == null && isFirstTimeEligible && firstTimePrice != null;
+    const priceApplied = manualPrice != null
+      ? manualPrice
+      : (wasFirstTime ? firstTimePrice! : basePrice);
 
     const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })

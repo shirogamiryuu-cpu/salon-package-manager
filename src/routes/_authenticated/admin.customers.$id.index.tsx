@@ -79,12 +79,14 @@ function CustomerDetail() {
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
   const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
+  const [assignManualPrice, setAssignManualPrice] = useState<string>("");
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
+  const [deductManualPrice, setDeductManualPrice] = useState<string>("");
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
 
@@ -92,6 +94,7 @@ function CustomerDetail() {
   const [addSessions, setAddSessions] = useState<number>(1);
   const [addDeposit, setAddDeposit] = useState<number>(0);
   const [addWarranty, setAddWarranty] = useState<number>(0);
+  const [addManualPrice, setAddManualPrice] = useState<string>("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -153,9 +156,12 @@ function CustomerDetail() {
     : null;
   const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
 
-  const totalAmount = firstTimeApplies
+  const computedTotal = firstTimeApplies
     ? firstTimePrice! + selectedUnit * Math.max(0, assignSessions - 1)
     : selectedUnit * assignSessions;
+  const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
+  const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
+  const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
   const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
   const depositSessionsEq = selectedUnit > 0
     ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
@@ -189,6 +195,7 @@ function CustomerDetail() {
       setAssignWarranty(0);
       setAssignPurchaseDate("");
       setAssignWarrantyExpires("");
+      setAssignManualPrice("");
       refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -210,6 +217,7 @@ function CustomerDetail() {
     setAddSessions(1);
     setAddDeposit(0);
     setAddWarranty(0);
+    setAddManualPrice("");
     setAddFor(cp);
   };
 
@@ -220,7 +228,11 @@ function CustomerDetail() {
       const unit = addFor.total_sessions > 0
         ? Number(addFor.total_price ?? 0) / addFor.total_sessions
         : 0;
-      const addedPrice = Math.round(unit * addSessions * 100) / 100;
+      const manualNum = addManualPrice === "" ? null : Number(addManualPrice);
+      const manualValid = manualNum != null && Number.isFinite(manualNum) && manualNum >= 0;
+      const addedPrice = manualValid
+        ? Math.round(manualNum! * 100) / 100
+        : Math.round(unit * addSessions * 100) / 100;
       await addSessionsFn({
         data: {
           customerPackageId: addFor.id,
@@ -263,6 +275,7 @@ function CustomerDetail() {
     // Default to the assigned variant if valid, else the first available variant.
     const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
     setDeductVariantId(defaultVariant);
+    setDeductManualPrice("");
     setDeductFor(cp);
   };
 
@@ -282,6 +295,15 @@ function CustomerDetail() {
       toast.error("Please choose a variant");
       return;
     }
+    let manualPrice: number | null = null;
+    if (deductManualPrice !== "") {
+      const n = Number(deductManualPrice);
+      if (!Number.isFinite(n) || n < 0) {
+        toast.error("Custom price must be a non-negative number");
+        return;
+      }
+      manualPrice = Math.round(n * 100) / 100;
+    }
     setDeducting(true);
     try {
       await use({
@@ -289,6 +311,7 @@ function CustomerDetail() {
           customerPackageId: deductFor.id,
           staffIds: Array.from(selectedStaff),
           variantId: deductVariantId || null,
+          manualPrice,
         },
       });
       toast.success("Approval request sent to customer (expires in 15 min)");
@@ -483,6 +506,22 @@ function CustomerDetail() {
                   onChange={(e) => setAssignWarrantyExpires(e.target.value)}
                   className="w-40 h-8"
                 />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Manual total price (MMK):</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1000"
+                  placeholder={`auto ${computedTotal.toFixed(0)}`}
+                  value={assignManualPrice}
+                  onChange={(e) => setAssignManualPrice(e.target.value)}
+                  className="w-32 h-8"
+                  title="Leave blank to use the calculated price. Set a custom total for one-off discounts."
+                />
+                {manualTotalValid && (
+                  <Badge variant="secondary" className="text-[10px]">override</Badge>
+                )}
               </div>
               <div className="w-full rounded-md border p-2 space-y-1">
                 {firstTimeApplies ? (
@@ -737,6 +776,21 @@ function CustomerDetail() {
                 className="w-24 h-8"
               />
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Manual added price (MMK)</span>
+              <Input
+                type="number"
+                min={0}
+                step="1000"
+                placeholder={addFor && addFor.total_sessions > 0
+                  ? `auto ${(Number(addFor.total_price ?? 0) / addFor.total_sessions * addSessions).toFixed(0)}`
+                  : "auto"}
+                value={addManualPrice}
+                onChange={(e) => setAddManualPrice(e.target.value)}
+                className="w-32 h-8"
+                title="Leave blank to charge the normal per-session rate."
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
@@ -796,6 +850,23 @@ function CustomerDetail() {
                     <span className="font-semibold">MMK {applied.toFixed(2)}</span>
                   </div>
                 )}
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">
+                    Custom price for this session (optional, MMK)
+                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="1000"
+                    placeholder={sel ? `auto ${applied.toFixed(0)}` : "auto"}
+                    value={deductManualPrice}
+                    onChange={(e) => setDeductManualPrice(e.target.value)}
+                    className="h-9"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Leave blank to charge the normal rate. Overrides first-time pricing.
+                  </p>
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Select the staff who performed the service (optional).
                 </div>

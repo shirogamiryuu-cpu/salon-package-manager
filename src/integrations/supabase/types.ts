@@ -674,6 +674,7 @@ export type Database = {
           customer_package_id: string
           expires_at: string
           id: string
+          manual_price: number | null
           responded_at: string | null
           staff_ids: string[]
           status: string
@@ -688,6 +689,7 @@ export type Database = {
           customer_package_id: string
           expires_at?: string
           id?: string
+          manual_price?: number | null
           responded_at?: string | null
           staff_ids?: string[]
           status?: string
@@ -702,6 +704,7 @@ export type Database = {
           customer_package_id?: string
           expires_at?: string
           id?: string
+          manual_price?: number | null
           responded_at?: string | null
           staff_ids?: string[]
           status?: string

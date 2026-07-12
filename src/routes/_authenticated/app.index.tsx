@@ -26,6 +26,8 @@ type PendingReq = {
   created_at: string;
   expires_at: string;
   package_name: string;
+  variant_label?: string | null;
+  manual_price?: number | null;
   remaining: number;
   total: number;
   staff: { name: string | null; email: string | null }[];
@@ -199,9 +201,14 @@ function MyPackages() {
                   <div className="min-w-0">
                     <div className="font-serif text-lg">Approve your session?</div>
                     <div className="mt-1 text-sm text-foreground/70">
-                      {r.package_name} · {r.remaining}/{r.total} left
+                      {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""} · {r.remaining}/{r.total} left
                       {staffNames ? ` · with ${staffNames}` : ""}
                     </div>
+                    {r.manual_price != null && (
+                      <div className="mt-1 text-sm font-medium text-primary">
+                        Custom price this session: MMK {r.manual_price.toLocaleString()}
+                      </div>
+                    )}
                   </div>
                   <div
                     className="text-[10px] uppercase text-foreground/60 flex items-center gap-1 shrink-0"
