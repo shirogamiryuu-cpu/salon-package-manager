@@ -435,18 +435,56 @@ function CustomerDetail() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
-              <SelectTrigger className="max-w-xs">
-                <SelectValue placeholder="Choose a package" />
-              </SelectTrigger>
-              <SelectContent>
-                {packages.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="search"
+              placeholder="Search packages…"
+              value={pkgSearch}
+              onChange={(e) => setPkgSearch(e.target.value)}
+              className="w-full sm:w-56 h-9"
+            />
+            {categories.length > 0 && (
+              <Select value={pkgCategoryFilter} onValueChange={setPkgCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-48 h-9">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  <SelectItem value="none">Uncategorised</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const q = pkgSearch.trim().toLowerCase();
+              const filtered = packages.filter((p) => {
+                if (pkgCategoryFilter === "none" && p.category_id) return false;
+                if (pkgCategoryFilter !== "all" && pkgCategoryFilter !== "none" && p.category_id !== pkgCategoryFilter) return false;
+                if (q && !p.name.toLowerCase().includes(q)) return false;
+                return true;
+              });
+              return (
+                <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder={filtered.length === 0 ? "No packages match" : "Choose a package"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filtered.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No packages match your filter.</div>
+                    ) : (
+                      filtered.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              );
+            })()}
             {availableVariants.length > 0 && (
               <Select value={pickVariantId} onValueChange={setPickVariantId}>
                 <SelectTrigger className="max-w-xs">
