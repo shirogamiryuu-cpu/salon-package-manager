@@ -514,6 +514,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         staff_ids: staffArr,
         variant_id: resolvedVariantId,
         variant_label: variantLabel,
+        manual_price: mp,
       })
       .select("id, expires_at").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
