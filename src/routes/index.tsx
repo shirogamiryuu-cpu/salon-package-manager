@@ -8,11 +8,11 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "EmpireCharme — Beautify with confidence" },
+      { title: "EmpireCharme — Beautify with Confidence" },
       {
         name: "description",
         content:
-          "EmpireCharme is a Singapore hair, nails and beauty house. Discover our story, services and packages.",
+          "EmpireCharme is a premium beauty salon in Yangon specializing in healthy hair, scalp treatments, nail care and professional beauty services.",
       },
     ],
   }),
@@ -32,40 +32,54 @@ function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <BackgroundPattern />
+
         <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 py-28 text-center md:py-40">
-          <img src={logo} alt="EmpireCharme" className="h-24 w-auto md:h-32 object-contain" />
+          <img
+            src={logo}
+            alt="EmpireCharme"
+            className="h-24 w-auto object-contain md:h-32"
+          />
+
           <p
             className="mt-10 text-xs uppercase text-primary"
             style={{ letterSpacing: "0.4em" }}
           >
-            Est. Singapore
+            Moe Kaung Road • Yangon
           </p>
+
           <h1
             className="mt-6 font-serif text-5xl leading-tight text-foreground md:text-7xl"
             style={{ letterSpacing: "0.18em" }}
           >
             BEAUTIFY
             <br />
-            <span className="italic font-light text-primary">with confidence</span>
+            <span className="font-light italic text-primary">
+              with confidence
+            </span>
           </h1>
+
           <div className="mt-10 h-px w-24 bg-primary" />
+
           <p className="mt-8 max-w-xl text-base text-foreground/75 md:text-lg">
-            An intimate atelier for hair, nails and quiet indulgence — where craftsmanship
-            meets warm, unhurried service.
+            Experience premium hair, scalp, nail and beauty services delivered
+            by experienced professionals who are passionate about helping you
+            look and feel your very best.
           </p>
+
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link to="/about">
               <Button
-                className="rounded-none bg-primary text-primary-foreground uppercase px-8 py-6 hover:bg-primary/90"
+                className="rounded-none bg-primary px-8 py-6 uppercase text-primary-foreground hover:bg-primary/90"
                 style={{ letterSpacing: "0.24em" }}
               >
                 Our Story
               </Button>
             </Link>
+
             <Link to="/auth">
               <Button
                 variant="outline"
-                className="rounded-none border-foreground/40 text-foreground uppercase px-8 py-6 hover:bg-foreground hover:text-background"
+                className="rounded-none border-foreground/40 px-8 py-6 uppercase text-foreground hover:bg-foreground hover:text-background"
                 style={{ letterSpacing: "0.24em" }}
               >
                 Client Portal
@@ -83,15 +97,17 @@ function Home() {
           className="text-center text-xs uppercase text-foreground/60"
           style={{ letterSpacing: "0.4em" }}
         >
-          The House of Charme
+          Our Services
         </p>
+
         <h2
           className="mt-4 text-center font-serif text-3xl md:text-4xl"
           style={{ letterSpacing: "0.18em" }}
         >
-          FOUR DISCIPLINES
+          FOUR SPECIALTIES
         </h2>
-        <div className="mt-14 grid gap-px bg-foreground/20 md:grid-cols-4 border border-foreground/20">
+
+        <div className="mt-14 grid gap-px border border-foreground/20 bg-foreground/20 md:grid-cols-4">
           {PILLARS.map(({ icon: Icon, label }) => (
             <div
               key={label}
@@ -107,6 +123,7 @@ function Home() {
                   strokeWidth={1.25}
                 />
               </span>
+
               <span
                 className="text-sm uppercase text-foreground"
                 style={{ letterSpacing: "0.32em" }}
@@ -123,28 +140,38 @@ function Home() {
       {/* Manifesto */}
       <section className="mx-auto grid w-full max-w-5xl gap-14 px-6 py-16 md:grid-cols-2 md:items-center">
         <div>
-          <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.32em" }}>
+          <p
+            className="text-xs uppercase text-primary"
+            style={{ letterSpacing: "0.32em" }}
+          >
             About Us
           </p>
+
           <h2
             className="mt-4 font-serif text-4xl md:text-5xl"
             style={{ letterSpacing: "0.14em" }}
           >
-            A quieter <br />
-            <em className="text-primary font-light">kind of luxury.</em>
+            Healthy hair.
+            <br />
+            <em className="font-light text-primary">Beautiful confidence.</em>
           </h2>
         </div>
+
         <div className="space-y-5 text-foreground/75">
           <p>
-            EmpireCharme was founded on a simple belief: beauty should feel like a moment
-            of clarity, never a performance. Every appointment is an invitation to slow
-            down and be cared for by hands who know their craft.
+            Located on Moe Kaung Road in Yankin Township, EmpireCharme has
+            become a trusted destination for clients seeking healthier hair,
+            professional scalp treatments and premium beauty services in
+            Yangon.
           </p>
+
           <p>
-            From a discreet address in Far East Plaza, our stylists compose treatments the
-            way you would compose a wardrobe — with intention, restraint, and a signature
-            you can call your own.
+            From signature scalp therapies and Korean-style wave perms to
+            precision haircuts, professional coloring, nail care and grooming
+            services, every treatment is thoughtfully tailored to help you
+            achieve beautiful, lasting results.
           </p>
+
           <Link
             to="/about"
             className="inline-block border-b border-primary pb-1 text-sm uppercase text-primary"
@@ -165,11 +192,27 @@ function BackgroundPattern() {
       className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.08]"
     >
       <defs>
-        <pattern id="charme-dots" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
+        <pattern
+          id="charme-dots"
+          x="0"
+          y="0"
+          width="36"
+          height="36"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(20)"
+        >
           <circle cx="4" cy="4" r="1" fill="#B79A5C" />
-          <line x1="18" y1="10" x2="26" y2="18" stroke="#B79A5C" strokeWidth="0.6" />
+          <line
+            x1="18"
+            y1="10"
+            x2="26"
+            y2="18"
+            stroke="#B79A5C"
+            strokeWidth="0.6"
+          />
         </pattern>
       </defs>
+
       <rect width="100%" height="100%" fill="url(#charme-dots)" />
     </svg>
   );

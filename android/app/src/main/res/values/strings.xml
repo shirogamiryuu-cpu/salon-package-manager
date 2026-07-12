@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">empireCharme</string>
+    <string name="title_activity_main">empireCharme</string>
+    <string name="package_name">com.youths.empireCharme</string>
+    <string name="custom_url_scheme">com.youths.empireCharme</string>
+</resources>

@@ -6,11 +6,11 @@ export const Route = createFileRoute("/about")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "About — EmpireCharme" },
+      { title: "About — EmpireCharme Yankin" },
       {
         name: "description",
         content:
-          "The story, values and people behind EmpireCharme — a Singapore atelier for hair, nails and considered beauty.",
+          "Discover EmpireCharme Yankin, a trusted beauty destination in Yangon specializing in healthy hair, scalp care, nail services and premium beauty experiences.",
       },
     ],
   }),
@@ -19,22 +19,23 @@ export const Route = createFileRoute("/about")({
 
 const VALUES = [
   {
-    title: "Craftsmanship",
-    body: "Every stylist trains for years before they hold shears in our chairs. Precision is not negotiable.",
+    title: "Healthy Hair",
+    body: "We believe beautiful hair starts with a healthy foundation. Our signature scalp and hair treatments are tailored to restore strength, shine and long-term hair health.",
   },
   {
-    title: "Intimacy",
-    body: "Small rooms. Quiet music. Time that belongs to you. We keep our floor deliberately unhurried.",
+    title: "Personalized Care",
+    body: "Every guest receives a professional consultation before every service, allowing our team to recommend treatments that best suit your hair, style and lifestyle.",
   },
   {
-    title: "Longevity",
-    body: "We tend to hair and nails so they grow stronger between visits — not thinner, not tired.",
+    title: "Professional Excellence",
+    body: "From Korean-style perms and vibrant coloring to precision cuts and nail services, our experienced beauty professionals are committed to delivering exceptional results.",
   },
 ];
 
 function About() {
   return (
     <PublicShell>
+      {/* Hero */}
       <section className="mx-auto w-full max-w-4xl px-6 py-24 text-center">
         <p
           className="text-xs uppercase text-primary"
@@ -42,19 +43,24 @@ function About() {
         >
           Our Story
         </p>
+
         <h1
           className="mt-6 font-serif text-4xl md:text-6xl"
           style={{ letterSpacing: "0.18em" }}
         >
-          A HOUSE BUILT ON
+          HEALTHY HAIR,
           <br />
-          <em className="text-primary font-light">quiet detail.</em>
+          <em className="font-light text-primary">beautiful confidence.</em>
         </h1>
+
         <div className="mx-auto mt-10 h-px w-16 bg-primary" />
+
         <p className="mx-auto mt-10 max-w-2xl text-foreground/75 leading-loose">
-          EmpireCharme began in 2015 with a small team, one address, and a conviction
-          that Singapore deserved a beauty house that treated its guests the way a
-          couturier treats a client — with time, discretion and a signature.
+          Located on Moe Kaung Road in Yankin Township, EmpireCharme is a trusted
+          beauty destination in Yangon offering premium hair, scalp, nail and
+          beauty services. Our experienced team combines professional expertise,
+          premium products and personalized care to help every guest achieve
+          healthy, beautiful and lasting results.
         </p>
       </section>
 
@@ -68,24 +74,28 @@ function About() {
         >
           WHAT WE STAND FOR
         </h2>
+
         <div className="mt-16 grid gap-12 md:grid-cols-3">
-          {VALUES.map((v, i) => (
-            <div key={v.title} className="text-center">
+          {VALUES.map((value, index) => (
+            <div key={value.title} className="text-center">
               <span
-                className="font-serif text-3xl text-primary italic"
+                className="font-serif text-3xl italic text-primary"
                 style={{ letterSpacing: "0.1em" }}
               >
-                0{i + 1}
+                0{index + 1}
               </span>
+
               <div className="mx-auto mt-4 h-px w-10 bg-primary" />
+
               <h3
                 className="mt-6 text-sm uppercase"
                 style={{ letterSpacing: "0.28em" }}
               >
-                {v.title}
+                {value.title}
               </h3>
-              <p className="mt-4 text-sm text-foreground/70 leading-loose">
-                {v.body}
+
+              <p className="mt-4 text-sm leading-loose text-foreground/70">
+                {value.body}
               </p>
             </div>
           ))}
@@ -94,7 +104,7 @@ function About() {
 
       <SectionDivider />
 
-      {/* Founder */}
+      {/* Philosophy */}
       <section className="mx-auto grid w-full max-w-5xl gap-14 px-6 py-16 md:grid-cols-[1fr_2fr] md:items-center">
         <div
           className="aspect-[3/4] w-full border border-foreground/30 bg-secondary"
@@ -105,39 +115,55 @@ function About() {
               className="font-serif text-5xl italic text-primary/60"
               style={{ letterSpacing: "0.2em" }}
             >
-              EB
+              EC
             </span>
           </div>
         </div>
+
         <div>
           <p
             className="text-xs uppercase text-primary"
             style={{ letterSpacing: "0.32em" }}
           >
-            Founder
+            Our Philosophy
           </p>
+
           <h2
             className="mt-4 font-serif text-4xl"
             style={{ letterSpacing: "0.16em" }}
           >
-            Eve Bong
+            Beauty Begins With Care
           </h2>
-          <p
-            className="mt-2 text-xs uppercase text-foreground/60"
-            style={{ letterSpacing: "0.24em" }}
-          >
-            Co-Founder & CEO
-          </p>
+
           <div className="mt-6 h-px w-16 bg-primary" />
+
           <p className="mt-6 text-foreground/75 leading-loose">
-            "I wanted a room where clients could exhale — where the treatment was as
-            considered as the conversation. That is the room we built, and the one we
-            protect every single day."
+            At EmpireCharme Yankin, we believe healthy hair is the foundation of
+            lasting beauty. Every appointment begins with understanding your
+            hair, scalp and personal style before recommending treatments that
+            suit your individual needs.
           </p>
+
+          <p className="mt-6 text-foreground/75 leading-loose">
+            From our signature scalp therapies and restorative hair treatments
+            to Korean-style wave perms, professional coloring, elegant nail
+            services and everyday styling, our experienced team is dedicated to
+            helping every guest look and feel their best in a welcoming,
+            relaxing environment.
+          </p>
+
+          <p className="mt-6 text-foreground/75 leading-loose">
+            Over the years, EmpireCharme has become a trusted destination for
+            clients who value healthy, beautiful hair and personalized service.
+            Our commitment remains the same—to provide exceptional care,
+            beautiful results and an experience that brings confidence with
+            every visit.
+          </p>
+
           <Link to="/services" className="mt-8 inline-block">
             <Button
               variant="outline"
-              className="rounded-none border-primary text-primary hover:bg-primary hover:text-primary-foreground uppercase"
+              className="rounded-none border-primary uppercase text-primary hover:bg-primary hover:text-primary-foreground"
               style={{ letterSpacing: "0.24em" }}
             >
               Explore Services

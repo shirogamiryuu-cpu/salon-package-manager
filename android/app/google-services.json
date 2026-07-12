@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1001352025860",
+    "project_id": "empirecharme",
+    "storage_bucket": "empirecharme.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1001352025860:android:b831a0770e1023c0192251",
+        "android_client_info": {
+          "package_name": "com.youths.empireCharme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgv7sI8sgHD9sCK3F-oK5dhHFEkJkI-YI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

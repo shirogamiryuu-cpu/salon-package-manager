@@ -11,7 +11,7 @@ export const Route = createFileRoute("/contact")({
       {
         name: "description",
         content:
-          "Visit EmpireCharme at Far East Plaza, Singapore. Opening hours, phone and socials.",
+          "Visit EmpireCharme in Yankin, Yangon. Find our location, opening hours and contact information.",
       },
     ],
   }),
@@ -28,52 +28,66 @@ function Contact() {
         >
           Visit Us
         </p>
+
         <h1
           className="mt-6 font-serif text-4xl md:text-6xl"
           style={{ letterSpacing: "0.18em" }}
         >
-          COME
+          WE LOOK
           <br />
-          <em className="text-primary font-light">by the atelier.</em>
+          <em className="font-light text-primary">forward to welcoming you.</em>
         </h1>
+
         <div className="mx-auto mt-10 h-px w-16 bg-primary" />
+
+        <p className="mx-auto mt-10 max-w-2xl text-foreground/75 leading-loose">
+          Visit EmpireCharme for premium hair, scalp, nail and beauty services.
+          Our experienced team is ready to help you achieve healthy, beautiful
+          results in a relaxing and welcoming environment.
+        </p>
       </section>
 
       <section className="mx-auto grid w-full max-w-6xl gap-10 px-6 md:grid-cols-2">
         <div className="space-y-8 border border-foreground/25 p-10">
           <Row icon={MapPin} title="Address">
-            14 Scotts Road #04-105
+            EmpireCharme
             <br />
-            Far East Plaza
+            R5HC+H78, Moe Kaung Road
             <br />
-            Singapore 228 213
+            Yankin Township, Yangon
           </Row>
+
           <div className="h-px bg-foreground/15" />
+
           <Row icon={Phone} title="Phone">
-            <a href="tel:+6567336958" className="hover:text-primary">
-              (65) 6733 6958
+            <a href="tel:+959779980556" className="hover:text-primary">
+              09 779 980556
             </a>
           </Row>
+
           <div className="h-px bg-foreground/15" />
+
           <Row icon={Clock} title="Opening Hours">
-            Mon – Fri · 11:30 – 20:30
-            <br />
-            Sat, Sun, PH · 11:30 – 19:30
+            Daily · 10:00 AM – Until Close
           </Row>
+
           <div className="h-px bg-foreground/15" />
+
           <Row icon={Instagram} title="Instagram">
-            @bellusdecharme
+            Contact us for our latest updates.
           </Row>
+
           <div className="h-px bg-foreground/15" />
+
           <Row icon={Facebook} title="Facebook">
-            /beautifullycharme
+            Empire Charme
           </Row>
         </div>
 
-        <div className="min-h-[420px] border border-foreground/25 overflow-hidden">
+        <div className="min-h-[420px] overflow-hidden border border-foreground/25">
           <iframe
-            title="EmpireCharme location"
-            src="https://www.google.com/maps?q=Far+East+Plaza+Singapore+14+Scotts+Road&output=embed"
+            title="EmpireCharme"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3818.9485215174864!2d96.16813777461525!3d16.828909718654597!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30c19348fcb1d3d7%3A0x3eca2c155c1ce7d0!2sEmpire%20Charme!5e0!3m2!1sen!2smm!4v1783820595125!5m2!1sen!2smm"
             className="h-full w-full"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
@@ -90,12 +104,14 @@ function Contact() {
         >
           ALREADY A GUEST?
         </h2>
+
         <p className="text-foreground/75">
-          Sign in to view your packages, sessions and loyalty points.
+          Sign in to your EmpireCharme packages and loyalty rewards.
         </p>
+
         <Link to="/auth">
           <Button
-            className="rounded-none bg-primary text-primary-foreground uppercase px-10 py-6 hover:bg-primary/90"
+            className="rounded-none bg-primary px-10 py-6 uppercase text-primary-foreground hover:bg-primary/90"
             style={{ letterSpacing: "0.24em" }}
           >
             Client Portal
@@ -127,6 +143,7 @@ function Row({
           strokeWidth={1.5}
         />
       </span>
+
       <div>
         <p
           className="text-[11px] uppercase text-foreground/60"
@@ -134,7 +151,8 @@ function Row({
         >
           {title}
         </p>
-        <div className="mt-2 text-sm text-foreground/85 leading-loose">
+
+        <div className="mt-2 text-sm leading-loose text-foreground/85">
           {children}
         </div>
       </div>
