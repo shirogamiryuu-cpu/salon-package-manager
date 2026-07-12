@@ -57,27 +57,26 @@ function AuthPage() {
       email = email.replace(/\s+/g, "");
     }
 
-    // If user entered phone number, find the email first
+    // If user entered phone number, resolve via edge function (RLS-safe)
     if (!email.includes("@")) {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("phone", email)
-        .maybeSingle();
+      const { data: resolved, error: resolveError } = await supabase.functions.invoke(
+        "resolve-login",
+        { body: { phone: email } },
+      );
 
-      if (profileError) {
+      if (resolveError) {
         setLoading(false);
-        toast.error(profileError.message);
+        toast.error(resolveError.message);
         return;
       }
 
-      if (!profile) {
+      if (!resolved?.email) {
         setLoading(false);
         toast.error("Phone number not found");
         return;
       }
 
-      email = profile.email;
+      email = resolved.email as string;
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({

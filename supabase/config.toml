@@ -1,1 +1,4 @@
 project_id = "elvvyhxdahaldpdfsksd"
+
+[functions.resolve-login]
+verify_jwt = false
