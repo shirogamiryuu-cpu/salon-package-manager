@@ -35,6 +35,7 @@ function AdminLayout() {
       nav={[
         { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
         { to: "/admin/packages", label: "Packages", icon: Package },
+        { to: "/admin/categories", label: "Categories", icon: FolderTree },
         { to: "/admin/customers", label: "Customers", icon: Users },
         { to: "/admin/promotions", label: "Promotions", icon: Tag },
         { to: "/admin/contacts", label: "Contacts", icon: Phone },

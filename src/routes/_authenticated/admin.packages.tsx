@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +26,10 @@ type Pkg = {
   points_awarded: number;
   image_url: string | null;
   first_time_price: number | null;
+  category_id: string | null;
 };
+
+type Category = { id: string; name: string; parent_id: string | null };
 
 type Variant = {
   id?: string;
@@ -34,7 +38,8 @@ type Variant = {
   first_time_price: number | string | null;
 };
 
-const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "" };
+const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "", category_id: "__none__" };
+const NONE = "__none__";
 
 
 function PackagesAdmin() {
