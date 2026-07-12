@@ -1,17 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicShell, SectionDivider } from "@/components/public-shell";
 import { Button } from "@/components/ui/button";
-import { Scissors, Sparkles, User, Baby, type LucideIcon } from "lucide-react";
+import {
+  Scissors,
+  Sparkles,
+  Droplets,
+  HeartPulse,
+  type LucideIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/services")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Services — EmpireCharme" },
+      { title: "Services — EmpireCharme Yankin" },
       {
         name: "description",
         content:
-          "Hair, nails, men's grooming and children's care at EmpireCharme. Signature treatments composed by our senior stylists.",
+          "Discover EmpireCharme Yankin services including professional hair styling, coloring, rebonding, perming and scalp treatments in Yangon.",
       },
     ],
   }),
@@ -29,26 +35,53 @@ const SERVICES: Service[] = [
   {
     icon: Scissors,
     title: "Hair",
-    body: "Precision cutting, colour composition and restorative rituals for hair that behaves itself between visits.",
-    items: ["Signature Cut", "Colour Composition", "Keratin Restoration", "Bridal Styling"],
+    body:
+      "Professional hair services designed to enhance your personal style while maintaining healthy, beautiful hair.",
+    items: [
+      "Hair Cut & Styling",
+      "Hair Coloring",
+      "Hair Treatment",
+      "Hair Transformation",
+    ],
   },
+
   {
     icon: Sparkles,
-    title: "Nails",
-    body: "A slow, seated ritual — hands and feet treated with the same reverence as a couture fitting.",
-    items: ["Classic Manicure", "Gel Extension", "Spa Pedicure", "Nail Art Atelier"],
+    title: "Hair Heresy Treatments",
+    body:
+      "Advanced repair and nourishing treatments created to restore damaged hair and bring back shine, softness and strength.",
+    items: [
+      "Hair Repair Treatments",
+      "Moisture Treatments",
+      "Smoothing Treatments",
+      "Premium Hair Care",
+    ],
   },
+
   {
-    icon: User,
-    title: "Men",
-    body: "A private corner for the discerning gentleman. Sharp lines, hot towels, and no small talk unless invited.",
-    items: ["Executive Cut", "Beard Sculpting", "Hot Towel Shave", "Scalp Therapy"],
+    icon: Droplets,
+    title: "Chemical Services",
+    body:
+      "Expert chemical services using professional techniques to create beautiful, long-lasting results.",
+    items: [
+      "Hair Color",
+      "Highlight",
+      "Root Touch Up",
+      "Rebond & Perm",
+    ],
   },
+
   {
-    icon: Baby,
-    title: "Kids",
-    body: "First haircuts and playful trims in a room that welcomes small guests without disturbing the atelier's calm.",
-    items: ["First Haircut", "Junior Trim", "Party Braids", "Gentle Wash"],
+    icon: HeartPulse,
+    title: "Scalp Rescue",
+    body:
+      "Specialized scalp care focused on improving scalp condition and supporting healthier hair growth.",
+    items: [
+      "Scalp Detox",
+      "Scalp Facial",
+      "Ginseng Scalp Therapy",
+      "Scalp Nourishing Treatments",
+    ],
   },
 ];
 
@@ -60,20 +93,26 @@ function Services() {
           className="text-xs uppercase text-primary"
           style={{ letterSpacing: "0.4em" }}
         >
-          What We Do
+          What We Offer
         </p>
+
         <h1
           className="mt-6 font-serif text-4xl md:text-6xl"
           style={{ letterSpacing: "0.18em" }}
         >
-          FOUR ROOMS,
+          BEAUTY SERVICES,
           <br />
-          <em className="text-primary font-light">one signature.</em>
+          <em className="text-primary font-light">
+            thoughtfully crafted.
+          </em>
         </h1>
+
         <div className="mx-auto mt-10 h-px w-16 bg-primary" />
+
         <p className="mx-auto mt-10 max-w-xl text-foreground/75 leading-loose">
-          Every service is composed by a senior stylist and delivered on your schedule —
-          never rushed, never repeated by rote.
+          At EmpireCharme Yankin, every service is designed with care,
+          precision and professional expertise to help you achieve healthy,
+          beautiful results.
         </p>
       </section>
 
@@ -97,27 +136,27 @@ function Services() {
                     strokeWidth={1.25}
                   />
                 </span>
+
                 <h2
                   className="font-serif text-3xl"
-                  style={{ letterSpacing: "0.2em" }}
+                  style={{ letterSpacing: "0.18em" }}
                 >
                   {title.toUpperCase()}
                 </h2>
               </div>
-              <p className="text-foreground/75 leading-loose">{body}</p>
+
+              <p className="text-foreground/75 leading-loose">
+                {body}
+              </p>
+
               <ul className="mt-2 divide-y divide-foreground/15 border-t border-foreground/15">
-                {items.map((it) => (
+                {items.map((item) => (
                   <li
-                    key={it}
-                    className="flex items-center justify-between py-3 text-sm text-foreground/80"
+                    key={item}
+                    className="py-3 text-sm text-foreground/80"
+                    style={{ letterSpacing: "0.12em" }}
                   >
-                    <span style={{ letterSpacing: "0.14em" }}>{it}</span>
-                    <span
-                      className="text-xs uppercase text-primary"
-                      style={{ letterSpacing: "0.28em" }}
-                    >
-                      Signature
-                    </span>
+                    {item}
                   </li>
                 ))}
               </ul>
@@ -127,25 +166,17 @@ function Services() {
 
         <div className="mt-16 flex flex-col items-center gap-6 text-center">
           <p className="max-w-xl text-foreground/75">
-            Ready to become a house guest? Sign in to view your packages, or write to us
-            for a first appointment.
+            Visit EmpireCharme Yankin for professional consultation and
+            personalized beauty services.
           </p>
+
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/auth">
+            <Link to="/contact">
               <Button
                 className="rounded-none bg-primary text-primary-foreground uppercase px-8 py-6 hover:bg-primary/90"
                 style={{ letterSpacing: "0.24em" }}
               >
-                Client Portal
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button
-                variant="outline"
-                className="rounded-none border-foreground/40 uppercase px-8 py-6 hover:bg-foreground hover:text-background"
-                style={{ letterSpacing: "0.24em" }}
-              >
-                Contact the Salon
+                Contact Salon
               </Button>
             </Link>
           </div>

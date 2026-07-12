@@ -70,9 +70,7 @@ function PackageDetail() {
   }, [id, listHistory]);
 
   if (!cp) {
-    return (
-      <div className="py-20 text-center text-foreground/60 italic">Loading…</div>
-    );
+    return <div className="py-20 text-center text-foreground/60 italic">Loading…</div>;
   }
 
   const totalPrice = Number(cp.total_price ?? 0) || Number(cp.packages?.price ?? 0);
@@ -98,10 +96,7 @@ function PackageDetail() {
 
       {/* Hero */}
       <header className="border-b border-foreground/25 pb-8">
-        <p
-          className="text-xs uppercase text-primary"
-          style={{ letterSpacing: "0.28em" }}
-        >
+        <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
           Your package
         </p>
         <h1
@@ -127,10 +122,7 @@ function PackageDetail() {
           >
             Sessions
           </span>
-          <span
-            className="font-serif text-2xl"
-            style={{ letterSpacing: "0.04em" }}
-          >
+          <span className="font-serif text-2xl" style={{ letterSpacing: "0.04em" }}>
             <span className="text-primary">{cp.sessions_remaining}</span>
             <span className="text-foreground/40"> / {cp.total_sessions}</span>
           </span>
@@ -155,7 +147,7 @@ function PackageDetail() {
       </section>
 
       {/* Financial breakdown */}
-      <section className="grid grid-cols-3 border-y border-foreground/25 divide-x divide-foreground/20">
+      <section className="grid grid-cols-3 min-w-0 border-y border-foreground/25 divide-x divide-foreground/20">
         <PriceCell label="Total" value={totalPrice} />
         <PriceCell label="Paid" value={depositAmount} />
         <PriceCell label="Outstanding" value={outstanding} accent={outstanding > 0} />
@@ -197,9 +189,7 @@ function PackageDetail() {
         {history === null ? (
           <p className="text-sm text-foreground/60 italic">Loading…</p>
         ) : history.length === 0 ? (
-          <p className="py-8 text-center text-foreground/60 italic">
-            No sessions used yet.
-          </p>
+          <p className="py-8 text-center text-foreground/60 italic">No sessions used yet.</p>
         ) : (
           <ul className="divide-y divide-foreground/15">
             {history.map((r, i) => (
@@ -240,15 +230,15 @@ function PackageDetail() {
 
 function PriceCell({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className="p-5 text-center">
-      <div
-        className="text-[10px] uppercase text-foreground/60"
-        style={{ letterSpacing: "0.22em" }}
-      >
+    <div className="min-w-0 overflow-hidden p-3 sm:p-5 text-center">
+      <div className="text-[10px] uppercase text-foreground/60" style={{ letterSpacing: "0.22em" }}>
         {label}
       </div>
+
       <div
-        className={`mt-2 font-serif text-xl md:text-2xl ${accent ? "text-primary" : "text-foreground"}`}
+        className={`mt-2 min-w-0 break-words font-serif text-sm sm:text-base md:text-xl ${
+          accent ? "text-primary" : "text-foreground"
+        }`}
         style={{ letterSpacing: "0.02em" }}
       >
         MMK {value.toLocaleString()}
