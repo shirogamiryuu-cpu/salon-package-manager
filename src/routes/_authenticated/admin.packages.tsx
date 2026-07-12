@@ -278,7 +278,50 @@ function PackagesAdmin() {
         </Dialog>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {pkgs.map((p) => {
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          type="search"
+          placeholder="Search packages…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-64 h-9"
+        />
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full sm:w-56 h-9">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All categories</SelectItem>
+            <SelectItem value="none">Uncategorized</SelectItem>
+            {cats.map((c) => {
+              const parent = c.parent_id ? cats.find((p) => p.id === c.parent_id) : null;
+              return (
+                <SelectItem key={c.id} value={c.id}>
+                  {parent ? `${parent.name} / ${c.name}` : c.name}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+        {(search || categoryFilter !== "all") && (
+          <Button size="sm" variant="ghost" onClick={() => { setSearch(""); setCategoryFilter("all"); }}>
+            Clear
+          </Button>
+        )}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {(() => {
+          const q = search.trim().toLowerCase();
+          const filtered = pkgs.filter((p) => {
+            if (categoryFilter === "none" && p.category_id) return false;
+            if (categoryFilter !== "all" && categoryFilter !== "none" && p.category_id !== categoryFilter) return false;
+            if (q && !(p.name.toLowerCase().includes(q) || (p.description ?? "").toLowerCase().includes(q))) return false;
+            return true;
+          });
+          if (filtered.length === 0) {
+            return <p className="text-muted-foreground">No packages match your filter.</p>;
+          }
+          return filtered.map((p) => {
           const promo = promoMap.get(p.id);
           const pricing = promo ? applyPromotion(Number(p.price), promo) : null;
           const vs = variantsByPkg[p.id] ?? [];
