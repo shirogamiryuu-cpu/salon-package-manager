@@ -191,6 +191,23 @@ function PackagesAdmin() {
             <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} package</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+              <div>
+                <Label>Category</Label>
+                <Select value={form.category_id ?? NONE} onValueChange={(v) => setForm({ ...form, category_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Uncategorized" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Uncategorized</SelectItem>
+                    {cats.map((c) => {
+                      const parent = c.parent_id ? cats.find((p) => p.id === c.parent_id) : null;
+                      return (
+                        <SelectItem key={c.id} value={c.id}>
+                          {parent ? `${parent.name} / ${c.name}` : c.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label>Description</Label><Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Price per session</Label><Input type="number" step="1000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
