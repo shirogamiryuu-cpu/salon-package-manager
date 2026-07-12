@@ -592,7 +592,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
     const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
     const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
-    const needed = unit * (used + 1);
+    const manualPrice = (req as any).manual_price == null ? null : Number((req as any).manual_price);
+    const thisSessionCost = manualPrice != null ? manualPrice : unit;
+    const needed = unit * used + thisSessionCost;
     if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
 
     // Compute price for THIS session, based on the chosen variant + first-time eligibility.
@@ -629,8 +631,11 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       }
     }
 
-    const wasFirstTime = isFirstTimeEligible && firstTimePrice != null;
-    const priceApplied = wasFirstTime ? firstTimePrice! : basePrice;
+    // Manual price overrides first-time pricing entirely.
+    const wasFirstTime = manualPrice == null && isFirstTimeEligible && firstTimePrice != null;
+    const priceApplied = manualPrice != null
+      ? manualPrice
+      : (wasFirstTime ? firstTimePrice! : basePrice);
 
     const { error: uErr } = await sb.from("customer_packages")
       .update({ sessions_remaining: cp.sessions_remaining - 1 })
