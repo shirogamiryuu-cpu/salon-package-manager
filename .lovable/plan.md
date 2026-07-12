@@ -1,62 +1,41 @@
-
 ## Goal
+Let admins enter a manual price override when (1) assigning a package to a customer, (2) adding sessions to an existing package, and (3) deducting a session — for one-off discounts. The override propagates through the deposit math, commissions, and history so revenue/reports reflect the real charged amount.
 
-Replace the current minimal pre-signin page with a proper public marketing site — a Home ("About Us"-driven) plus at least 3 additional public pages — styled to the uploaded Charme branding guidelines.
+## What already exists
+- `assignPackage` and `adminAddSessions` already accept `totalPrice` / `addedPrice` args, but the UI doesn't always expose them clearly.
+- `useSession` → `respondSessionRequest` always **computes** `price_applied` from variant/package price. There is no way to override it.
 
-## Public pages (all accessible without signing in)
+## Changes
 
-1. **/** — Home / About Us hero
-   - Full-viewport hero with Charme logo, tagline "beautify with confidence"
-   - Short brand story section
-   - Feature strip (Hair · Nails · Men · Kids) using the iconography from the guidelines (Scissors, Nail polish, Comb, Wand)
-   - Call to action → Sign in / Sign up
-2. **/about** — Our Story
-   - Founding story, philosophy, "beautify with confidence" ethos
-   - Values (3 pillars) with hairline dividers
-   - Team highlight (Co-Founder & CEO placeholder from guidelines)
-3. **/services** — What We Do
-   - 4 service categories (Hair, Nails, Men, Kids) as editorial cards with icon + description
-   - Signature treatments list
-4. **/contact** — Visit Us
-   - Address: 14 Scotts Road #04-105, Far East Plaza, Singapore 228 213
-   - Phone (65) 6733 6958, socials /beautifullycharme, @bellusdecharme
-   - Opening hours: Mon–Fri 11:30–20:30, Sat/Sun/PH 11:30–19:30
-   - Simple map embed (Google Maps iframe) + sign-in CTA
+### 1. Database
+Migration on `session_deduction_requests`:
+- Add `manual_price NUMERIC(10,2) NULL` — admin-entered override carried from request → approval.
 
-## Shared public layout
+(No changes to `usage_logs`; it already has `price_applied`.)
 
-New `src/routes/_public.tsx` layout route wrapping the 4 pages with:
-- Slim top nav: logo left; links Home · About · Services · Contact; "Sign in" button right (gold outline)
-- Footer: logo, address, hours, socials, copyright, subtle Charme pattern hint
-- Auto-redirect to `/app` / `/admin` / `/staff` if a session already exists (preserved from current landing behavior)
+### 2. Edge function `supabase/functions/admin-api/index.ts`
+- `useSession`: accept optional `manualPrice`. Validate `>= 0`. Persist into the new `session_deduction_requests.manual_price` column.
+- `respondSessionRequest`: when `req.manual_price` is set, use it as `price_applied` and set `was_first_time = false` (manual price overrides first-time logic). Deposit-sufficiency check uses the manual price for this session instead of the computed unit.
+- `assignPackage`: no logic change — already honors `totalPrice`; just ensure it's used when provided (already true).
+- `adminAddSessions`: no logic change — already honors `addedPrice`.
+- Commission trigger already prefers `usage_logs.price_applied` for revenue, so overrides automatically flow into commissions.
 
-Files:
-- new `src/routes/_public.tsx` (layout with nav + footer + session redirect)
-- rewrite `src/routes/index.tsx` → Home
-- new `src/routes/about.tsx`
-- new `src/routes/services.tsx`
-- new `src/routes/contact.tsx`
+### 3. SPA wrappers `src/lib/admin.functions.ts`
+- Extend `useSession` signature with `manualPrice?: number`.
 
-## Branding application (from PDF)
+### 4. UI
+- **Assign package dialog** (`admin.customers.$id.index.tsx` or the assign modal it uses): surface/label the existing "Total price" input as "Total price (override for discounts)" with a helper hint; default to computed price × sessions but editable.
+- **Add sessions dialog** (`admin.customers.$id.packages.$cpId.tsx`): same treatment for `addedPrice` — label as "Added price (override)".
+- **Deduct-session dialog** (staff/admin flow that calls `useSession`, in `admin.customers.$id.packages.$cpId.tsx` / staff index): add a new optional "Custom price for this session" number input. If left blank → current behavior. If filled → passed as `manualPrice`.
+- Customer approval screen (`app.notifications.tsx`) shows the request; if `manual_price` present, display it so the customer sees the actual charge before approving.
 
-- **Palette**: warm cream background `#FAF9F7`, ink `#222`, gold accent `#B79A5C` (mapped to Pantone 871C gold family in guidelines), muted gold tints for section bands. Reuse the existing tokens in `src/styles.css` — no new color tokens needed.
-- **Typography**: keep Cormorant Garamond (already loaded) as the Didot/Bodoni stand-in for display; body in same serif per current design system. Headings use wide letter-spacing (0.18–0.2em) per current rules.
-- **Motifs**:
-  - Hairline 1px `#333` dividers between sections
-  - Slash motif: a 20°-rotated thin gold slash used as a section separator / accent (pure CSS, no image asset)
-  - Twinkle/dot micro-pattern behind hero using an inline SVG at ~15% opacity (per "50% opacity" guidance for background use; toned down for web legibility)
-- **Iconography**: use `lucide-react` equivalents — Scissors (Hair), Sparkles (Nails), User (Men), Baby (Kids). Each icon sits inside a 20°-rotated hairline square to echo the brand's slash rule.
-- **Logo**: reuse existing `@/public/EmpireCharme.png` import already used in `app-shell.tsx`.
-
-## Behavior
-
-- All 4 routes are `ssr: false` and public (outside the `_authenticated` layout).
-- The `_public` layout runs the same session check as today's `Landing` and redirects signed-in users to their role-based home. Unauthenticated visitors see the marketing pages.
-- Nav uses TanStack Router `<Link>`; active link gets the gold underline treatment matching the app shell.
+### 5. History display
+- No schema change; existing `price_applied` column already renders on history rows (`app.history.tsx`, admin history). Will automatically show the overridden value.
 
 ## Out of scope
+- No changes to promotions, warranty, or points logic.
+- No bulk re-price tool for past sessions.
 
-- No changes to authenticated routes, admin, staff, or customer flows.
-- No changes to database, edge functions, or auth logic.
-- No new fonts, colors, or design tokens beyond what's already in `src/styles.css`.
-- No copywriting sign-off — placeholder brand copy inspired by the guidelines; user can revise.
+## Technical notes
+- Validation: manual price must be a non-negative number and, for `useSession`, cannot exceed remaining deposit balance (`deposit_amount - already-consumed`), otherwise the deposit check throws as it does today.
+- Backwards compatible: `manual_price` is nullable; existing requests keep computed pricing.
