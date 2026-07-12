@@ -71,6 +71,8 @@ type PendingReq = {
   created_at: string;
   expires_at: string;
   package_name: string;
+  variant_label?: string | null;
+  manual_price?: number | null;
   remaining: number;
   total: number;
   staff: {
