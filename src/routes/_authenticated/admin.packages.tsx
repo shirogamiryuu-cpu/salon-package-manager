@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +26,10 @@ type Pkg = {
   points_awarded: number;
   image_url: string | null;
   first_time_price: number | null;
+  category_id: string | null;
 };
+
+type Category = { id: string; name: string; parent_id: string | null };
 
 type Variant = {
   id?: string;
@@ -34,13 +38,15 @@ type Variant = {
   first_time_price: number | string | null;
 };
 
-const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "" };
+const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "", category_id: "__none__" };
+const NONE = "__none__";
 
 
 function PackagesAdmin() {
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [variantsByPkg, setVariantsByPkg] = useState<Record<string, Variant[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
+  const [cats, setCats] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
   const [form, setForm] = useState<any>(empty);
@@ -63,6 +69,12 @@ function PackagesAdmin() {
       (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: v.price, first_time_price: v.first_time_price });
     }
     setVariantsByPkg(map);
+    const { data: cs } = await supabase
+      .from("package_categories")
+      .select("id,name,parent_id")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    setCats((cs ?? []) as Category[]);
   };
   useEffect(() => { load(); }, []);
 
@@ -72,7 +84,7 @@ function PackagesAdmin() {
     setOpen(true);
   };
   const openEdit = (p: Pkg) => {
-    setEditing(p); setForm(p); setImageFile(null);
+    setEditing(p); setForm({ ...p, category_id: p.category_id ?? NONE }); setImageFile(null);
     setVariants((variantsByPkg[p.id] ?? []).map((v) => ({ ...v })));
     setRemovedVariantIds([]);
     setOpen(true);
@@ -111,6 +123,7 @@ function PackagesAdmin() {
         points_awarded: Number(form.points_awarded),
         image_url,
         first_time_price: ftp,
+        category_id: form.category_id && form.category_id !== NONE ? form.category_id : null,
       };
       let pkgId = editing?.id;
       if (editing) {
@@ -178,6 +191,23 @@ function PackagesAdmin() {
             <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} package</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+              <div>
+                <Label>Category</Label>
+                <Select value={form.category_id ?? NONE} onValueChange={(v) => setForm({ ...form, category_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Uncategorized" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Uncategorized</SelectItem>
+                    {cats.map((c) => {
+                      const parent = c.parent_id ? cats.find((p) => p.id === c.parent_id) : null;
+                      return (
+                        <SelectItem key={c.id} value={c.id}>
+                          {parent ? `${parent.name} / ${c.name}` : c.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label>Description</Label><Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Price per session</Label><Input type="number" step="1000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
@@ -283,6 +313,13 @@ function PackagesAdmin() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2 text-xs">
+                {(() => {
+                  const c = p.category_id ? cats.find((x) => x.id === p.category_id) : null;
+                  const parent = c?.parent_id ? cats.find((x) => x.id === c.parent_id) : null;
+                  return c ? (
+                    <Badge variant="secondary">{parent ? `${parent.name} / ${c.name}` : c.name}</Badge>
+                  ) : null;
+                })()}
                 {promo && <Badge className="bg-primary">{formatDiscountLabel(promo)} · {promo.name}</Badge>}
                 <Badge variant="outline">+{p.points_awarded} pts</Badge>
               </div>

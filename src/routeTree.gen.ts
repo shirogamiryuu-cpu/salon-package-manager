@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminPromotionsRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminPackagesRouteImport } from './routes/_authenticated/admin.packages'
 import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authenticated/admin.history'
 import { Route as AuthenticatedAdminContactsRouteImport } from './routes/_authenticated/admin.contacts'
+import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as AuthenticatedAdminCustomersIndexRouteImport } from './routes/_authenticated/admin.customers.index'
 import { Route as AuthenticatedAppMineIdRouteImport } from './routes/_authenticated/app.mine.$id'
 import { Route as AuthenticatedAdminCustomersIdIndexRouteImport } from './routes/_authenticated/admin.customers.$id.index'
@@ -152,6 +153,12 @@ const AuthenticatedAdminContactsRoute =
     path: '/contacts',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCategoriesRoute =
+  AuthenticatedAdminCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminCustomersIndexRoute =
   AuthenticatedAdminCustomersIndexRouteImport.update({
     id: '/customers/',
@@ -186,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/home': typeof AuthenticatedHomeRoute
   '/staff': typeof AuthenticatedStaffRouteWithChildren
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/contacts': typeof AuthenticatedAdminContactsRoute
   '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
@@ -210,6 +218,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/services': typeof ServicesRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/contacts': typeof AuthenticatedAdminContactsRoute
   '/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/admin/packages': typeof AuthenticatedAdminPackagesRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRouteWithChildren
+  '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/contacts': typeof AuthenticatedAdminContactsRoute
   '/_authenticated/admin/history': typeof AuthenticatedAdminHistoryRoute
   '/_authenticated/admin/packages': typeof AuthenticatedAdminPackagesRoute
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/home'
     | '/staff'
+    | '/admin/categories'
     | '/admin/contacts'
     | '/admin/history'
     | '/admin/packages'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/services'
     | '/home'
+    | '/admin/categories'
     | '/admin/contacts'
     | '/admin/history'
     | '/admin/packages'
@@ -320,6 +332,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/_authenticated/home'
     | '/_authenticated/staff'
+    | '/_authenticated/admin/categories'
     | '/_authenticated/admin/contacts'
     | '/_authenticated/admin/history'
     | '/_authenticated/admin/packages'
@@ -503,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminContactsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/categories': {
+      id: '/_authenticated/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/customers/': {
       id: '/_authenticated/admin/customers/'
       path: '/customers'
@@ -535,6 +555,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminContactsRoute: typeof AuthenticatedAdminContactsRoute
   AuthenticatedAdminHistoryRoute: typeof AuthenticatedAdminHistoryRoute
   AuthenticatedAdminPackagesRoute: typeof AuthenticatedAdminPackagesRoute
@@ -546,6 +567,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminContactsRoute: AuthenticatedAdminContactsRoute,
   AuthenticatedAdminHistoryRoute: AuthenticatedAdminHistoryRoute,
   AuthenticatedAdminPackagesRoute: AuthenticatedAdminPackagesRoute,
