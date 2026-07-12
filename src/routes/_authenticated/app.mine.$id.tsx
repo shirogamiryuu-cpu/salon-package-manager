@@ -24,6 +24,8 @@ type CP = {
   warranty_years: number;
   warranty_expires_at: string | null;
   variant_label?: string | null;
+  package_name?: string | null;
+  package_description?: string | null;
   packages: {
     name: string;
     description: string | null;
@@ -52,7 +54,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,variant_label,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,variant_label,package_name,package_description,packages(name,description,price,points_awarded)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -103,12 +105,12 @@ function PackageDetail() {
           className="mt-3 font-serif text-4xl md:text-5xl italic"
           style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
         >
-          {cp.packages?.name ?? "Package"}
+          {cp.packages?.name ?? cp.package_name ?? "Package"}
           {cp.variant_label ? ` · ${cp.variant_label}` : ""}
         </h1>
-        {cp.packages?.description && (
+        {(cp.packages?.description ?? cp.package_description) && (
           <p className="mt-4 text-sm text-foreground/70 italic max-w-lg">
-            {cp.packages.description}
+            {cp.packages?.description ?? cp.package_description}
           </p>
         )}
       </header>

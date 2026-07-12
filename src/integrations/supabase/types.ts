@@ -184,7 +184,10 @@ export type Database = {
           deposit_paid_at: string | null
           deposit_sessions_paid: number
           id: string
-          package_id: string
+          package_description: string | null
+          package_id: string | null
+          package_image_url: string | null
+          package_name: string | null
           purchase_date: string
           sessions_remaining: number
           total_price: number
@@ -201,7 +204,10 @@ export type Database = {
           deposit_paid_at?: string | null
           deposit_sessions_paid?: number
           id?: string
-          package_id: string
+          package_description?: string | null
+          package_id?: string | null
+          package_image_url?: string | null
+          package_name?: string | null
           purchase_date?: string
           sessions_remaining: number
           total_price?: number
@@ -218,7 +224,10 @@ export type Database = {
           deposit_paid_at?: string | null
           deposit_sessions_paid?: number
           id?: string
-          package_id?: string
+          package_description?: string | null
+          package_id?: string | null
+          package_image_url?: string | null
+          package_name?: string | null
           purchase_date?: string
           sessions_remaining?: number
           total_price?: number
