@@ -910,7 +910,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const adminIds = Array.from(
       new Set((logs ?? []).map((l: any) => l.admin_id).filter(Boolean) as string[]),
     );
-    const [{ data: staffLinks }, { data: adminProfiles }] = await Promise.all([
+    const [{ data: staffLinks }, { data: adminProfiles }, { data: sdrRows }] = await Promise.all([
       ids.length
         ? sb.from("session_staff")
             .select("usage_log_id, staff_user_id, profiles:staff_user_id(id,email,name)")
@@ -919,7 +919,16 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       adminIds.length
         ? sb.from("profiles").select("id,email,name").in("id", adminIds)
         : Promise.resolve({ data: [] as any[] }),
+      ids.length
+        ? sb.from("session_deduction_requests")
+            .select("usage_log_id, approved_by_admin")
+            .in("usage_log_id", ids)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
+    const adminApprovedLogs = new Set(
+      ((sdrRows ?? []) as any[]).filter((r) => r.approved_by_admin).map((r) => r.usage_log_id),
+    );
+
     const staffByLog = new Map<string, any[]>();
     for (const sl of (staffLinks ?? []) as any[]) {
       const arr = staffByLog.get(sl.usage_log_id) ?? [];
