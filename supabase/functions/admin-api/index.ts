@@ -328,9 +328,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }
 
     const totalSessions = Math.max(1, Number(sessions) || pkg.total_sessions || 1);
-    const defaultUnit = variantUnit != null
-      ? variantUnit
-      : (Number(pkg.price) || 0) / Math.max(1, pkg.total_sessions || 1);
+    // packages.price is stored as price PER SESSION (see admin packages editor)
+    const defaultUnit = variantUnit != null ? variantUnit : (Number(pkg.price) || 0);
     const addPrice = Number.isFinite(Number(totalPrice))
       ? Math.max(0, Number(totalPrice))
       : Math.round(defaultUnit * totalSessions * 100) / 100;
@@ -422,9 +421,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .select("package_id, total_sessions, sessions_remaining, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at, packages(price,total_sessions)")
       .eq("id", customerPackageId).maybeSingle();
     if (cErr || !cp) throw new Error("Not found");
-    const pkgPrice = Number((cp as any).packages?.price ?? 0);
-    const pkgTotal = Math.max(1, Number((cp as any).packages?.total_sessions ?? 1));
-    const defaultUnit = pkgPrice / pkgTotal;
+    // packages.price is per session
+    const defaultUnit = Number((cp as any).packages?.price ?? 0);
     const addPrice = Number.isFinite(Number(addedPrice))
       ? Math.max(0, Number(addedPrice))
       : Math.round(defaultUnit * add * 100) / 100;
