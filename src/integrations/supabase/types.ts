@@ -669,6 +669,7 @@ export type Database = {
       session_deduction_requests: {
         Row: {
           admin_id: string
+          approved_by_admin: boolean
           created_at: string
           customer_id: string
           customer_package_id: string
@@ -684,6 +685,7 @@ export type Database = {
         }
         Insert: {
           admin_id: string
+          approved_by_admin?: boolean
           created_at?: string
           customer_id: string
           customer_package_id: string
@@ -699,6 +701,7 @@ export type Database = {
         }
         Update: {
           admin_id?: string
+          approved_by_admin?: boolean
           created_at?: string
           customer_id?: string
           customer_package_id?: string
