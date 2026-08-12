@@ -525,7 +525,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds, variantId, manualPrice }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId, manualPrice, skipApproval }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
