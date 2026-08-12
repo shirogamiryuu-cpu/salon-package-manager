@@ -159,7 +159,7 @@ function NotifBody({
         </div>
         {typeof manualPrice === "number" && (
           <div className="text-sm font-medium mt-1">
-            Charge: MMK {manualPrice.toFixed(2)}
+            Charge: MMK {manualPrice.toFixed(0)}
           </div>
         )}
         <div className="text-xs text-muted-foreground mt-1">

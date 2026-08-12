@@ -305,18 +305,18 @@ function PackagesAdmin() {
                 <span>{p.name}</span>
                 {vs.length > 0 ? (
                   <span className="text-base">
-                    MMK {Math.min(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    MMK {Math.min(...vs.map((v) => Number(v.price))).toFixed(0)}
                     {" – "}
-                    MMK {Math.max(...vs.map((v) => Number(v.price))).toFixed(2)}
+                    MMK {Math.max(...vs.map((v) => Number(v.price))).toFixed(0)}
                     <span className="text-xs text-muted-foreground font-normal"> / session</span>
                   </span>
                 ) : pricing ? (
                   <div className="text-right">
-                    <div className="text-xs text-muted-foreground line-through">MMK {pricing.original.toFixed(2)}</div>
-                    <div className="text-base text-primary">MMK {pricing.final.toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
+                    <div className="text-xs text-muted-foreground line-through">MMK {pricing.original.toFixed(0)}</div>
+                    <div className="text-base text-primary">MMK {pricing.final.toFixed(0)}<span className="text-xs text-muted-foreground font-normal"> / session</span></div>
                   </div>
                 ) : (
-                  <span className="text-base">MMK {Number(p.price).toFixed(2)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
+                  <span className="text-base">MMK {Number(p.price).toFixed(0)}<span className="text-xs text-muted-foreground font-normal"> / session</span></span>
                 )}
               </CardTitle>
             </CardHeader>
@@ -325,7 +325,7 @@ function PackagesAdmin() {
               {vs.length > 0 && (
                 <div className="flex flex-wrap gap-1 text-xs">
                   {vs.map((v, i) => (
-                    <Badge key={i} variant="secondary">{v.label} MMK {Number(v.price).toFixed(2)}</Badge>
+                    <Badge key={i} variant="secondary">{v.label} MMK {Number(v.price).toFixed(0)}</Badge>
                   ))}
                 </div>
               )}
