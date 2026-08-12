@@ -578,8 +578,21 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         variant_label: variantLabel,
         manual_price: mp,
       })
-      .select("id, expires_at").single();
+      .select("id, expires_at, customer_package_id, admin_id, staff_ids, variant_id, variant_label, manual_price").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
+
+    // Admin-side deduction: approve immediately, no customer confirmation, no push.
+    if (skipApproval === true) {
+      const res = await performApproval(sb, reqRow, new Date().toISOString(), true);
+      return {
+        ok: true,
+        pending: false,
+        approvedByAdmin: true,
+        requestId: reqRow.id,
+        remaining: res.remaining,
+      };
+    }
+
     try {
       await sendSessionApprovalPush({
         customerId: cp.customer_id,
@@ -590,6 +603,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       console.error("[push] session approval notification failed", pushError);
     }
     return { ok: true, pending: true, requestId: reqRow.id, expiresAt: reqRow.expires_at };
+
   },
 
   async customerListPendingRequests(_p, { userId }) {
