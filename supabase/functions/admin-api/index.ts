@@ -961,6 +961,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         admin_email: a?.email ?? "",
         admin_name: a?.name ?? null,
         staff: staffByLog.get(l.id) ?? [],
+        approved_by_admin: adminApprovedLogs.has(l.id),
+
       };
     });
   },
