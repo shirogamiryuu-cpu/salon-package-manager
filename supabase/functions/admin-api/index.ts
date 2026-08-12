@@ -208,7 +208,69 @@ async function assertStaff(userId: string) {
   if (!s && !st) throw new Error("Forbidden");
 }
 
+// Shared deduction logic: turns a pending session_deduction_request into an
+// approved one (decrement sessions, write usage log + staff, flag approved).
+// Used both by the customer approval path and the admin skip-approval path.
+async function performApproval(sb: any, req: any, nowIso: string, byAdmin = false) {
+  const { data: cp, error: cpErr } = await sb
+    .from("customer_packages")
+    .select("customer_id, package_id, sessions_remaining, total_sessions, deposit_amount, total_price, packages(price)")
+    .eq("id", req.customer_package_id).maybeSingle();
+  if (cpErr || !cp) throw new Error("Package not found");
+  if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
+  const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+  const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
+  const manualPrice = req.manual_price == null ? null : Number(req.manual_price);
+  const thisSessionCost = manualPrice != null ? manualPrice : unit;
+  const needed = unit * used + thisSessionCost;
+  if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
+
+  // Compute price for THIS session, based on the chosen variant or the package price.
+  let variantPrice: number | null = null;
+  if (req.variant_id) {
+    const { data: v } = await sb.from("package_variants")
+      .select("price").eq("id", req.variant_id).maybeSingle();
+    if (v) variantPrice = Number(v.price);
+  }
+  const pkgPrice = Number((cp as any).packages?.price ?? 0);
+  const basePrice = variantPrice != null ? variantPrice : pkgPrice;
+  const priceApplied = manualPrice != null ? manualPrice : basePrice;
+
+  const { error: uErr } = await sb.from("customer_packages")
+    .update({ sessions_remaining: cp.sessions_remaining - 1 })
+    .eq("id", req.customer_package_id);
+  if (uErr) throw new Error(uErr.message);
+  const { data: log, error: lErr } = await sb.from("usage_logs")
+    .insert({
+      customer_package_id: req.customer_package_id,
+      admin_id: req.admin_id,
+      variant_id: req.variant_id,
+      variant_label: req.variant_label,
+      price_applied: priceApplied,
+    })
+    .select("id").single();
+  if (lErr || !log) throw new Error(lErr?.message ?? "Failed to log");
+  if (Array.isArray(req.staff_ids) && req.staff_ids.length) {
+    const { data: validRoles } = await sb.from("user_roles")
+      .select("user_id").in("role", ["staff", "stylist"]).in("user_id", req.staff_ids);
+    const valid = new Set((validRoles ?? []).map((r: any) => r.user_id));
+    const rows = req.staff_ids.filter((id: string) => valid.has(id))
+      .map((staff_user_id: string) => ({ usage_log_id: log.id, staff_user_id }));
+    if (rows.length) await sb.from("session_staff").insert(rows);
+  }
+  await sb.from("session_deduction_requests")
+    .update({
+      status: "approved",
+      responded_at: nowIso,
+      usage_log_id: log.id,
+      approved_by_admin: byAdmin,
+    })
+    .eq("id", req.id);
+  return { remaining: cp.sessions_remaining - 1, usageLogId: log.id, priceApplied };
+}
+
 // ============== Action handlers ==============
+
 
 const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise<unknown>> = {
   async adminListCustomers(_p, { userId }) {
@@ -463,7 +525,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { ok: true };
   },
 
-  async useSession({ customerPackageId, staffIds, variantId, manualPrice }, { userId }) {
+  async useSession({ customerPackageId, staffIds, variantId, manualPrice, skipApproval }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
     const { data: cp, error } = await sb
@@ -516,8 +578,21 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         variant_label: variantLabel,
         manual_price: mp,
       })
-      .select("id, expires_at").single();
+      .select("id, expires_at, customer_package_id, admin_id, staff_ids, variant_id, variant_label, manual_price").single();
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
+
+    // Admin-side deduction: approve immediately, no customer confirmation, no push.
+    if (skipApproval === true) {
+      const res = await performApproval(sb, reqRow, new Date().toISOString(), true);
+      return {
+        ok: true,
+        pending: false,
+        approvedByAdmin: true,
+        requestId: reqRow.id,
+        remaining: res.remaining,
+      };
+    }
+
     try {
       await sendSessionApprovalPush({
         customerId: cp.customer_id,
@@ -528,6 +603,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       console.error("[push] session approval notification failed", pushError);
     }
     return { ok: true, pending: true, requestId: reqRow.id, expiresAt: reqRow.expires_at };
+
   },
 
   async customerListPendingRequests(_p, { userId }) {
@@ -586,57 +662,10 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }
 
     // Approve: run the actual deduction.
-    const { data: cp, error: cpErr } = await sb
-      .from("customer_packages")
-      .select("customer_id, package_id, sessions_remaining, total_sessions, deposit_amount, total_price, packages(price)")
-      .eq("id", req.customer_package_id).maybeSingle();
-    if (cpErr || !cp) throw new Error("Package not found");
-    if (cp.sessions_remaining <= 0) throw new Error("No sessions left");
-    const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-    const unit = cp.total_sessions > 0 ? Number(cp.total_price ?? 0) / cp.total_sessions : 0;
-    const manualPrice = (req as any).manual_price == null ? null : Number((req as any).manual_price);
-    const thisSessionCost = manualPrice != null ? manualPrice : unit;
-    const needed = unit * used + thisSessionCost;
-    if (Number(cp.deposit_amount ?? 0) + 0.005 < needed) throw new Error("Deposit exhausted");
-
-    // Compute price for THIS session, based on the chosen variant or the package price.
-    let variantPrice: number | null = null;
-    if (req.variant_id) {
-      const { data: v } = await sb.from("package_variants")
-        .select("price").eq("id", req.variant_id).maybeSingle();
-      if (v) variantPrice = Number(v.price);
-    }
-    const pkgPrice = Number((cp as any).packages?.price ?? 0);
-    const basePrice = variantPrice != null ? variantPrice : pkgPrice;
-    const priceApplied = manualPrice != null ? manualPrice : basePrice;
-
-    const { error: uErr } = await sb.from("customer_packages")
-      .update({ sessions_remaining: cp.sessions_remaining - 1 })
-      .eq("id", req.customer_package_id);
-    if (uErr) throw new Error(uErr.message);
-    const { data: log, error: lErr } = await sb.from("usage_logs")
-      .insert({
-        customer_package_id: req.customer_package_id,
-        admin_id: req.admin_id,
-        variant_id: req.variant_id,
-        variant_label: req.variant_label,
-        price_applied: priceApplied,
-      })
-      .select("id").single();
-    if (lErr || !log) throw new Error(lErr?.message ?? "Failed to log");
-    if (Array.isArray(req.staff_ids) && req.staff_ids.length) {
-      const { data: validRoles } = await sb.from("user_roles")
-        .select("user_id").in("role", ["staff", "stylist"]).in("user_id", req.staff_ids);
-      const valid = new Set((validRoles ?? []).map((r: any) => r.user_id));
-      const rows = req.staff_ids.filter((id: string) => valid.has(id))
-        .map((staff_user_id: string) => ({ usage_log_id: log.id, staff_user_id }));
-      if (rows.length) await sb.from("session_staff").insert(rows);
-    }
-    await sb.from("session_deduction_requests")
-      .update({ status: "approved", responded_at: nowIso, usage_log_id: log.id })
-      .eq("id", req.id);
-    return { ok: true, status: "approved", remaining: cp.sessions_remaining - 1 };
+    const res = await performApproval(sb, req, nowIso);
+    return { ok: true, status: "approved", remaining: res.remaining };
   },
+
 
   async adminListStaff(_p, { userId }) {
     await assertAdmin(userId);
@@ -881,7 +910,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const adminIds = Array.from(
       new Set((logs ?? []).map((l: any) => l.admin_id).filter(Boolean) as string[]),
     );
-    const [{ data: staffLinks }, { data: adminProfiles }] = await Promise.all([
+    const [{ data: staffLinks }, { data: adminProfiles }, { data: sdrRows }] = await Promise.all([
       ids.length
         ? sb.from("session_staff")
             .select("usage_log_id, staff_user_id, profiles:staff_user_id(id,email,name)")
@@ -890,7 +919,16 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       adminIds.length
         ? sb.from("profiles").select("id,email,name").in("id", adminIds)
         : Promise.resolve({ data: [] as any[] }),
+      ids.length
+        ? sb.from("session_deduction_requests")
+            .select("usage_log_id, approved_by_admin")
+            .in("usage_log_id", ids)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
+    const adminApprovedLogs = new Set(
+      ((sdrRows ?? []) as any[]).filter((r) => r.approved_by_admin).map((r) => r.usage_log_id),
+    );
+
     const staffByLog = new Map<string, any[]>();
     for (const sl of (staffLinks ?? []) as any[]) {
       const arr = staffByLog.get(sl.usage_log_id) ?? [];
@@ -923,6 +961,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         admin_email: a?.email ?? "",
         admin_name: a?.name ?? null,
         staff: staffByLog.get(l.id) ?? [],
+        approved_by_admin: adminApprovedLogs.has(l.id),
+
       };
     });
   },

@@ -90,6 +90,8 @@ function CustomerDetail() {
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
   const [deductManualPrice, setDeductManualPrice] = useState<string>("");
+  const [deductSkipApproval, setDeductSkipApproval] = useState(false);
+
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
 
@@ -271,6 +273,8 @@ function CustomerDetail() {
     const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
     setDeductVariantId(defaultVariant);
     setDeductManualPrice("");
+    setDeductSkipApproval(false);
+
     setDeductFor(cp);
   };
 
@@ -307,16 +311,23 @@ function CustomerDetail() {
           staffIds: Array.from(selectedStaff),
           variantId: deductVariantId || null,
           manualPrice,
+          skipApproval: deductSkipApproval,
         },
       });
-      toast.success("Approval request sent to customer (expires in 15 min)");
+      toast.success(
+        deductSkipApproval
+          ? "Session deducted (admin approved)"
+          : "Approval request sent to customer (expires in 15 min)",
+      );
       setDeductFor(null);
+      refresh();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setDeducting(false);
     }
   };
+
 
   const doPromote = async () => {
     try {
@@ -858,9 +869,22 @@ function CustomerDetail() {
                     Leave blank to charge the normal rate.
                   </p>
                 </div>
+                <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50">
+                  <Checkbox
+                    checked={deductSkipApproval}
+                    onCheckedChange={(v) => setDeductSkipApproval(v === true)}
+                  />
+                  <span className="text-sm">
+                    Deduct now without customer approval
+                    <span className="block text-[11px] text-muted-foreground">
+                      Use only when the customer has no phone or app. Recorded as admin approved.
+                    </span>
+                  </span>
+                </label>
                 <div className="text-xs text-muted-foreground">
                   Select the staff who performed the service (optional).
                 </div>
+
                 <div className="space-y-2 max-h-56 overflow-y-auto">
                   {staffOpts.length === 0 && (
                     <p className="text-sm text-muted-foreground">No staff members yet.</p>
@@ -886,8 +910,9 @@ function CustomerDetail() {
               Cancel
             </Button>
             <Button onClick={confirmDeduct} disabled={deducting}>
-              {deducting ? "Deducting..." : "Deduct"}
+              {deducting ? "Deducting..." : deductSkipApproval ? "Deduct now" : "Request approval"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

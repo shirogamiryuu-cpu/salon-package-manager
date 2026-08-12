@@ -33,8 +33,9 @@ export const addDepositAmount = (a: {
 }) => callAdminApi("addDepositAmount", payload(a));
 
 export const useSession = (a: {
-  data: { customerPackageId: string; staffIds?: string[]; variantId?: string | null; manualPrice?: number | null };
+  data: { customerPackageId: string; staffIds?: string[]; variantId?: string | null; manualPrice?: number | null; skipApproval?: boolean };
 }) => callAdminApi("useSession", payload(a));
+
 
 export const customerListPendingRequests = (_a?: Arg<undefined>) =>
   callAdminApi("customerListPendingRequests");
