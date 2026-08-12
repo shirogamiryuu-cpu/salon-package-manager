@@ -90,6 +90,8 @@ function CustomerDetail() {
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
   const [deductManualPrice, setDeductManualPrice] = useState<string>("");
+  const [deductSkipApproval, setDeductSkipApproval] = useState(false);
+
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
 
