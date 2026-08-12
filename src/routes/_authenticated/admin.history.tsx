@@ -191,7 +191,9 @@ function AdminHistory() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     By: {r.admin_name ?? r.admin_email ?? "—"}
+                    {(r as any).approved_by_admin ? " · admin approved" : ""}
                   </div>
+
 
                 </CardContent>
               </Card>
