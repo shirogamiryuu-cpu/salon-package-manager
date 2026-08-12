@@ -15,7 +15,7 @@ Migration on `session_deduction_requests`:
 
 ### 2. Edge function `supabase/functions/admin-api/index.ts`
 - `useSession`: accept optional `manualPrice`. Validate `>= 0`. Persist into the new `session_deduction_requests.manual_price` column.
-- `respondSessionRequest`: when `req.manual_price` is set, use it as `price_applied` and set `was_first_time = false` (manual price overrides first-time logic). Deposit-sufficiency check uses the manual price for this session instead of the computed unit.
+- `respondSessionRequest`: when `req.manual_price` is set, use it as `price_applied`. Deposit-sufficiency check uses the manual price for this session instead of the computed unit.
 - `assignPackage`: no logic change — already honors `totalPrice`; just ensure it's used when provided (already true).
 - `adminAddSessions`: no logic change — already honors `addedPrice`.
 - Commission trigger already prefers `usage_logs.price_applied` for revenue, so overrides automatically flow into commissions.

@@ -69,11 +69,11 @@ function CustomerDetail() {
   const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; first_time_price: number | null; category_id: string | null }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; category_id: string | null }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [pkgSearch, setPkgSearch] = useState<string>("");
   const [pkgCategoryFilter, setPkgCategoryFilter] = useState<string>("all");
-  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number; first_time_price: number | null }[]>>({});
+  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number }[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
   const [pickVariantId, setPickVariantId] = useState<string>("");
@@ -117,7 +117,7 @@ function CustomerDetail() {
       const [{ data }, { data: cats }] = await Promise.all([
         supabase
           .from("packages")
-          .select("id,name,total_sessions,price,first_time_price,category_id")
+          .select("id,name,total_sessions,price,category_id")
           .eq("is_active", true),
         supabase
           .from("package_categories")
@@ -130,14 +130,13 @@ function CustomerDetail() {
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
       const { data: vs } = await supabase
         .from("package_variants")
-        .select("id,package_id,label,price,first_time_price,sort_order")
+        .select("id,package_id,label,price,sort_order")
         .order("sort_order", { ascending: true });
       const map: Record<string, any[]> = {};
       for (const v of (vs ?? []) as any[]) {
         (map[v.package_id] ||= []).push({
           id: v.id, label: v.label,
           price: Number(v.price),
-          first_time_price: v.first_time_price == null ? null : Number(v.first_time_price),
         });
       }
       setVariantsByPkg(map);
@@ -154,21 +153,7 @@ function CustomerDetail() {
     : null;
   const selectedUnit = selectedVariant ? basePrice : (selectedPricing ? selectedPricing.final : basePrice);
 
-  // First-time price applies when this customer has no existing package of this (package, variant).
-  const ownsThisPackage = !!(data?.customerPackages ?? []).find(
-    (cp: any) => cp.package_id === pickId && (cp.variant_id ?? null) === (pickVariantId || null),
-  );
-  const effectiveFirstTime = selectedVariant
-    ? (selectedVariant.first_time_price ?? selectedPkg?.first_time_price ?? null)
-    : (selectedPkg?.first_time_price ?? null);
-  const firstTimePrice = !ownsThisPackage && effectiveFirstTime != null
-    ? Number(effectiveFirstTime)
-    : null;
-  const firstTimeApplies = firstTimePrice != null && assignSessions >= 1;
-
-  const computedTotal = firstTimeApplies
-    ? firstTimePrice! + selectedUnit * Math.max(0, assignSessions - 1)
-    : selectedUnit * assignSessions;
+  const computedTotal = selectedUnit * assignSessions;
   const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
   const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
   const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
@@ -572,58 +557,29 @@ function CustomerDetail() {
                 )}
               </div>
               <div className="w-full rounded-md border p-2 space-y-1">
-                {firstTimeApplies ? (
-                  <>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        <Badge variant="secondary" className="mr-1">1st time</Badge>
-                        1st session
-                      </span>
-                      <span className="font-medium">MMK {firstTimePrice!.toFixed(2)}</span>
-                    </div>
-                    {assignSessions > 1 && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          MMK {selectedUnit.toFixed(2)} × {assignSessions - 1} more session{assignSessions - 1 === 1 ? "" : "s"}
-                        </span>
-                        <span className="font-medium">MMK {(selectedUnit * (assignSessions - 1)).toFixed(2)}</span>
-                      </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {selectedPricing ? (
+                      <>
+                        <span className="line-through mr-1">MMK {selectedPricing.original.toFixed(2)}</span>
+                        <span className="text-foreground font-medium">MMK {selectedUnit.toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <>MMK {selectedUnit.toFixed(2)}</>
                     )}
-                    <div className="flex items-center justify-between border-t pt-1">
-                      <span className="text-muted-foreground text-sm">Total</span>
-                      <span className="font-semibold">MMK {totalAmount.toFixed(2)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {selectedPricing ? (
-                        <>
-                          <span className="line-through mr-1">MMK {selectedPricing.original.toFixed(2)}</span>
-                          <span className="text-foreground font-medium">MMK {selectedUnit.toFixed(2)}</span>
-                        </>
-                      ) : (
-                        <>MMK {selectedUnit.toFixed(2)}</>
-                      )}
-                      {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
-                    </span>
-                    <span className="font-semibold">
-                      Total MMK {totalAmount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
+                    {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
+                  </span>
+                  <span className="font-semibold">
+                    Total MMK {totalAmount.toFixed(2)}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Deposit: MMK {assignDepositAmount.toFixed(2)}</span>
                   <span>Outstanding: MMK {outstandingAmount.toFixed(2)}</span>
                 </div>
-                {selectedPromo && !firstTimeApplies && (
+                {selectedPromo && (
                   <div className="text-xs">
                     <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
-                  </div>
-                )}
-                {selectedPkg?.first_time_price != null && ownsThisPackage && (
-                  <div className="text-xs text-muted-foreground">
-                    First-time price already used for this customer on this package.
                   </div>
                 )}
               </div>
@@ -861,15 +817,7 @@ function CustomerDetail() {
             if (!deductFor) return null;
             const vs = variantsByPkg[deductFor.package_id] ?? [];
             const sel = vs.find((v) => v.id === deductVariantId) ?? null;
-            // First-time eligibility mirrors server: no session ever deducted on any of this
-            // customer's copies of this package (any variant).
-            const sameCps = (data?.customerPackages ?? []).filter((c: any) => c.package_id === deductFor.package_id);
-            const anyUsed = sameCps.some((c: any) => (c.total_sessions ?? 0) - (c.sessions_remaining ?? 0) > 0);
-            const isFirstTimeEligible = !anyUsed;
-            const basePrice = sel ? sel.price : 0;
-            const effectiveFirstTime = sel?.first_time_price ?? null;
-            const wasFirstTime = isFirstTimeEligible && effectiveFirstTime != null;
-            const applied = wasFirstTime ? effectiveFirstTime! : basePrice;
+            const applied = sel ? sel.price : 0;
             return (
               <div className="py-2 space-y-3">
                 {vs.length > 0 && (
@@ -881,7 +829,6 @@ function CustomerDetail() {
                         {vs.map((v) => (
                           <SelectItem key={v.id} value={v.id}>
                             {v.label} — MMK {v.price.toFixed(2)}
-                            {v.first_time_price != null ? ` (1st: MMK ${v.first_time_price.toFixed(2)})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -890,11 +837,7 @@ function CustomerDetail() {
                 )}
                 {sel && (
                   <div className="rounded-md border p-2 text-sm flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {wasFirstTime ? (
-                        <><Badge variant="secondary" className="mr-1">1st time</Badge>Price this session</>
-                      ) : "Price this session"}
-                    </span>
+                    <span className="text-muted-foreground">Price this session</span>
                     <span className="font-semibold">MMK {applied.toFixed(2)}</span>
                   </div>
                 )}
@@ -912,7 +855,7 @@ function CustomerDetail() {
                     className="h-9"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Leave blank to charge the normal rate. Overrides first-time pricing.
+                    Leave blank to charge the normal rate.
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">

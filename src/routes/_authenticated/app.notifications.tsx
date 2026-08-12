@@ -16,6 +16,7 @@ type Row = {
   created_at: string;
   expires_at: string;
   responded_at: string | null;
+  manual_price: number | null;
   customer_packages: {
     id: string;
     sessions_remaining: number;
@@ -42,7 +43,7 @@ function Notifications() {
     const { data } = await supabase
       .from("session_deduction_requests")
       .select(
-        "id,customer_package_id,status,created_at,expires_at,responded_at,customer_packages(id,sessions_remaining,total_sessions,packages(name))",
+        "id,customer_package_id,status,created_at,expires_at,responded_at,manual_price,customer_packages(id,sessions_remaining,total_sessions,packages(name))",
       )
       .eq("customer_id", u.user.id)
       .order("created_at", { ascending: false })
@@ -107,10 +108,10 @@ function Notifications() {
                     params={{ id: r.customer_package_id }}
                     className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-xl"
                   >
-                    <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} />
+                    <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} manualPrice={r.manual_price} />
                   </Link>
                 ) : (
-                  <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} />
+                  <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} manualPrice={r.manual_price} />
                 )}
               </Card>
             );
@@ -130,6 +131,7 @@ function NotifBody({
   dt,
   createdAt,
   status,
+  manualPrice,
 }: {
   meta: { label: string; variant: "default" | "secondary" | "outline" | "destructive" };
   Icon: any;
@@ -139,6 +141,7 @@ function NotifBody({
   dt: Date;
   createdAt: Date;
   status: Row["status"];
+  manualPrice?: number | null;
 }) {
   return (
     <CardContent className="p-4 flex items-start gap-3">
@@ -154,6 +157,11 @@ function NotifBody({
           Session deduction request
           {typeof remaining === "number" && typeof total === "number" ? ` · ${remaining}/${total} left` : ""}
         </div>
+        {typeof manualPrice === "number" && (
+          <div className="text-sm font-medium mt-1">
+            Charge: MMK {manualPrice.toFixed(2)}
+          </div>
+        )}
         <div className="text-xs text-muted-foreground mt-1">
           {status === "pending" ? "Requested" : "Updated"} {dt.toLocaleString()}
           {status !== "pending" && dt.getTime() !== createdAt.getTime()

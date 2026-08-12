@@ -25,7 +25,6 @@ type Pkg = {
   total_sessions: number;
   points_awarded: number;
   image_url: string | null;
-  first_time_price: number | null;
   category_id: string | null;
 };
 
@@ -35,10 +34,9 @@ type Variant = {
   id?: string;
   label: string;
   price: number | string;
-  first_time_price: number | string | null;
 };
 
-const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", first_time_price: "", category_id: "__none__" };
+const empty = { name: "", description: "", price: 0, total_sessions: 1, points_awarded: 0, image_url: "", category_id: "__none__" };
 const NONE = "__none__";
 
 
@@ -64,11 +62,11 @@ function PackagesAdmin() {
     setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
     const { data: vs } = await supabase
       .from("package_variants")
-      .select("id,package_id,label,price,first_time_price,sort_order")
+      .select("id,package_id,label,price,sort_order")
       .order("sort_order", { ascending: true });
     const map: Record<string, Variant[]> = {};
     for (const v of (vs ?? []) as any[]) {
-      (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: v.price, first_time_price: v.first_time_price });
+      (map[v.package_id] ||= []).push({ id: v.id, label: v.label, price: v.price });
     }
     setVariantsByPkg(map);
     const { data: cs } = await supabase
@@ -92,7 +90,7 @@ function PackagesAdmin() {
     setOpen(true);
   };
 
-  const addVariant = () => setVariants((vs) => [...vs, { label: "", price: "", first_time_price: "" }]);
+  const addVariant = () => setVariants((vs) => [...vs, { label: "", price: "" }]);
   const removeVariant = (idx: number) => {
     setVariants((vs) => {
       const v = vs[idx];
@@ -114,9 +112,6 @@ function PackagesAdmin() {
         const { data: signed } = await supabase.storage.from("package-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
         image_url = signed?.signedUrl ?? null;
       }
-      const ftp = form.first_time_price === "" || form.first_time_price === null || form.first_time_price === undefined
-        ? null
-        : Number(form.first_time_price);
       const payload = {
         name: form.name,
         description: form.description || null,
@@ -124,7 +119,6 @@ function PackagesAdmin() {
         total_sessions: 1,
         points_awarded: Number(form.points_awarded),
         image_url,
-        first_time_price: ftp,
         category_id: form.category_id && form.category_id !== NONE ? form.category_id : null,
       };
       let pkgId = editing?.id;
@@ -150,10 +144,6 @@ function PackagesAdmin() {
           package_id: pkgId!,
           label: v.label.trim(),
           price: Number(v.price),
-          first_time_price:
-            v.first_time_price === "" || v.first_time_price === null || v.first_time_price === undefined
-              ? null
-              : Number(v.first_time_price),
           sort_order: (v as any).sort_order,
         };
         if (v.id) {
@@ -215,17 +205,6 @@ function PackagesAdmin() {
                 <div><Label>Price per session</Label><Input type="number" step="1000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
                 <div><Label>Points</Label><Input type="number" value={form.points_awarded} onChange={(e) => setForm({ ...form, points_awarded: e.target.value })} /></div>
               </div>
-              <div>
-                <Label>First-time session price (optional)</Label>
-                <Input
-                  type="number"
-                  step="1000"
-                  placeholder="e.g. 200 — leave blank to use regular price"
-                  value={form.first_time_price ?? ""}
-                  onChange={(e) => setForm({ ...form, first_time_price: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">Used when no matching variant first-time price is set.</p>
-              </div>
 
               <div className="rounded-md border p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -241,7 +220,7 @@ function PackagesAdmin() {
                   <p className="text-xs text-muted-foreground italic">No variants — package uses the base price above.</p>
                 )}
                 {variants.map((v, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_100px_110px_auto] gap-2 items-center">
+                  <div key={i} className="grid grid-cols-[1fr_100px_auto] gap-2 items-center">
                     <Input
                       placeholder="Label (e.g. Short hair)"
                       value={v.label}
@@ -253,13 +232,6 @@ function PackagesAdmin() {
                       placeholder="Price"
                       value={v.price as any}
                       onChange={(e) => updateVariant(i, { price: e.target.value })}
-                    />
-                    <Input
-                      type="number"
-                      step="1000"
-                      placeholder="1st-time MMK"
-                      value={(v.first_time_price ?? "") as any}
-                      onChange={(e) => updateVariant(i, { first_time_price: e.target.value })}
                     />
                     <Button type="button" size="icon" variant="ghost" onClick={() => removeVariant(i)}>
                       <X className="h-4 w-4" />
