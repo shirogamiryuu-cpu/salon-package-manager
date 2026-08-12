@@ -233,7 +233,13 @@ function AdminHistory() {
                       <TableCell>
                         {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
                       </TableCell>
-                      <TableCell>{r.admin_name ?? r.admin_email ?? "—"}</TableCell>
+                      <TableCell>
+                        {r.admin_name ?? r.admin_email ?? "—"}
+                        {(r as any).approved_by_admin ? (
+                          <span className="text-xs text-muted-foreground ml-2">admin approved</span>
+                        ) : null}
+                      </TableCell>
+
 
                     </TableRow>
                   ))}
