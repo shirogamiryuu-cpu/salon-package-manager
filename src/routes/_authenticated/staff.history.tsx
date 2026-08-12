@@ -71,7 +71,7 @@ function StaffHistory() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
-                    {r.price_applied ? ` · MMK ${r.price_applied.toFixed(2)}` : ""}
+                    {r.price_applied ? ` · MMK ${r.price_applied.toFixed(0)}` : ""}
                   </div>
                 </CardContent>
               </Card>
@@ -99,7 +99,7 @@ function StaffHistory() {
                         {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
                         {r.price_applied ? (
                           <span className="text-xs text-muted-foreground ml-2">
-                            MMK {r.price_applied.toFixed(2)}
+                            MMK {r.price_applied.toFixed(0)}
                           </span>
                         ) : null}
                       </TableCell>
