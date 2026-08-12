@@ -362,6 +362,7 @@ export type Database = {
       package_variants: {
         Row: {
           created_at: string
+          first_time_price: number | null
           id: string
           label: string
           package_id: string
@@ -371,6 +372,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          first_time_price?: number | null
           id?: string
           label: string
           package_id: string
@@ -380,6 +382,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          first_time_price?: number | null
           id?: string
           label?: string
           package_id?: string
@@ -402,6 +405,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           description: string | null
+          first_time_price: number | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -414,6 +418,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          first_time_price?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -426,6 +431,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          first_time_price?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -846,6 +852,7 @@ export type Database = {
           used_at: string
           variant_id: string | null
           variant_label: string | null
+          was_first_time: boolean
         }
         Insert: {
           admin_id: string
@@ -855,6 +862,7 @@ export type Database = {
           used_at?: string
           variant_id?: string | null
           variant_label?: string | null
+          was_first_time?: boolean
         }
         Update: {
           admin_id?: string
@@ -864,6 +872,7 @@ export type Database = {
           used_at?: string
           variant_id?: string | null
           variant_label?: string | null
+          was_first_time?: boolean
         }
         Relationships: [
           {
