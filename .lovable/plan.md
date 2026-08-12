@@ -1,41 +1,39 @@
 ## Goal
-Let admins enter a manual price override when (1) assigning a package to a customer, (2) adding sessions to an existing package, and (3) deducting a session — for one-off discounts. The override propagates through the deposit math, commissions, and history so revenue/reports reflect the real charged amount.
 
-## What already exists
-- `assignPackage` and `adminAddSessions` already accept `totalPrice` / `addedPrice` args, but the UI doesn't always expose them clearly.
-- `useSession` → `respondSessionRequest` always **computes** `price_applied` from variant/package price. There is no way to override it.
+Let an admin deduct a session immediately, without waiting for the customer to approve — for customers who have no phone / no app access.
+
+## How it works today
+
+`useSession` always creates a pending row in `session_deduction_requests`, sends a push, and waits for the customer to call `respondSessionRequest`. Only on approval does the app reduce `sessions_remaining`, write the `usage_logs` row, and fire the commission trigger.
 
 ## Changes
 
-### 1. Database
-Migration on `session_deduction_requests`:
-- Add `manual_price NUMERIC(10,2) NULL` — admin-entered override carried from request → approval.
+### 1. Admin UI — Deduct dialog
+In the "Deduct a session" dialog (`admin.customers.$id.index.tsx`), add a toggle:
 
-(No changes to `usage_logs`; it already has `price_applied`.)
+- **Request customer approval** (default, current behaviour)
+- **Deduct now without approval** — shown with a short warning line ("Use only when the customer has no app/phone. This is recorded as admin-approved.")
 
-### 2. Edge function `supabase/functions/admin-api/index.ts`
-- `useSession`: accept optional `manualPrice`. Validate `>= 0`. Persist into the new `session_deduction_requests.manual_price` column.
-- `respondSessionRequest`: when `req.manual_price` is set, use it as `price_applied`. Deposit-sufficiency check uses the manual price for this session instead of the computed unit.
-- `assignPackage`: no logic change — already honors `totalPrice`; just ensure it's used when provided (already true).
-- `adminAddSessions`: no logic change — already honors `addedPrice`.
-- Commission trigger already prefers `usage_logs.price_applied` for revenue, so overrides automatically flow into commissions.
+When the toggle is on, the confirm button reads "Deduct now" and no push is sent.
 
-### 3. SPA wrappers `src/lib/admin.functions.ts`
-- Extend `useSession` signature with `manualPrice?: number`.
+### 2. Backend — `admin-api` edge function
+- `useSession` accepts a new optional `skipApproval: boolean`.
+- When `skipApproval` is true (admin-only, already enforced by `assertAdmin`):
+  - Run the same deposit/variant/manual-price validation as today.
+  - Insert the `session_deduction_requests` row as usual (pending), then immediately perform the approval path server-side: decrement `sessions_remaining`, insert the `usage_logs` row with the computed `price_applied`, insert `session_staff` rows, and update the request to `approved` with `usage_log_id`.
+  - Updating the request to `approved` keeps the existing commission trigger working unchanged, so commissions are still created.
+  - Skip the push notification.
+- The approval path is factored into a shared internal helper so `respondSessionRequest` and the skip-approval path use identical logic (no duplicated pricing rules).
 
-### 4. UI
-- **Assign package dialog** (`admin.customers.$id.index.tsx` or the assign modal it uses): surface/label the existing "Total price" input as "Total price (override for discounts)" with a helper hint; default to computed price × sessions but editable.
-- **Add sessions dialog** (`admin.customers.$id.packages.$cpId.tsx`): same treatment for `addedPrice` — label as "Added price (override)".
-- **Deduct-session dialog** (staff/admin flow that calls `useSession`, in `admin.customers.$id.packages.$cpId.tsx` / staff index): add a new optional "Custom price for this session" number input. If left blank → current behavior. If filled → passed as `manualPrice`.
-- Customer approval screen (`app.notifications.tsx`) shows the request; if `manual_price` present, display it so the customer sees the actual charge before approving.
+### 3. Audit trail
+Add `approved_by_admin BOOLEAN NOT NULL DEFAULT false` to `session_deduction_requests` (migration), set to true for admin-side deductions, so history can distinguish self-approved sessions.
 
-### 5. History display
-- No schema change; existing `price_applied` column already renders on history rows (`app.history.tsx`, admin history). Will automatically show the overridden value.
+### 4. History display
+Admin history rows for these sessions show a small "Admin approved" tag; customer history is unchanged apart from the session appearing normally.
+
+### 5. SPA wrapper
+`src/lib/admin.functions.ts` → `useSession` signature gains `skipApproval?: boolean`.
 
 ## Out of scope
-- No changes to promotions, warranty, or points logic.
-- No bulk re-price tool for past sessions.
-
-## Technical notes
-- Validation: manual price must be a non-negative number and, for `useSession`, cannot exceed remaining deposit balance (`deposit_amount - already-consumed`), otherwise the deposit check throws as it does today.
-- Backwards compatible: `manual_price` is nullable; existing requests keep computed pricing.
+- No change to first-time pricing, variants, deposits, or commission rules.
+- Staff (non-admin) users cannot skip approval.
