@@ -273,6 +273,8 @@ function CustomerDetail() {
     const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
     setDeductVariantId(defaultVariant);
     setDeductManualPrice("");
+    setDeductSkipApproval(false);
+
     setDeductFor(cp);
   };
 
