@@ -867,9 +867,22 @@ function CustomerDetail() {
                     Leave blank to charge the normal rate.
                   </p>
                 </div>
+                <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50">
+                  <Checkbox
+                    checked={deductSkipApproval}
+                    onCheckedChange={(v) => setDeductSkipApproval(v === true)}
+                  />
+                  <span className="text-sm">
+                    Deduct now without customer approval
+                    <span className="block text-[11px] text-muted-foreground">
+                      Use only when the customer has no phone or app. Recorded as admin approved.
+                    </span>
+                  </span>
+                </label>
                 <div className="text-xs text-muted-foreground">
                   Select the staff who performed the service (optional).
                 </div>
+
                 <div className="space-y-2 max-h-56 overflow-y-auto">
                   {staffOpts.length === 0 && (
                     <p className="text-sm text-muted-foreground">No staff members yet.</p>
