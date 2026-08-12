@@ -908,8 +908,9 @@ function CustomerDetail() {
               Cancel
             </Button>
             <Button onClick={confirmDeduct} disabled={deducting}>
-              {deducting ? "Deducting..." : "Deduct"}
+              {deducting ? "Deducting..." : deductSkipApproval ? "Deduct now" : "Request approval"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
