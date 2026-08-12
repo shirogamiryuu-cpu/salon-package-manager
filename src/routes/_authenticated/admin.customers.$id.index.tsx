@@ -430,145 +430,105 @@ function CustomerDetail() {
         <CardHeader>
           <CardTitle>Assign a package</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Input
-              type="search"
-              placeholder="Search packages…"
-              value={pkgSearch}
-              onChange={(e) => setPkgSearch(e.target.value)}
-              className="w-full sm:w-56 h-9"
-            />
-            {categories.length > 0 && (
-              <Select value={pkgCategoryFilter} onValueChange={setPkgCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-9">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  <SelectItem value="none">Uncategorised</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(() => {
-              const q = pkgSearch.trim().toLowerCase();
-              const filtered = packages.filter((p) => {
-                if (pkgCategoryFilter === "none" && p.category_id) return false;
-                if (pkgCategoryFilter !== "all" && pkgCategoryFilter !== "none" && p.category_id !== pkgCategoryFilter) return false;
-                if (q && !p.name.toLowerCase().includes(q)) return false;
-                return true;
-              });
-              return (
-                <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
-                  <SelectTrigger className="max-w-xs">
-                    <SelectValue placeholder={filtered.length === 0 ? "No packages match" : "Choose a package"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filtered.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No packages match your filter.</div>
-                    ) : (
-                      filtered.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              );
-            })()}
-            {availableVariants.length > 0 && (
-              <Select value={pickVariantId} onValueChange={setPickVariantId}>
-                <SelectTrigger className="max-w-xs">
-                  <SelectValue placeholder="Choose a variant" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableVariants.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.label} — MMK {v.price.toFixed(2)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <Button onClick={doAssign} disabled={!pickId || (availableVariants.length > 0 && !pickVariantId)}>
-              Assign
-            </Button>
-          </div>
+        <CardContent className="space-y-5">
+          {/* Step 1 — pick the package */}
+          {(() => {
+            const q = pkgSearch.trim().toLowerCase();
+            const filtered = packages.filter((p) => {
+              if (pkgCategoryFilter === "none" && p.category_id) return false;
+              if (pkgCategoryFilter !== "all" && pkgCategoryFilter !== "none" && p.category_id !== pkgCategoryFilter) return false;
+              if (q && !p.name.toLowerCase().includes(q)) return false;
+              return true;
+            });
+            return (
+              <div className="space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Input
+                    type="search"
+                    placeholder="Search packages…"
+                    value={pkgSearch}
+                    onChange={(e) => setPkgSearch(e.target.value)}
+                    className="h-9"
+                  />
+                  {categories.length > 0 && (
+                    <Select value={pkgCategoryFilter} onValueChange={setPkgCategoryFilter}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All categories</SelectItem>
+                        <SelectItem value="none">Uncategorised</SelectItem>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={filtered.length === 0 ? "No packages match" : "Choose a package"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filtered.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">No packages match your filter.</div>
+                      ) : (
+                        filtered.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {availableVariants.length > 0 && (
+                    <Select value={pickVariantId} onValueChange={setPickVariantId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Choose an option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableVariants.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.label} — MMK {v.price.toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {selectedPkg && (
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Sessions:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  value={assignSessions}
-                  onChange={(e) => setAssignSessions(Math.max(1, Number(e.target.value) || 1))}
-                  className="w-20 h-8"
-                />
+            <>
+              {/* Step 2 — the essentials */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="block text-muted-foreground">Sessions</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={assignSessions}
+                    onChange={(e) => setAssignSessions(Math.max(1, Number(e.target.value) || 1))}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-muted-foreground">Deposit paid (MMK)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="1000"
+                    max={totalAmount || undefined}
+                    value={assignDepositAmount}
+                    onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
+                    className="h-9"
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Deposit amount (MMK):</span>
-                <Input
-                  type="number"
-                  min={0}
-                  step="1000"
-                  max={totalAmount || undefined}
-                  value={assignDepositAmount}
-                  onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
-                  className="w-28 h-8"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Warranty years:</span>
-                <Input
-                  type="number"
-                  min={0}
-                  value={assignWarranty}
-                  onChange={(e) => setAssignWarranty(Math.max(0, Number(e.target.value) || 0))}
-                  className="w-20 h-8"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Purchase date:</span>
-                <Input
-                  type="date"
-                  value={assignPurchaseDate}
-                  onChange={(e) => setAssignPurchaseDate(e.target.value)}
-                  className="w-40 h-8"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Warranty expires:</span>
-                <Input
-                  type="date"
-                  value={assignWarrantyExpires}
-                  onChange={(e) => setAssignWarrantyExpires(e.target.value)}
-                  className="w-40 h-8"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Manual total price (MMK):</span>
-                <Input
-                  type="number"
-                  min={0}
-                  step="1000"
-                  placeholder={`auto ${computedTotal.toFixed(0)}`}
-                  value={assignManualPrice}
-                  onChange={(e) => setAssignManualPrice(e.target.value)}
-                  className="w-32 h-8"
-                  title="Leave blank to use the calculated price. Set a custom total for one-off discounts."
-                />
-                {manualTotalValid && (
-                  <Badge variant="secondary" className="text-[10px]">override</Badge>
-                )}
-              </div>
-              <div className="w-full rounded-md border p-2 space-y-1">
+
+              {/* Summary */}
+              <div className="rounded-md border p-3 space-y-1 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
                     {selectedPricing ? (
@@ -581,9 +541,7 @@ function CustomerDetail() {
                     )}
                     {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
                   </span>
-                  <span className="font-semibold">
-                    Total MMK {totalAmount.toFixed(2)}
-                  </span>
+                  <span className="font-semibold">Total MMK {totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Deposit: MMK {assignDepositAmount.toFixed(2)}</span>
@@ -594,11 +552,64 @@ function CustomerDetail() {
                     <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
                   </div>
                 )}
+                {manualTotalValid && (
+                  <div className="text-xs"><Badge variant="secondary">manual price override</Badge></div>
+                )}
               </div>
 
-            </div>
+              {/* Advanced */}
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="px-0 text-muted-foreground"
+                  onClick={() => setShowAssignAdvanced((v) => !v)}
+                >
+                  {showAssignAdvanced ? "Hide" : "More"} options (dates, warranty, custom price)
+                </Button>
+                {showAssignAdvanced && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="block text-muted-foreground">Purchase date</label>
+                      <Input type="date" value={assignPurchaseDate} onChange={(e) => setAssignPurchaseDate(e.target.value)} className="h-9" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-muted-foreground">Warranty years</label>
+                      <Input type="number" min={0} value={assignWarranty} onChange={(e) => setAssignWarranty(Math.max(0, Number(e.target.value) || 0))} className="h-9" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-muted-foreground">Warranty expires</label>
+                      <Input type="date" value={assignWarrantyExpires} onChange={(e) => setAssignWarrantyExpires(e.target.value)} className="h-9" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-muted-foreground">Custom total price (MMK)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="1000"
+                        placeholder={`auto ${computedTotal.toFixed(0)}`}
+                        value={assignManualPrice}
+                        onChange={(e) => setAssignManualPrice(e.target.value)}
+                        className="h-9"
+                        title="Leave blank to use the calculated price."
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
+
+          <Button
+            onClick={doAssign}
+            disabled={!pickId || (availableVariants.length > 0 && !pickVariantId)}
+            className="w-full sm:w-auto"
+          >
+            Assign package
+          </Button>
         </CardContent>
+
       </Card>
 
       <div className="space-y-3">
