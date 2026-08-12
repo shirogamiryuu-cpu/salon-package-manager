@@ -172,13 +172,26 @@ function AuthPage() {
                 <div className="space-y-2">
                   <Label htmlFor="si-password">Password</Label>
 
-                  <Input
-                    id="si-password"
-                    type="password"
-                    required
-                    value={siPassword}
-                    onChange={(e) => setSiPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="si-password"
+                      type={showSiPassword ? "text" : "password"}
+                      required
+                      value={siPassword}
+                      onChange={(e) => setSiPassword(e.target.value)}
+                      className="pr-10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSiPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground"
+                      tabIndex={-1}
+                      aria-label={showSiPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSiPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -228,14 +241,27 @@ function AuthPage() {
                 <div className="space-y-2">
                   <Label htmlFor="su-password">Password</Label>
 
-                  <Input
-                    id="su-password"
-                    type="password"
-                    required
-                    minLength={6}
-                    value={suPassword}
-                    onChange={(e) => setSuPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="su-password"
+                      type={showSuPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      value={suPassword}
+                      onChange={(e) => setSuPassword(e.target.value)}
+                      className="pr-10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSuPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground"
+                      tabIndex={-1}
+                      aria-label={showSuPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSuPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
