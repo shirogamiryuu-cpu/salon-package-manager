@@ -307,16 +307,23 @@ function CustomerDetail() {
           staffIds: Array.from(selectedStaff),
           variantId: deductVariantId || null,
           manualPrice,
+          skipApproval: deductSkipApproval,
         },
       });
-      toast.success("Approval request sent to customer (expires in 15 min)");
+      toast.success(
+        deductSkipApproval
+          ? "Session deducted (admin approved)"
+          : "Approval request sent to customer (expires in 15 min)",
+      );
       setDeductFor(null);
+      refresh();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setDeducting(false);
     }
   };
+
 
   const doPromote = async () => {
     try {
