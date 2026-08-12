@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import logo from "@/public/EmpireCharme.png";
 
 export const Route = createFileRoute("/auth")({
@@ -23,12 +24,14 @@ function AuthPage() {
   // Sign in
   const [siIdentifier, setSiIdentifier] = useState("");
   const [siPassword, setSiPassword] = useState("");
+  const [showSiPassword, setShowSiPassword] = useState(false);
 
   // Sign up
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suPhone, setSuPhone] = useState("");
   const [suName, setSuName] = useState("");
+  const [showSuPassword, setShowSuPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
