@@ -797,11 +797,11 @@ function CustomerDetail() {
                 type="number"
                 min={0}
                 step="1000"
-                value={addDeposit === 0 ? "" : addDeposit}
+                value={addDeposit}
                 onChange={(e) => {
                   const raw = e.target.value;
-                  if (raw === "") return setAddDeposit(0);
-                  setAddDeposit(Math.max(0, Number(raw) || 0));
+                  if (raw === "") return setAddDeposit("");
+                  setAddDeposit(String(Math.max(0, Number(raw) || 0)));
                 }}
                 className="w-24 h-8"
               />
