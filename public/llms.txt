@@ -1,0 +1,10 @@
+# EmpireCharme
+
+> EmpireCharme is a premium beauty salon on Moe Kaung Road, Yankin Township, Yangon, offering hair, scalp, nail and grooming services.
+
+## Pages
+
+- [Home](/): Salon overview, specialties and highlights.
+- [About](/about): Our story, values and philosophy of healthy hair care.
+- [Services](/services): Hair, treatments, nails and grooming services.
+- [Contact](/contact): Address, phone, opening hours and map.

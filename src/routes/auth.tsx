@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
@@ -141,7 +141,10 @@ function AuthPage() {
             <img src={logo} alt="EmpireCharme" className="h-16 w-auto mx-auto" />
           </div>
 
-          <CardTitle className="text-2xl">Welcome to Empire Charme</CardTitle>
+          <h1 className="text-2xl font-serif leading-none tracking-tight">
+            Welcome to Empire Charme
+          </h1>
+
 
           <CardDescription>Sign in or create your salon account</CardDescription>
         </CardHeader>
