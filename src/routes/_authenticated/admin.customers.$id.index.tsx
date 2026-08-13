@@ -523,11 +523,12 @@ function CustomerDetail() {
                     min={0}
                     step="1000"
                     max={totalAmount || undefined}
-                    value={assignDepositAmount === 0 ? "" : assignDepositAmount}
+                    value={assignDepositAmount}
                     onChange={(e) => {
                       const raw = e.target.value;
-                      if (raw === "") return setAssignDepositAmount(0);
-                      setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(raw) || 0)));
+                      if (raw === "") return setAssignDepositAmount("");
+                      const n = Math.max(0, Math.min(totalAmount, Number(raw) || 0));
+                      setAssignDepositAmount(String(n));
                     }}
                     className="h-9"
                   />
@@ -551,7 +552,7 @@ function CustomerDetail() {
                   <span className="font-semibold">Total MMK {totalAmount.toFixed(0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Deposit: MMK {assignDepositAmount.toFixed(0)}</span>
+                  <span>Deposit: MMK {assignDepositNum.toFixed(0)}</span>
                   <span>Outstanding: MMK {outstandingAmount.toFixed(0)}</span>
                 </div>
                 {selectedPromo && (
@@ -684,17 +685,18 @@ function CustomerDetail() {
                             step="1000"
                             max={outstanding || undefined}
                             placeholder="Add deposit (MMK)"
-                            value={draft || ""}
+                            value={depositDrafts[cp.id] ?? ""}
                             onChange={(e) => {
-                              const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
+                              const raw = e.target.value;
+                              const v = raw === "" ? "" : String(Math.max(0, Math.min(outstanding, Number(raw) || 0)));
                               setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
                             }}
                             className="h-8"
                           />
                           <Button
                             size="sm"
-                            variant={draft > 0 ? "default" : "ghost"}
-                            disabled={draft <= 0 || outstanding <= 0}
+                            variant={depositDrafts[cp.id] ? "default" : "ghost"}
+                            disabled={!depositDrafts[cp.id] || outstanding <= 0}
                             onClick={() => saveDeposit(cp)}
                           >
                             <Plus className="h-3 w-3 mr-1" /> Add
