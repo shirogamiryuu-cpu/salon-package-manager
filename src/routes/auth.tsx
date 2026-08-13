@@ -141,7 +141,10 @@ function AuthPage() {
             <img src={logo} alt="EmpireCharme" className="h-16 w-auto mx-auto" />
           </div>
 
-          <CardTitle className="text-2xl">Welcome to Empire Charme</CardTitle>
+          <h1 className="text-2xl font-serif leading-none tracking-tight">
+            Welcome to Empire Charme
+          </h1>
+
 
           <CardDescription>Sign in or create your salon account</CardDescription>
         </CardHeader>
