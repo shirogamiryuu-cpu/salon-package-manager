@@ -902,13 +902,13 @@ function CustomerDetail() {
                     <p className="text-sm text-muted-foreground">No staff members yet.</p>
                   )}
                   {(() => {
-                    const groups = new Map<string, StaffOpt[]>();
+                    const groups: Record<string, StaffOpt[]> = {};
                     for (const s of staffOpts) {
                       const key = s.category ?? "staff";
-                      (groups.get(key) ?? groups.set(key, []).get(key)!).push(s);
+                      (groups[key] ??= []).push(s);
                     }
                     const order = ["stylist", "staff"];
-                    const sorted = Array.from(groups.entries()).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+                    const sorted = Object.entries(groups).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
                     return sorted.map(([category, members]) => (
                       <div key={category} className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
