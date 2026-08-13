@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/staff/")({
 });
 
 type Dash = {
+  scope?: "mine" | "all";
   stats: {
     today: number;
     week: number;
@@ -100,13 +101,16 @@ function StaffDash() {
   if (!data) return <p className="text-muted-foreground">Loading…</p>;
 
   const { stats, recent, pending, sold, topCustomers } = data;
+  const isAll = data.scope === "all";
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">My dashboard</h1>
+        <h1 className="text-2xl font-semibold">{isAll ? "Salon dashboard" : "My dashboard"}</h1>
         <p className="text-sm text-muted-foreground">
-          Your sessions, customers and package sales at a glance.
+          {isAll
+            ? "Admin preview: sessions, customers and package sales across the salon."
+            : "Your sessions, customers and package sales at a glance."}
         </p>
       </div>
 

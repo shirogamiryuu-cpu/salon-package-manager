@@ -1025,17 +1025,38 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
   },
 
   async staffDashboard(_p, { userId }) {
-    await assertStaff(userId);
+    const [isStaff, isStylist, isAdminUser] = await Promise.all([
+      hasRole(userId, "staff"),
+      hasRole(userId, "stylist"),
+      hasRole(userId, "admin"),
+    ]);
+    const staffScoped = isStaff || isStylist;
+    if (!staffScoped && !isAdminUser) throw new Error("Forbidden");
     const sb = admin();
 
-    const { data: links } = await sb
-      .from("session_staff")
-      .select(
-        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone)))",
-      )
-      .eq("staff_user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(500);
+    let links: any[] = [];
+    if (staffScoped) {
+      const { data } = await sb
+        .from("session_staff")
+        .select(
+          "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone)))",
+        )
+        .eq("staff_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      links = data ?? [];
+    } else {
+      // Admin previewing the staff view: show salon-wide sessions.
+      const { data } = await sb
+        .from("usage_logs")
+        .select(
+          "id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone))",
+        )
+        .order("used_at", { ascending: false })
+        .limit(500);
+      links = (data ?? []).map((ul: any) => ({ usage_log_id: ul.id, created_at: ul.used_at, usage_logs: ul }));
+    }
+
 
     const sessions = ((links ?? []) as any[])
       .map((l) => {
@@ -1069,13 +1090,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const revenue = (since: string) =>
       sessions.filter((s) => s.used_at >= since).reduce((a, s) => a + (s.price_applied || 0), 0);
 
-    // Packages this staff sold
-    const { data: sold } = await sb
+    // Packages this staff sold (all sales when an admin previews)
+    let soldQ = sb
       .from("customer_packages")
       .select("id, purchase_date, total_price, package_name, packages(name), profiles:customer_id(email,name)")
-      .contains("sold_by_staff_ids", [userId])
       .order("purchase_date", { ascending: false })
       .limit(100);
+    if (staffScoped) soldQ = soldQ.contains("sold_by_staff_ids", [userId]);
+    const { data: sold } = await soldQ;
 
     const soldRows = ((sold ?? []) as any[]).map((c) => ({
       id: c.id,
@@ -1087,15 +1109,17 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }));
 
     // Pending approvals where this staff is attached
-    const { data: pending } = await sb
+    let pendingQ = sb
       .from("session_deduction_requests")
       .select(
         "id, created_at, expires_at, status, variant_label, customer_packages(package_name, packages(name), profiles:customer_id(email,name))",
       )
-      .contains("staff_ids", [userId])
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(20);
+    if (staffScoped) pendingQ = pendingQ.contains("staff_ids", [userId]);
+    const { data: pending } = await pendingQ;
+
 
     const pendingRows = ((pending ?? []) as any[]).map((r) => ({
       id: r.id,
@@ -1126,7 +1150,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .slice(0, 5);
 
     return {
+      scope: staffScoped ? "mine" : "all",
       stats: {
+
         today: count(startOfDay),
         week: count(startOfWeek),
         month: count(startOfMonth),
