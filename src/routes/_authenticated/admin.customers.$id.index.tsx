@@ -78,7 +78,7 @@ function CustomerDetail() {
   const [pickId, setPickId] = useState<string>("");
   const [pickVariantId, setPickVariantId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
-  const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
+  const [assignDepositAmount, setAssignDepositAmount] = useState<string>("");
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
   const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
@@ -86,7 +86,7 @@ function CustomerDetail() {
   const [showAssignAdvanced, setShowAssignAdvanced] = useState(false);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
-  const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
+  const [depositDrafts, setDepositDrafts] = useState<Record<string, string>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
@@ -98,7 +98,7 @@ function CustomerDetail() {
 
   const [addFor, setAddFor] = useState<any | null>(null);
   const [addSessions, setAddSessions] = useState<number>(1);
-  const [addDeposit, setAddDeposit] = useState<number>(0);
+  const [addDeposit, setAddDeposit] = useState<string>("");
   const [addWarranty, setAddWarranty] = useState<number>(0);
   const [addManualPrice, setAddManualPrice] = useState<string>("");
   const [adding, setAdding] = useState(false);
@@ -160,9 +160,10 @@ function CustomerDetail() {
   const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
   const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
   const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
-  const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
+  const assignDepositNum = assignDepositAmount === "" ? 0 : Math.max(0, Math.min(totalAmount, Number(assignDepositAmount) || 0));
+  const outstandingAmount = Math.max(0, totalAmount - assignDepositNum);
   const depositSessionsEq = selectedUnit > 0
-    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
+    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositNum / selectedUnit)))
     : 0;
 
   const doAssign = async () => {
@@ -178,7 +179,7 @@ function CustomerDetail() {
           packageId: pickId,
           variantId: pickVariantId || null,
           sessions: assignSessions,
-          depositAmount: assignDepositAmount,
+          depositAmount: assignDepositNum,
           totalPrice: totalAmount,
           warrantyYears: assignWarranty,
           purchaseDate: assignPurchaseDate || undefined,
@@ -189,7 +190,7 @@ function CustomerDetail() {
       setPickId("");
       setPickVariantId("");
       setAssignSessions(1);
-      setAssignDepositAmount(0);
+      setAssignDepositAmount("");
       setAssignWarranty(0);
       setAssignPurchaseDate("");
       setAssignWarrantyExpires("");
@@ -213,7 +214,7 @@ function CustomerDetail() {
 
   const openAdd = (cp: any) => {
     setAddSessions(1);
-    setAddDeposit(0);
+    setAddDeposit("");
     setAddWarranty(0);
     setAddManualPrice("");
     setAddFor(cp);
@@ -228,6 +229,7 @@ function CustomerDetail() {
         : 0;
       const manualNum = addManualPrice === "" ? null : Number(addManualPrice);
       const manualValid = manualNum != null && Number.isFinite(manualNum) && manualNum >= 0;
+      const addDepositNum = addDeposit === "" ? 0 : Math.max(0, Number(addDeposit) || 0);
       const addedPrice = manualValid
         ? Math.round(manualNum! * 100) / 100
         : Math.round(unit * addSessions * 100) / 100;
@@ -235,7 +237,7 @@ function CustomerDetail() {
         data: {
           customerPackageId: addFor.id,
           sessions: addSessions,
-          depositAmount: addDeposit,
+          depositAmount: addDepositNum,
           addedPrice,
           warrantyYears: addWarranty,
         },
@@ -251,7 +253,8 @@ function CustomerDetail() {
   };
 
   const saveDeposit = async (cp: any) => {
-    const amount = depositDrafts[cp.id] ?? 0;
+    const draft = depositDrafts[cp.id] ?? "";
+    const amount = draft === "" ? 0 : Math.max(0, Number(draft) || 0);
     if (!amount || amount <= 0) return;
     try {
       await addDepositFn({ data: { customerPackageId: cp.id, amount } });
@@ -520,11 +523,12 @@ function CustomerDetail() {
                     min={0}
                     step="1000"
                     max={totalAmount || undefined}
-                    value={assignDepositAmount === 0 ? "" : assignDepositAmount}
+                    value={assignDepositAmount}
                     onChange={(e) => {
                       const raw = e.target.value;
-                      if (raw === "") return setAssignDepositAmount(0);
-                      setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(raw) || 0)));
+                      if (raw === "") return setAssignDepositAmount("");
+                      const n = Math.max(0, Math.min(totalAmount, Number(raw) || 0));
+                      setAssignDepositAmount(String(n));
                     }}
                     className="h-9"
                   />
@@ -548,7 +552,7 @@ function CustomerDetail() {
                   <span className="font-semibold">Total MMK {totalAmount.toFixed(0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Deposit: MMK {assignDepositAmount.toFixed(0)}</span>
+                  <span>Deposit: MMK {assignDepositNum.toFixed(0)}</span>
                   <span>Outstanding: MMK {outstandingAmount.toFixed(0)}</span>
                 </div>
                 {selectedPromo && (
@@ -681,17 +685,18 @@ function CustomerDetail() {
                             step="1000"
                             max={outstanding || undefined}
                             placeholder="Add deposit (MMK)"
-                            value={draft || ""}
+                            value={depositDrafts[cp.id] ?? ""}
                             onChange={(e) => {
-                              const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
+                              const raw = e.target.value;
+                              const v = raw === "" ? "" : String(Math.max(0, Math.min(outstanding, Number(raw) || 0)));
                               setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
                             }}
                             className="h-8"
                           />
                           <Button
                             size="sm"
-                            variant={draft > 0 ? "default" : "ghost"}
-                            disabled={draft <= 0 || outstanding <= 0}
+                            variant={depositDrafts[cp.id] ? "default" : "ghost"}
+                            disabled={!depositDrafts[cp.id] || outstanding <= 0}
                             onClick={() => saveDeposit(cp)}
                           >
                             <Plus className="h-3 w-3 mr-1" /> Add
@@ -792,11 +797,11 @@ function CustomerDetail() {
                 type="number"
                 min={0}
                 step="1000"
-                value={addDeposit === 0 ? "" : addDeposit}
+                value={addDeposit}
                 onChange={(e) => {
                   const raw = e.target.value;
-                  if (raw === "") return setAddDeposit(0);
-                  setAddDeposit(Math.max(0, Number(raw) || 0));
+                  if (raw === "") return setAddDeposit("");
+                  setAddDeposit(String(Math.max(0, Number(raw) || 0)));
                 }}
                 className="w-24 h-8"
               />
