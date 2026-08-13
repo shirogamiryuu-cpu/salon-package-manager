@@ -1024,7 +1024,126 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }));
   },
 
+  async staffDashboard(_p, { userId }) {
+    await assertStaff(userId);
+    const sb = admin();
+
+    const { data: links } = await sb
+      .from("session_staff")
+      .select(
+        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone)))",
+      )
+      .eq("staff_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    const sessions = ((links ?? []) as any[])
+      .map((l) => {
+        const ul = l.usage_logs;
+        const cp = ul?.customer_packages;
+        if (!ul) return null;
+        return {
+          id: ul.id,
+          used_at: ul.used_at,
+          customer_email: cp?.profiles?.email ?? "Customer",
+          customer_name: cp?.profiles?.name ?? null,
+          customer_phone: cp?.profiles?.phone ?? null,
+          package_name: cp?.packages?.name ?? cp?.package_name ?? "Package",
+          variant_label: ul.variant_label ?? null,
+          price_applied: Number(ul.price_applied ?? 0),
+          remaining: cp?.sessions_remaining ?? 0,
+          total: cp?.total_sessions ?? 0,
+          customer_id: cp?.customer_id ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const startOfWeekDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    startOfWeekDate.setDate(startOfWeekDate.getDate() - ((startOfWeekDate.getDay() + 6) % 7));
+    const startOfWeek = startOfWeekDate.toISOString();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const count = (since: string) => sessions.filter((s) => s.used_at >= since).length;
+    const revenue = (since: string) =>
+      sessions.filter((s) => s.used_at >= since).reduce((a, s) => a + (s.price_applied || 0), 0);
+
+    // Packages this staff sold
+    const { data: sold } = await sb
+      .from("customer_packages")
+      .select("id, purchase_date, total_price, package_name, packages(name), profiles:customer_id(email,name)")
+      .contains("sold_by_staff_ids", [userId])
+      .order("purchase_date", { ascending: false })
+      .limit(100);
+
+    const soldRows = ((sold ?? []) as any[]).map((c) => ({
+      id: c.id,
+      purchase_date: c.purchase_date,
+      total_price: Number(c.total_price ?? 0),
+      package_name: c.packages?.name ?? c.package_name ?? "Package",
+      customer_name: c.profiles?.name ?? null,
+      customer_email: c.profiles?.email ?? "Customer",
+    }));
+
+    // Pending approvals where this staff is attached
+    const { data: pending } = await sb
+      .from("session_deduction_requests")
+      .select(
+        "id, created_at, expires_at, status, variant_label, customer_packages(package_name, packages(name), profiles:customer_id(email,name))",
+      )
+      .contains("staff_ids", [userId])
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const pendingRows = ((pending ?? []) as any[]).map((r) => ({
+      id: r.id,
+      created_at: r.created_at,
+      expires_at: r.expires_at,
+      variant_label: r.variant_label ?? null,
+      package_name: r.customer_packages?.packages?.name ?? r.customer_packages?.package_name ?? "Package",
+      customer_name: r.customer_packages?.profiles?.name ?? null,
+      customer_email: r.customer_packages?.profiles?.email ?? "Customer",
+    }));
+
+    // Top customers by session count
+    const byCustomer = new Map<string, any>();
+    for (const s of sessions) {
+      const key = s.customer_id ?? s.customer_email;
+      const cur = byCustomer.get(key) ?? {
+        name: s.customer_name,
+        email: s.customer_email,
+        sessions: 0,
+        last_at: s.used_at,
+      };
+      cur.sessions += 1;
+      if (s.used_at > cur.last_at) cur.last_at = s.used_at;
+      byCustomer.set(key, cur);
+    }
+    const topCustomers = Array.from(byCustomer.values())
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 5);
+
+    return {
+      stats: {
+        today: count(startOfDay),
+        week: count(startOfWeek),
+        month: count(startOfMonth),
+        total: sessions.length,
+        uniqueCustomers: byCustomer.size,
+        monthRevenue: revenue(startOfMonth),
+        packagesSold: soldRows.length,
+      },
+      recent: sessions.slice(0, 10),
+      pending: pendingRows,
+      sold: soldRows.slice(0, 5),
+      topCustomers,
+    };
+  },
+
   async staffListMyHistory(_p, { userId }) {
+
     await assertStaff(userId);
     const sb = admin();
     const { data: links, error } = await sb
