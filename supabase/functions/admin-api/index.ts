@@ -1150,7 +1150,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .slice(0, 5);
 
     return {
+      scope: staffScoped ? "mine" : "all",
       stats: {
+
         today: count(startOfDay),
         week: count(startOfWeek),
         month: count(startOfMonth),
