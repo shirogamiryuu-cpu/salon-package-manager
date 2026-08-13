@@ -152,7 +152,7 @@ function PackageDetail() {
       <section className="grid grid-cols-3 min-w-0 border-y border-foreground/25 divide-x divide-foreground/20">
         <PriceCell label="Total" value={totalPrice} />
         <PriceCell label="Paid" value={depositAmount} />
-        <PriceCell label="Outstanding" value={outstanding} accent={outstanding > 0} />
+        <PriceCell label="Remaining Amount" value={outstanding} accent={outstanding > 0} />
       </section>
 
       {/* Meta grid */}

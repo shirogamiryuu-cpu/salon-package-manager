@@ -178,7 +178,7 @@ function AdminPackageDetail() {
               </div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-xs text-muted-foreground">Outstanding</div>
+              <div className="text-xs text-muted-foreground">Remaining Amount</div>
               <div className="text-base font-semibold">MMK {outstanding.toFixed(0)}</div>
             </div>
           </div>

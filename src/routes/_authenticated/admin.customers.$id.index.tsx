@@ -553,7 +553,7 @@ function CustomerDetail() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Deposit: MMK {assignDepositNum.toFixed(0)}</span>
-                  <span>Outstanding: MMK {outstandingAmount.toFixed(0)}</span>
+                  <span>Remaining Amount: MMK {outstandingAmount.toFixed(0)}</span>
                 </div>
                 {selectedPromo && (
                   <div className="text-xs">
@@ -674,7 +674,7 @@ function CustomerDetail() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-muted-foreground">Outstanding</div>
+                            <div className="text-muted-foreground">Remaining Amount</div>
                             <div className="font-semibold text-sm">MMK {outstanding.toFixed(0)}</div>
                           </div>
                         </div>
