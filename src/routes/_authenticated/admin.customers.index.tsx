@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
 });
 
-type C = { id: string; email: string; name: string | null; phone: string | null; points: number; created_at: string };
+type C = { id: string; name: string | null; phone: string | null; points: number; created_at: string };
 
 function Customers() {
   const list = useServerFn(adminListCustomers);
@@ -21,7 +21,7 @@ function Customers() {
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    list().then((d) => setRows(d as C[])).catch(() => setRows([]));
+    list().then((d) => setRows((d as C[]).map(({ id, name, phone, points, created_at }) => ({ id, name, phone, points, created_at })))).catch(() => setRows([]));
   }, [list]);
 
   const filtered = useMemo(() => {
@@ -29,7 +29,6 @@ function Customers() {
     return rows.filter(
       (r) =>
         (r.name ?? "").toLowerCase().includes(s) ||
-        r.email.toLowerCase().includes(s) ||
         (r.phone ?? "").includes(s),
     );
   }, [rows, q]);
@@ -40,7 +39,7 @@ function Customers() {
       <h1 className="text-2xl font-semibold">Customers</h1>
 
       <Input
-        placeholder="Search by name, email or phone"
+        placeholder="Search by name or phone"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="w-full sm:max-w-sm"
@@ -56,7 +55,6 @@ function Customers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Points</TableHead>
                 <TableHead>Joined</TableHead>
@@ -80,8 +78,6 @@ function Customers() {
                     {c.name ?? "—"}
                   </TableCell>
 
-                  <TableCell>{c.email}</TableCell>
-
                   <TableCell>{c.phone ?? "—"}</TableCell>
 
                   <TableCell>
@@ -101,7 +97,7 @@ function Customers() {
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={5}
                     className="text-center text-muted-foreground py-8"
                   >
                     No customers
