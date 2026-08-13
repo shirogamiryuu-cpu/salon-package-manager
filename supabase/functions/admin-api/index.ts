@@ -303,9 +303,22 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     return { profile, customerPackages: pkgs ?? [] };
   },
 
-  async assignPackage({ customerId, packageId, variantId, sessions, depositAmount, totalPrice, warrantyYears, purchaseDate, warrantyExpiresAt }, { userId }) {
+  async assignPackage({ customerId, packageId, variantId, sessions, depositAmount, totalPrice, warrantyYears, purchaseDate, warrantyExpiresAt, soldByStaffIds }, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
+    // Staff the customer bought with (may differ from who performs the sessions)
+    let soldBy: string[] = Array.isArray(soldByStaffIds)
+      ? [...new Set(soldByStaffIds.filter((x: unknown) => typeof x === "string" && x))]
+      : [];
+    if (soldBy.length > 0) {
+      const { data: validRoles } = await sb
+        .from("user_roles")
+        .select("user_id")
+        .in("user_id", soldBy)
+        .in("role", ["staff", "stylist", "admin"]);
+      const allowed = new Set((validRoles ?? []).map((r: any) => r.user_id));
+      soldBy = soldBy.filter((x) => allowed.has(x));
+    }
     const { data: pkg, error: pErr } = await sb
       .from("packages")
       .select("total_sessions,points_awarded,price")
@@ -350,7 +363,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
 
     let existingQ = sb
       .from("customer_packages")
-      .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at")
+      .select("id, sessions_remaining, total_sessions, deposit_sessions_paid, deposit_amount, total_price, warranty_years, warranty_expires_at, sold_by_staff_ids")
       .eq("customer_id", customerId)
       .eq("package_id", packageId);
     existingQ = variantId ? existingQ.eq("variant_id", variantId) : existingQ.is("variant_id", null);
@@ -379,6 +392,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         deposit_paid_at: newDepAmount > 0 ? nowIso : null,
         warranty_years: newYears,
         warranty_expires_at: newExp ? new Date(newExp).toISOString() : null,
+        ...(soldBy.length > 0
+          ? { sold_by_staff_ids: [...new Set([...(existing.sold_by_staff_ids ?? []), ...soldBy])] }
+          : {}),
       }).eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
@@ -397,6 +413,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
         warranty_years: yrs,
         warranty_expires_at: expiresAt,
         purchase_date: purchaseIso,
+        sold_by_staff_ids: soldBy,
       });
       if (error) throw new Error(error.message);
     }
