@@ -71,6 +71,10 @@ export const adminSetStaffCategory = (a: {
 export const staffListMySessions = (_a?: Arg<undefined>) =>
   callAdminApi("staffListMySessions");
 
+export const staffDashboard = (_a?: Arg<undefined>) =>
+  callAdminApi("staffDashboard");
+
+
 export const adminCreateAdmin = (a: {
   data: { email: string; password: string; name?: string };
 }) => callAdminApi("adminCreateAdmin", payload(a));
