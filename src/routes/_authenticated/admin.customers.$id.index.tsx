@@ -520,8 +520,12 @@ function CustomerDetail() {
                     min={0}
                     step="1000"
                     max={totalAmount || undefined}
-                    value={assignDepositAmount}
-                    onChange={(e) => setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(e.target.value) || 0)))}
+                    value={assignDepositAmount === 0 ? "" : assignDepositAmount}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return setAssignDepositAmount(0);
+                      setAssignDepositAmount(Math.max(0, Math.min(totalAmount, Number(raw) || 0)));
+                    }}
                     className="h-9"
                   />
                 </div>
@@ -788,8 +792,12 @@ function CustomerDetail() {
                 type="number"
                 min={0}
                 step="1000"
-                value={addDeposit}
-                onChange={(e) => setAddDeposit(Math.max(0, Number(e.target.value) || 0))}
+                value={addDeposit === 0 ? "" : addDeposit}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") return setAddDeposit(0);
+                  setAddDeposit(Math.max(0, Number(raw) || 0));
+                }}
                 className="w-24 h-8"
               />
             </div>
