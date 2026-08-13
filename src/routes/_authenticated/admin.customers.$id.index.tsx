@@ -160,9 +160,10 @@ function CustomerDetail() {
   const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
   const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
   const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
-  const outstandingAmount = Math.max(0, totalAmount - assignDepositAmount);
+  const assignDepositNum = assignDepositAmount === "" ? 0 : Math.max(0, Math.min(totalAmount, Number(assignDepositAmount) || 0));
+  const outstandingAmount = Math.max(0, totalAmount - assignDepositNum);
   const depositSessionsEq = selectedUnit > 0
-    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositAmount / selectedUnit)))
+    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositNum / selectedUnit)))
     : 0;
 
   const doAssign = async () => {
@@ -178,7 +179,7 @@ function CustomerDetail() {
           packageId: pickId,
           variantId: pickVariantId || null,
           sessions: assignSessions,
-          depositAmount: assignDepositAmount,
+          depositAmount: assignDepositNum,
           totalPrice: totalAmount,
           warrantyYears: assignWarranty,
           purchaseDate: assignPurchaseDate || undefined,
@@ -189,7 +190,7 @@ function CustomerDetail() {
       setPickId("");
       setPickVariantId("");
       setAssignSessions(1);
-      setAssignDepositAmount(0);
+      setAssignDepositAmount("");
       setAssignWarranty(0);
       setAssignPurchaseDate("");
       setAssignWarrantyExpires("");
