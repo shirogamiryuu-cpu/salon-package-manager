@@ -55,7 +55,6 @@ function Customers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Points</TableHead>
                 <TableHead>Joined</TableHead>
@@ -78,8 +77,6 @@ function Customers() {
                   <TableCell className="font-medium">
                     {c.name ?? "—"}
                   </TableCell>
-
-                  <TableCell>{c.email}</TableCell>
 
                   <TableCell>{c.phone ?? "—"}</TableCell>
 
