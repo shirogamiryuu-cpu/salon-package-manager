@@ -214,7 +214,7 @@ function CustomerDetail() {
 
   const openAdd = (cp: any) => {
     setAddSessions(1);
-    setAddDeposit(0);
+    setAddDeposit("");
     setAddWarranty(0);
     setAddManualPrice("");
     setAddFor(cp);
@@ -229,6 +229,7 @@ function CustomerDetail() {
         : 0;
       const manualNum = addManualPrice === "" ? null : Number(addManualPrice);
       const manualValid = manualNum != null && Number.isFinite(manualNum) && manualNum >= 0;
+      const addDepositNum = addDeposit === "" ? 0 : Math.max(0, Number(addDeposit) || 0);
       const addedPrice = manualValid
         ? Math.round(manualNum! * 100) / 100
         : Math.round(unit * addSessions * 100) / 100;
@@ -236,7 +237,7 @@ function CustomerDetail() {
         data: {
           customerPackageId: addFor.id,
           sessions: addSessions,
-          depositAmount: addDeposit,
+          depositAmount: addDepositNum,
           addedPrice,
           warrantyYears: addWarranty,
         },
@@ -252,7 +253,8 @@ function CustomerDetail() {
   };
 
   const saveDeposit = async (cp: any) => {
-    const amount = depositDrafts[cp.id] ?? 0;
+    const draft = depositDrafts[cp.id] ?? "";
+    const amount = draft === "" ? 0 : Math.max(0, Number(draft) || 0);
     if (!amount || amount <= 0) return;
     try {
       await addDepositFn({ data: { customerPackageId: cp.id, amount } });
