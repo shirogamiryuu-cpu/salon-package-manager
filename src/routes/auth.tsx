@@ -43,9 +43,10 @@ function AuthPage() {
         .eq("user_id", data.session.user.id);
 
       const isAdmin = roles?.some((r) => r.role === "admin");
+      const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
 
       navigate({
-        to: isAdmin ? "/admin" : "/app",
+        to: isAdmin ? "/admin" : isStaff ? "/staff" : "/app",
       });
     });
   }, [navigate]);
@@ -100,9 +101,10 @@ function AuthPage() {
       .eq("user_id", data.user.id);
 
     const isAdmin = roles?.some((r) => r.role === "admin");
+    const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
 
     navigate({
-      to: isAdmin ? "/admin" : "/home",
+      to: isAdmin ? "/admin" : isStaff ? "/staff" : "/home",
     });
   };
   const signUp = async (e: React.FormEvent) => {
