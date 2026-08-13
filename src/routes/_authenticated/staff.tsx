@@ -17,7 +17,7 @@ function StaffLayout() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return navigate({ to: "/auth" });
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      const isStaff = data?.some((r) => r.role === "staff");
+      const isStaff = data?.some((r) => r.role === "staff" || r.role === "stylist");
       const isAdmin = data?.some((r) => r.role === "admin");
       if (!isStaff && !isAdmin) {
         navigate({ to: "/app" });
