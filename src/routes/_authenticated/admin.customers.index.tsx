@@ -39,7 +39,7 @@ function Customers() {
       <h1 className="text-2xl font-semibold">Customers</h1>
 
       <Input
-        placeholder="Search by name, email or phone"
+        placeholder="Search by name or phone"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="w-full sm:max-w-sm"
@@ -97,7 +97,7 @@ function Customers() {
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={5}
                     className="text-center text-muted-foreground py-8"
                   >
                     No customers
