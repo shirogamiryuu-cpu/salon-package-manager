@@ -1,0 +1,1 @@
+ALTER TABLE public.customer_packages ADD COLUMN IF NOT EXISTS sold_by_staff_ids uuid[] NOT NULL DEFAULT '{}'::uuid[];
