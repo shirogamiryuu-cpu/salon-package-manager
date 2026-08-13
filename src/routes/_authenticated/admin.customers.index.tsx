@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
 });
 
-type C = { id: string; email: string; name: string | null; phone: string | null; points: number; created_at: string };
+type C = { id: string; name: string | null; phone: string | null; points: number; created_at: string };
 
 function Customers() {
   const list = useServerFn(adminListCustomers);
@@ -21,7 +21,7 @@ function Customers() {
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    list().then((d) => setRows(d as C[])).catch(() => setRows([]));
+    list().then((d) => setRows((d as C[]).map(({ id, name, phone, points, created_at }) => ({ id, name, phone, points, created_at })))).catch(() => setRows([]));
   }, [list]);
 
   const filtered = useMemo(() => {
@@ -29,7 +29,6 @@ function Customers() {
     return rows.filter(
       (r) =>
         (r.name ?? "").toLowerCase().includes(s) ||
-        r.email.toLowerCase().includes(s) ||
         (r.phone ?? "").includes(s),
     );
   }, [rows, q]);
