@@ -1025,17 +1025,38 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
   },
 
   async staffDashboard(_p, { userId }) {
-    await assertStaff(userId);
+    const [isStaff, isStylist, isAdminUser] = await Promise.all([
+      hasRole(userId, "staff"),
+      hasRole(userId, "stylist"),
+      hasRole(userId, "admin"),
+    ]);
+    const staffScoped = isStaff || isStylist;
+    if (!staffScoped && !isAdminUser) throw new Error("Forbidden");
     const sb = admin();
 
-    const { data: links } = await sb
-      .from("session_staff")
-      .select(
-        "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone)))",
-      )
-      .eq("staff_user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(500);
+    let links: any[] = [];
+    if (staffScoped) {
+      const { data } = await sb
+        .from("session_staff")
+        .select(
+          "usage_log_id, created_at, usage_logs(id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone)))",
+        )
+        .eq("staff_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      links = data ?? [];
+    } else {
+      // Admin previewing the staff view: show salon-wide sessions.
+      const { data } = await sb
+        .from("usage_logs")
+        .select(
+          "id, used_at, customer_package_id, variant_label, price_applied, customer_packages(customer_id, sessions_remaining, total_sessions, package_name, packages(name), profiles:customer_id(email,name,phone))",
+        )
+        .order("used_at", { ascending: false })
+        .limit(500);
+      links = (data ?? []).map((ul: any) => ({ usage_log_id: ul.id, created_at: ul.used_at, usage_logs: ul }));
+    }
+
 
     const sessions = ((links ?? []) as any[])
       .map((l) => {
