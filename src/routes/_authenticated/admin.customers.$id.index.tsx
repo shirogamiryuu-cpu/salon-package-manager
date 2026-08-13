@@ -78,7 +78,7 @@ function CustomerDetail() {
   const [pickId, setPickId] = useState<string>("");
   const [pickVariantId, setPickVariantId] = useState<string>("");
   const [assignSessions, setAssignSessions] = useState<number>(1);
-  const [assignDepositAmount, setAssignDepositAmount] = useState<number>(0);
+  const [assignDepositAmount, setAssignDepositAmount] = useState<string>("");
   const [assignWarranty, setAssignWarranty] = useState<number>(0);
   const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
   const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
@@ -86,7 +86,7 @@ function CustomerDetail() {
   const [showAssignAdvanced, setShowAssignAdvanced] = useState(false);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
-  const [depositDrafts, setDepositDrafts] = useState<Record<string, number>>({});
+  const [depositDrafts, setDepositDrafts] = useState<Record<string, string>>({});
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductVariantId, setDeductVariantId] = useState<string>("");
@@ -98,7 +98,7 @@ function CustomerDetail() {
 
   const [addFor, setAddFor] = useState<any | null>(null);
   const [addSessions, setAddSessions] = useState<number>(1);
-  const [addDeposit, setAddDeposit] = useState<number>(0);
+  const [addDeposit, setAddDeposit] = useState<string>("");
   const [addWarranty, setAddWarranty] = useState<number>(0);
   const [addManualPrice, setAddManualPrice] = useState<string>("");
   const [adding, setAdding] = useState(false);
