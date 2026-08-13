@@ -1090,13 +1090,14 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const revenue = (since: string) =>
       sessions.filter((s) => s.used_at >= since).reduce((a, s) => a + (s.price_applied || 0), 0);
 
-    // Packages this staff sold
-    const { data: sold } = await sb
+    // Packages this staff sold (all sales when an admin previews)
+    let soldQ = sb
       .from("customer_packages")
       .select("id, purchase_date, total_price, package_name, packages(name), profiles:customer_id(email,name)")
-      .contains("sold_by_staff_ids", [userId])
       .order("purchase_date", { ascending: false })
       .limit(100);
+    if (staffScoped) soldQ = soldQ.contains("sold_by_staff_ids", [userId]);
+    const { data: sold } = await soldQ;
 
     const soldRows = ((sold ?? []) as any[]).map((c) => ({
       id: c.id,
@@ -1108,15 +1109,17 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     }));
 
     // Pending approvals where this staff is attached
-    const { data: pending } = await sb
+    let pendingQ = sb
       .from("session_deduction_requests")
       .select(
         "id, created_at, expires_at, status, variant_label, customer_packages(package_name, packages(name), profiles:customer_id(email,name))",
       )
-      .contains("staff_ids", [userId])
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(20);
+    if (staffScoped) pendingQ = pendingQ.contains("staff_ids", [userId]);
+    const { data: pending } = await pendingQ;
+
 
     const pendingRows = ((pending ?? []) as any[]).map((r) => ({
       id: r.id,
