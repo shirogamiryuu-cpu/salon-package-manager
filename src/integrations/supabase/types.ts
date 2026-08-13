@@ -190,6 +190,7 @@ export type Database = {
           package_name: string | null
           purchase_date: string
           sessions_remaining: number
+          sold_by_staff_ids: string[]
           total_price: number
           total_sessions: number
           variant_id: string | null
@@ -210,6 +211,7 @@ export type Database = {
           package_name?: string | null
           purchase_date?: string
           sessions_remaining: number
+          sold_by_staff_ids?: string[]
           total_price?: number
           total_sessions: number
           variant_id?: string | null
@@ -230,6 +232,7 @@ export type Database = {
           package_name?: string | null
           purchase_date?: string
           sessions_remaining?: number
+          sold_by_staff_ids?: string[]
           total_price?: number
           total_sessions?: number
           variant_id?: string | null

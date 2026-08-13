@@ -84,6 +84,7 @@ function CustomerDetail() {
   const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
   const [assignManualPrice, setAssignManualPrice] = useState<string>("");
   const [showAssignAdvanced, setShowAssignAdvanced] = useState(false);
+  const [assignSoldBy, setAssignSoldBy] = useState<Set<string>>(new Set());
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [customerRoles, setCustomerRoles] = useState<string[]>([]);
   const [depositDrafts, setDepositDrafts] = useState<Record<string, string>>({});
@@ -184,6 +185,7 @@ function CustomerDetail() {
           warrantyYears: assignWarranty,
           purchaseDate: assignPurchaseDate || undefined,
           warrantyExpiresAt: assignWarrantyExpires || undefined,
+          soldByStaffIds: [...assignSoldBy],
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
@@ -195,6 +197,7 @@ function CustomerDetail() {
       setAssignPurchaseDate("");
       setAssignWarrantyExpires("");
       setAssignManualPrice("");
+      setAssignSoldBy(new Set());
       refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -535,6 +538,52 @@ function CustomerDetail() {
                 </div>
               </div>
 
+              {/* Sold by */}
+              <div className="space-y-2">
+                <label className="block text-muted-foreground">
+                  Sold by <span className="text-xs">(who the customer bought with)</span>
+                </label>
+                {staffOpts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No staff members yet.</p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto rounded-md border p-3">
+                    {(() => {
+                      const groups: Record<string, StaffOpt[]> = {};
+                      for (const s of staffOpts) {
+                        const key = s.category ?? "staff";
+                        (groups[key] ??= []).push(s);
+                      }
+                      const order = ["stylist", "staff"];
+                      const sorted = Object.entries(groups).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+                      return sorted.map(([category, members]) => (
+                        <div key={category} className="space-y-1">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {category === "stylist" ? "Stylists" : "Staff"}
+                          </p>
+                          <div className="grid gap-1 sm:grid-cols-2">
+                            {members.map((s) => (
+                              <label key={s.id} className="flex items-center gap-2 rounded-md px-1 py-1 cursor-pointer hover:bg-muted/50">
+                                <Checkbox
+                                  checked={assignSoldBy.has(s.id)}
+                                  onCheckedChange={() =>
+                                    setAssignSoldBy((prev) => {
+                                      const next = new Set(prev);
+                                      next.has(s.id) ? next.delete(s.id) : next.add(s.id);
+                                      return next;
+                                    })
+                                  }
+                                />
+                                <span className="text-sm">{s.name ?? s.email}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
+
               {/* Summary */}
               <div className="rounded-md border p-3 space-y-1 text-sm">
                 <div className="flex items-center justify-between">
@@ -655,6 +704,17 @@ function CustomerDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={pct} />
+                  {Array.isArray(cp.sold_by_staff_ids) && cp.sold_by_staff_ids.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Sold by:{" "}
+                      {cp.sold_by_staff_ids
+                        .map((sid: string) => {
+                          const s = staffOpts.find((o) => o.id === sid);
+                          return s?.name ?? s?.email ?? "Unknown";
+                        })
+                        .join(", ")}
+                    </p>
+                  )}
                   {(() => {
                     const totalPrice = Number(cp.total_price ?? 0);
                     const deposited = Number(cp.deposit_amount ?? 0);
