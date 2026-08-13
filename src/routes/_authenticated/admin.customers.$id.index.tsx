@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
   component: CustomerDetail,
 });
 
-type StaffOpt = { id: string; email: string | null; name: string | null };
+type StaffOpt = { id: string; email: string | null; name: string | null; category: "staff" | "stylist" | null };
 
 function CustomerDetail() {
   const { id } = Route.useParams();
