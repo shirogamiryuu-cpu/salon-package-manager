@@ -897,22 +897,40 @@ function CustomerDetail() {
                   Select the staff who performed the service (optional).
                 </div>
 
-                <div className="space-y-2 max-h-56 overflow-y-auto">
+                <div className="space-y-3 max-h-56 overflow-y-auto">
                   {staffOpts.length === 0 && (
                     <p className="text-sm text-muted-foreground">No staff members yet.</p>
                   )}
-                  {staffOpts.map((s) => (
-                    <label
-                      key={s.id}
-                      className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50"
-                    >
-                      <Checkbox
-                        checked={selectedStaff.has(s.id)}
-                        onCheckedChange={() => toggleStaff(s.id)}
-                      />
-                      <span className="text-sm">{s.name ?? s.email}</span>
-                    </label>
-                  ))}
+                  {(() => {
+                    const groups = new Map<string, StaffOpt[]>();
+                    for (const s of staffOpts) {
+                      const key = s.category ?? "staff";
+                      (groups.get(key) ?? groups.set(key, []).get(key)!).push(s);
+                    }
+                    const order = ["stylist", "staff"];
+                    const sorted = Array.from(groups.entries()).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+                    return sorted.map(([category, members]) => (
+                      <div key={category} className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {category === "stylist" ? "Stylists" : "Staff"}
+                        </p>
+                        <div className="space-y-2">
+                          {members.map((s) => (
+                            <label
+                              key={s.id}
+                              className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50"
+                            >
+                              <Checkbox
+                                checked={selectedStaff.has(s.id)}
+                                onCheckedChange={() => toggleStaff(s.id)}
+                              />
+                              <span className="text-sm">{s.name ?? s.email}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             );
