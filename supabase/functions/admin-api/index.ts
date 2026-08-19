@@ -778,8 +778,18 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const cleanEmail = (email ?? "").trim() || null;
     const cleanPhone = (phone ?? "").trim().replace(/\s+/g, "") || null;
     if (!cleanEmail && !cleanPhone) throw new Error("Email or phone is required");
+    if (cleanPhone) {
+      const digits = cleanPhone.replace(/[^0-9]/g, "");
+      const { data: existing } = await sb
+        .from("profiles").select("id, phone").not("phone", "is", null);
+      const dup = (existing ?? []).some(
+        (p: any) => String(p.phone ?? "").replace(/[^0-9]/g, "") === digits,
+      );
+      if (dup) throw new Error("A customer with this phone number already exists");
+    }
     // Supabase auth requires an email; synthesize one from phone if missing.
     const finalEmail = cleanEmail ?? `phone_${cleanPhone!.replace(/[^0-9]/g, "")}@placeholder.local`;
+
     const finalPassword = (password ?? "").trim() || (crypto.randomUUID().replace(/-/g, "") + "!9");
     const { data: created, error } = await sb.auth.admin.createUser({
       email: finalEmail,
