@@ -88,7 +88,7 @@ function AdminDash() {
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [custName, setCustName] = useState("");
-  const [custEmail, setCustEmail] = useState("");
+  
   const [custPhone, setCustPhone] = useState("");
   const [custPoints, setCustPoints] = useState("");
   const [custPassword, setCustPassword] = useState(genTempPassword());
