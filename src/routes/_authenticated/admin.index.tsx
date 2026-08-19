@@ -302,7 +302,6 @@ function AdminDash() {
                     </div>
                     <div className="space-y-2">
 
-                    <div className="space-y-2">
                       <Label htmlFor="cust-phone">Phone</Label>
                       <Input id="cust-phone" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="+1234567890" />
                     </div>
