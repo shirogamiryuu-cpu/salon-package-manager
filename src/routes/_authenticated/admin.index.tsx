@@ -192,7 +192,6 @@ function AdminDash() {
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? custPassword;
       toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
       setCustName("");
-      setCustEmail("");
       setCustPhone("");
       setCustPoints("");
       setCustPassword(genTempPassword());
