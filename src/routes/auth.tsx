@@ -55,58 +55,80 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
 
-    let email = siIdentifier.trim();
+    try {
+      let email = siIdentifier.trim();
 
-    if (!email.includes("@")) {
-      email = email.replace(/\s+/g, "");
-    }
+      if (!email.includes("@")) {
+        email = email.replace(/\s+/g, "");
+      }
 
-    // If user entered phone number, resolve via edge function (RLS-safe)
-    if (!email.includes("@")) {
-      const { data: resolved, error: resolveError } = await supabase.functions.invoke(
-        "resolve-login",
-        { body: { phone: email } },
-      );
+      // If user entered phone number, resolve via edge function (RLS-safe)
+      if (!email.includes("@")) {
+        const { data: resolved, error: resolveError } = await supabase.functions.invoke(
+          "resolve-login",
+          { body: { phone: email } },
+        );
 
-      if (resolveError) {
-        setLoading(false);
-        toast.error(resolveError.message);
+        if (resolveError) {
+          toast.error(resolveError.message);
+          return;
+        }
+
+        if (!resolved?.email) {
+          toast.error("Phone number not found");
+          return;
+        }
+
+        email = resolved.email as string;
+      }
+
+      // Retry once on transient network failures
+      let attempt = 0;
+      let result: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>> | null = null;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        try {
+          result = await supabase.auth.signInWithPassword({ email, password: siPassword });
+          break;
+        } catch (err) {
+          attempt += 1;
+          if (attempt >= 2) throw err;
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+
+      const { data, error } = result!;
+
+      if (error) {
+        toast.error(error.message);
         return;
       }
 
-      if (!resolved?.email) {
-        setLoading(false);
-        toast.error("Phone number not found");
-        return;
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
+
+      const isAdmin = roles?.some((r) => r.role === "admin");
+      const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
+
+      navigate({
+        to: isAdmin ? "/admin" : isStaff ? "/staff" : "/home",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/failed to fetch|network|load failed/i.test(message)) {
+        toast.error(
+          "Can't reach the server. Check your internet connection (or disable ad/tracker blockers) and try again.",
+        );
+      } else {
+        toast.error(message);
       }
-
-      email = resolved.email as string;
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: siPassword,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id);
-
-    const isAdmin = roles?.some((r) => r.role === "admin");
-    const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
-
-    navigate({
-      to: isAdmin ? "/admin" : isStaff ? "/staff" : "/home",
-    });
   };
+
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
