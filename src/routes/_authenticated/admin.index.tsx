@@ -175,20 +175,20 @@ function AdminDash() {
 
   async function onCreateCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!custEmail.trim() && !custPhone.trim()) {
-      return toast.error("Email or phone is required");
+    if (!custPhone.trim()) {
+      return toast.error("Phone is required");
     }
     setSavingCust(true);
     try {
       const res = await createCustomer({
         data: {
-          email: custEmail.trim() || undefined,
-          phone: custPhone.trim() || undefined,
+          phone: custPhone.trim(),
           name: custName.trim() || undefined,
           password: custPassword,
           points: custPoints ? Number(custPoints) : undefined,
         },
       });
+
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? custPassword;
       toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
       setCustName("");
