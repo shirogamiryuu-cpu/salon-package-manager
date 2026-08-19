@@ -14,7 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, UserPlus } from "lucide-react";
+import { Copy, Download, UserPlus } from "lucide-react";
+import { generateLoginSheetPdf } from "@/lib/login-sheet-pdf";
 
 function genTempPassword() {
   return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6) + "!9";
@@ -28,7 +29,9 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
   const [phone, setPhone] = useState("");
   const [points, setPoints] = useState("");
   const [password, setPassword] = useState(genTempPassword());
-  const [created, setCreated] = useState<{ phone: string; password: string } | null>(null);
+  const [created, setCreated] = useState<{ phone: string; password: string; name?: string } | null>(
+    null,
+  );
 
   function reset() {
     setName("");
@@ -52,7 +55,7 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
         },
       });
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? password;
-      setCreated({ phone: phone.trim(), password: tmp });
+      setCreated({ phone: phone.trim(), password: tmp, name: name.trim() || undefined });
       toast.success("Customer account created");
       onCreated?.();
     } catch (err) {
@@ -68,6 +71,21 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
       ?.writeText(`Login: ${created.phone}\nPassword: ${created.password}`)
       .then(() => toast.success("Credentials copied"))
       .catch(() => toast.error("Copy failed"));
+  };
+
+  const downloadSheet = () => {
+    if (!created) return;
+    try {
+      generateLoginSheetPdf({
+        name: created.name,
+        phone: created.phone,
+        password: created.password,
+        siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+      });
+      toast.success("Login sheet downloaded");
+    } catch {
+      toast.error("Could not generate PDF");
+    }
   };
 
   return (
@@ -111,6 +129,10 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
               <Button type="button" variant="outline" onClick={copy}>
                 <Copy className="mr-2 h-4 w-4" />
                 Copy
+              </Button>
+              <Button type="button" variant="outline" onClick={downloadSheet}>
+                <Download className="mr-2 h-4 w-4" />
+                Login sheet (PDF)
               </Button>
               <Button type="button" variant="secondary" onClick={reset}>
                 Add another
