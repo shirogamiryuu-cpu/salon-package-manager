@@ -88,7 +88,7 @@ function AdminDash() {
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [custName, setCustName] = useState("");
-  const [custEmail, setCustEmail] = useState("");
+  
   const [custPhone, setCustPhone] = useState("");
   const [custPoints, setCustPoints] = useState("");
   const [custPassword, setCustPassword] = useState(genTempPassword());
@@ -175,24 +175,23 @@ function AdminDash() {
 
   async function onCreateCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!custEmail.trim() && !custPhone.trim()) {
-      return toast.error("Email or phone is required");
+    if (!custPhone.trim()) {
+      return toast.error("Phone is required");
     }
     setSavingCust(true);
     try {
       const res = await createCustomer({
         data: {
-          email: custEmail.trim() || undefined,
-          phone: custPhone.trim() || undefined,
+          phone: custPhone.trim(),
           name: custName.trim() || undefined,
           password: custPassword,
           points: custPoints ? Number(custPoints) : undefined,
         },
       });
+
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? custPassword;
       toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
       setCustName("");
-      setCustEmail("");
       setCustPhone("");
       setCustPoints("");
       setCustPassword(genTempPassword());
@@ -292,7 +291,7 @@ function AdminDash() {
                   <DialogHeader>
                     <DialogTitle>Add customer manually</DialogTitle>
                     <DialogDescription>
-                      For existing customers before the app launch. Provide email or phone (or both).
+                      For existing customers before the app launch. A phone number is required.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -301,10 +300,7 @@ function AdminDash() {
                       <Input id="cust-name" value={custName} onChange={(e) => setCustName(e.target.value)} placeholder="Full name" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cust-email">Email</Label>
-                      <Input id="cust-email" type="email" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} placeholder="name@example.com" />
-                    </div>
-                    <div className="space-y-2">
+
                       <Label htmlFor="cust-phone">Phone</Label>
                       <Input id="cust-phone" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="+1234567890" />
                     </div>
