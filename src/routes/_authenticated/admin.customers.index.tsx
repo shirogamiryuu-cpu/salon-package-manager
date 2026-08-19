@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
+import { AddCustomerDialog } from "@/components/add-customer-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
@@ -33,18 +35,31 @@ function Customers() {
     );
   }, [rows, q]);
 
+  const refresh = () =>
+    list()
+      .then((d) =>
+        setRows(
+          (d as C[]).map(({ id, name, phone, points, created_at }) => ({ id, name, phone, points, created_at })),
+        ),
+      )
+      .catch(() => setRows([]));
+
   return (
   <div className="space-y-4">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h1 className="text-2xl font-semibold">Customers</h1>
 
-      <Input
-        placeholder="Search by name or phone"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="w-full sm:max-w-sm"
-      />
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search by name or phone"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="w-full sm:max-w-sm"
+        />
+        <AddCustomerDialog onCreated={refresh} />
+      </div>
     </div>
+
 
     <Card>
       <CardContent className="p-0">
