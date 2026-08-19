@@ -301,9 +301,7 @@ function AdminDash() {
                       <Input id="cust-name" value={custName} onChange={(e) => setCustName(e.target.value)} placeholder="Full name" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cust-email">Email</Label>
-                      <Input id="cust-email" type="email" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} placeholder="name@example.com" />
-                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="cust-phone">Phone</Label>
                       <Input id="cust-phone" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="+1234567890" />
