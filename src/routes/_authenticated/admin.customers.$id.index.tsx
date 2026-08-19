@@ -21,10 +21,13 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -45,7 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
 
@@ -546,43 +549,80 @@ function CustomerDetail() {
                 {staffOpts.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No staff members yet.</p>
                 ) : (
-                  <div className="space-y-3 max-h-48 overflow-y-auto rounded-md border p-3">
-                    {(() => {
-                      const groups: Record<string, StaffOpt[]> = {};
-                      for (const s of staffOpts) {
-                        const key = s.category ?? "staff";
-                        (groups[key] ??= []).push(s);
+                  <div className="space-y-2">
+                    <Select
+                      value=""
+                      onValueChange={(id) =>
+                        setAssignSoldBy((prev) => new Set(prev).add(id))
                       }
-                      const order = ["stylist", "staff"];
-                      const sorted = Object.entries(groups).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
-                      return sorted.map(([category, members]) => (
-                        <div key={category} className="space-y-1">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            {category === "stylist" ? "Stylists" : "Staff"}
-                          </p>
-                          <div className="grid gap-1 sm:grid-cols-2">
-                            {members.map((s) => (
-                              <label key={s.id} className="flex items-center gap-2 rounded-md px-1 py-1 cursor-pointer hover:bg-muted/50">
-                                <Checkbox
-                                  checked={assignSoldBy.has(s.id)}
-                                  onCheckedChange={() =>
-                                    setAssignSoldBy((prev) => {
-                                      const next = new Set(prev);
-                                      next.has(s.id) ? next.delete(s.id) : next.add(s.id);
-                                      return next;
-                                    })
-                                  }
-                                />
-                                <span className="text-sm">{s.name ?? s.email}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ));
-                    })()}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Add staff…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(() => {
+                          const groups: Record<string, StaffOpt[]> = {};
+                          for (const s of staffOpts) {
+                            if (assignSoldBy.has(s.id)) continue;
+                            const key = s.category ?? "staff";
+                            (groups[key] ??= []).push(s);
+                          }
+                          const order = ["stylist", "staff"];
+                          const sorted = Object.entries(groups).sort(
+                            (a, b) => order.indexOf(a[0]) - order.indexOf(b[0]),
+                          );
+                          if (sorted.length === 0)
+                            return (
+                              <div className="px-2 py-2 text-sm text-muted-foreground">
+                                Everyone selected
+                              </div>
+                            );
+                          return sorted.map(([category, members]) => (
+                            <SelectGroup key={category}>
+                              <SelectLabel>
+                                {category === "stylist" ? "Stylists" : "Staff"}
+                              </SelectLabel>
+                              {members.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.name ?? s.email}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ));
+                        })()}
+                      </SelectContent>
+                    </Select>
+
+                    {assignSoldBy.size > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {[...assignSoldBy].map((id) => {
+                          const s = staffOpts.find((o) => o.id === id);
+                          return (
+                            <Badge key={id} variant="secondary" className="gap-1">
+                              {s?.name ?? s?.email ?? "Staff"}
+                              <button
+                                type="button"
+                                aria-label="Remove"
+                                onClick={() =>
+                                  setAssignSoldBy((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(id);
+                                    return next;
+                                  })
+                                }
+                                className="ml-0.5 opacity-60 hover:opacity-100"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
 
               {/* Summary */}
               <div className="rounded-md border p-3 space-y-1 text-sm">
