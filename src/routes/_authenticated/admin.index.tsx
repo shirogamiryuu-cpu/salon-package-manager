@@ -292,7 +292,7 @@ function AdminDash() {
                   <DialogHeader>
                     <DialogTitle>Add customer manually</DialogTitle>
                     <DialogDescription>
-                      For existing customers before the app launch. Provide email or phone (or both).
+                      For existing customers before the app launch. A phone number is required.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
