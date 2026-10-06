@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { normalizeMyanmarPhone } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/profile")({
   component: Profile,
@@ -37,13 +38,17 @@ function Profile() {
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
+    const cleanPhone = phone.trim() ? normalizeMyanmarPhone(phone) : null;
     const { error } = await supabase
       .from("profiles")
-      .update({ name: name.trim() || null, phone })
+      .update({ name: name.trim() || null, phone: cleanPhone })
       .eq("id", u.user.id);
     setSaving(false);
     if (error) toast.error(error.message);
-    else toast.success("Profile updated");
+    else {
+      if (cleanPhone) setPhone(cleanPhone);
+      toast.success("Profile updated");
+    }
   };
 
   const changePassword = async () => {
@@ -72,7 +77,11 @@ function Profile() {
           </div>
           <div>
             <Label>Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="09xxxxxxxxx"
+            />
           </div>
           <Button onClick={saveProfile} disabled={saving}>
             Save

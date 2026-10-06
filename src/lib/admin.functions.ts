@@ -71,7 +71,14 @@ export const adminCreateStaff = (a: {
     email?: string;
     password?: string;
   };
-}) => callAdminApi("adminCreateStaff", payload(a));
+}) => {
+  const d = { ...payload(a) };
+  if (!d.email || !d.email.trim()) {
+    const randomHex = Math.random().toString(36).slice(2, 10);
+    d.email = `staff_${Date.now()}_${randomHex}@internal.local`;
+  }
+  return callAdminApi("adminCreateStaff", d);
+};
 
 export const adminUpdateStaff = (a: {
   data: {
@@ -83,8 +90,16 @@ export const adminUpdateStaff = (a: {
   };
 }) => callAdminApi("adminUpdateStaff", payload(a));
 
-export const adminDeleteStaff = (a: { data: { userId: string } }) =>
-  callAdminApi("adminDeleteStaff", payload(a));
+export const adminDeleteStaff = async (a: { data: { userId: string } }) => {
+  try {
+    return await callAdminApi("adminDeleteStaff", payload(a));
+  } catch (err: any) {
+    if (err?.message?.includes("Unknown action")) {
+      return await callAdminApi("adminRemoveStaffRole", payload(a));
+    }
+    throw err;
+  }
+};
 
 export const adminCreateCustomer = (a: {
   data: { email?: string; phone?: string; name?: string; password?: string };

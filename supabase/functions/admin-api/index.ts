@@ -920,8 +920,9 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     const cleanEmail = (email ?? "").trim() || null;
     let cleanPhone = (phone ?? "").trim().replace(/\s+/g, "").replace(/[-()]/g, "") || null;
     if (cleanPhone) {
-      if (cleanPhone.startsWith("+959")) cleanPhone = "09" + cleanPhone.slice(4);
-      else if (cleanPhone.startsWith("959")) cleanPhone = "09" + cleanPhone.slice(3);
+      if (cleanPhone.startsWith("+95")) cleanPhone = "0" + cleanPhone.slice(3);
+      else if (cleanPhone.startsWith("95") && cleanPhone.length > 8)
+        cleanPhone = "0" + cleanPhone.slice(2);
       else if (cleanPhone.startsWith("9") && !cleanPhone.startsWith("09"))
         cleanPhone = "0" + cleanPhone;
     }

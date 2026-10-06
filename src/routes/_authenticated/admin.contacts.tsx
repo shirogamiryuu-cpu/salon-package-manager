@@ -113,7 +113,7 @@ function ContactsAdmin() {
               <div>
                 <Label>Phone</Label>
                 <Input
-                  placeholder="+852 1234 5678"
+                  placeholder="09xxxxxxxxx"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 />

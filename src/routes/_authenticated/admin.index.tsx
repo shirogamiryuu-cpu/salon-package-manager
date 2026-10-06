@@ -98,9 +98,7 @@ function AdminDash() {
   const [password, setPassword] = useState(genTempPassword());
   const [saving, setSaving] = useState(false);
 
-  const [staffEmail, setStaffEmail] = useState("");
   const [staffName, setStaffName] = useState("");
-  const [staffPhone, setStaffPhone] = useState("");
   const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("stylist");
   const [savingStaff, setSavingStaff] = useState(false);
 
@@ -108,7 +106,6 @@ function AdminDash() {
   const [editingStaff, setEditingStaff] = useState<PersonRow | null>(null);
   const [editStaffName, setEditStaffName] = useState("");
   const [editStaffCategory, setEditStaffCategory] = useState<"staff" | "stylist">("stylist");
-  const [editStaffPhone, setEditStaffPhone] = useState("");
   const [savingEditStaff, setSavingEditStaff] = useState(false);
 
   const [deleteStaffFor, setDeleteStaffFor] = useState<PersonRow | null>(null);
@@ -187,18 +184,17 @@ function AdminDash() {
     }
     setSavingStaff(true);
     try {
+      const randomHex = Math.random().toString(36).slice(2, 10);
+      const generatedEmail = `staff_${Date.now()}_${randomHex}@internal.local`;
       await createStaff({
         data: {
           name: staffName.trim(),
           category: staffCategory,
-          phone: staffPhone.trim() || undefined,
-          email: staffEmail.trim() || undefined,
+          email: generatedEmail,
         },
       });
       toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} added successfully`);
       setStaffName("");
-      setStaffPhone("");
-      setStaffEmail("");
       setStaffCategory("stylist");
       setAddStaffOpen(false);
       refresh();
@@ -213,7 +209,6 @@ function AdminDash() {
     setEditingStaff(s);
     setEditStaffName(s.name ?? "");
     setEditStaffCategory(s.category ?? "stylist");
-    setEditStaffPhone(s.phone ?? "");
     setEditStaffOpen(true);
   }
 
@@ -230,7 +225,6 @@ function AdminDash() {
           userId: editingStaff.id,
           name: editStaffName.trim(),
           category: editStaffCategory,
-          phone: editStaffPhone.trim() || undefined,
         },
       });
       toast.success("Staff member updated");
@@ -621,27 +615,6 @@ function AdminDash() {
                           </Button>
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="staff-phone">Phone (optional)</Label>
-                        <Input
-                          id="staff-phone"
-                          value={staffPhone}
-                          onChange={(e) => setStaffPhone(e.target.value)}
-                          placeholder="+95 9 123 456 789"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="staff-email">Email (optional)</Label>
-                        <Input
-                          id="staff-email"
-                          type="email"
-                          value={staffEmail}
-                          onChange={(e) => setStaffEmail(e.target.value)}
-                          placeholder="staff@salon.com"
-                        />
-                      </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" disabled={savingStaff}>
@@ -812,16 +785,6 @@ function AdminDash() {
                     Staff
                   </Button>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-staff-phone">Phone (optional)</Label>
-                <Input
-                  id="edit-staff-phone"
-                  value={editStaffPhone}
-                  onChange={(e) => setEditStaffPhone(e.target.value)}
-                  placeholder="+95 9 123 456 789"
-                />
               </div>
             </div>
             <DialogFooter>

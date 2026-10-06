@@ -21,8 +21,9 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     let normalized = phone.trim().replace(/\s+/g, "").replace(/[-()]/g, "");
-    if (normalized.startsWith("+959")) normalized = "09" + normalized.slice(4);
-    else if (normalized.startsWith("959")) normalized = "09" + normalized.slice(3);
+    if (normalized.startsWith("+95")) normalized = "0" + normalized.slice(3);
+    else if (normalized.startsWith("95") && normalized.length > 8)
+      normalized = "0" + normalized.slice(2);
     else if (normalized.startsWith("9") && !normalized.startsWith("09"))
       normalized = "0" + normalized;
 
