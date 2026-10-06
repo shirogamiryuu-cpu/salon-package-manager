@@ -40,6 +40,8 @@ export function createProxyFetch(supabaseUrl: string): typeof fetch | undefined 
       return fetch(proxiedUrl(input.toString(), supabaseUrl), init);
     }
     const rewritten = proxiedUrl(input.url, supabaseUrl);
-    return rewritten === input.url ? fetch(input, init) : fetch(new Request(rewritten, input), init);
+    return rewritten === input.url
+      ? fetch(input, init)
+      : fetch(new Request(rewritten, input), init);
   };
 }

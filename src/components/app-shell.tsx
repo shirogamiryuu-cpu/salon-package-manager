@@ -76,7 +76,10 @@ export function AppShell({
           {/* Sign Out */}
           <div className="border-t border-foreground/15 p-4 space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs uppercase text-foreground/60" style={{ letterSpacing: "0.18em" }}>
+              <span
+                className="text-xs uppercase text-foreground/60"
+                style={{ letterSpacing: "0.18em" }}
+              >
                 Call the salon
               </span>
               <SalonContactsButton />

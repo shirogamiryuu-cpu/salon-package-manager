@@ -43,10 +43,9 @@ function AuthPage() {
         .eq("user_id", data.session.user.id);
 
       const isAdmin = roles?.some((r) => r.role === "admin");
-      const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
 
       navigate({
-        to: isAdmin ? "/admin" : isStaff ? "/staff" : "/app",
+        to: isAdmin ? "/admin" : "/home",
       });
     });
   }, [navigate]);
@@ -83,16 +82,13 @@ function AuthPage() {
       }
 
       // Retry once on transient network failures
-      let attempt = 0;
       let result: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>> | null = null;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
+      for (let attempt = 0; attempt < 2; attempt++) {
         try {
           result = await supabase.auth.signInWithPassword({ email, password: siPassword });
           break;
         } catch (err) {
-          attempt += 1;
-          if (attempt >= 2) throw err;
+          if (attempt >= 1) throw err;
           await new Promise((r) => setTimeout(r, 800));
         }
       }
@@ -110,10 +106,9 @@ function AuthPage() {
         .eq("user_id", data.user.id);
 
       const isAdmin = roles?.some((r) => r.role === "admin");
-      const isStaff = roles?.some((r) => r.role === "staff" || r.role === "stylist");
 
       navigate({
-        to: isAdmin ? "/admin" : isStaff ? "/staff" : "/home",
+        to: isAdmin ? "/admin" : "/home",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -168,7 +163,6 @@ function AuthPage() {
           <h1 className="text-2xl font-serif leading-none tracking-tight">
             Welcome to Empire Charme
           </h1>
-
 
           <CardDescription>Sign in or create your salon account</CardDescription>
         </CardHeader>

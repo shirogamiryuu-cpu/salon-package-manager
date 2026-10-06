@@ -18,9 +18,8 @@ function AdminLayout() {
       if (!u.user) return navigate({ to: "/auth" });
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
       const isAdmin = data?.some((r) => r.role === "admin");
-      const isStaff = data?.some((r) => r.role === "staff");
       if (!isAdmin) {
-        navigate({ to: isStaff ? "/staff" : "/app" });
+        navigate({ to: "/home" });
         return;
       }
       setOk(true);

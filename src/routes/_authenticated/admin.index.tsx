@@ -12,6 +12,7 @@ import {
   KeyRound,
   Lock,
   Scissors,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,8 @@ import {
   adminCreateAdmin,
   adminCreateCustomer,
   adminCreateStaff,
+  adminUpdateStaff,
+  adminDeleteStaff,
   adminListAdmins,
   adminListCustomers,
   adminListStaff,
@@ -63,8 +66,22 @@ function genTempPassword() {
   return out + "!9";
 }
 
-type PersonRow = { id: string; email: string | null; name: string | null; created_at: string; is_staff?: boolean; is_stylist?: boolean; category?: "staff" | "stylist" };
-type CustomerRow = { id: string; email: string | null; name: string | null; phone: string | null; points: number | null };
+type PersonRow = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  phone?: string | null;
+  created_at: string;
+  is_staff?: boolean;
+  is_stylist?: boolean;
+  category?: "staff" | "stylist";
+};
+type CustomerRow = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  phone: string | null;
+};
 
 function AdminDash() {
   const [stats, setStats] = useState({ customers: 0, packages: 0, sold: 0 });
@@ -82,30 +99,37 @@ function AdminDash() {
 
   const [staffEmail, setStaffEmail] = useState("");
   const [staffName, setStaffName] = useState("");
-  const [staffPassword, setStaffPassword] = useState(genTempPassword());
-  const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("staff");
+  const [staffPhone, setStaffPhone] = useState("");
+  const [staffCategory, setStaffCategory] = useState<"staff" | "stylist">("stylist");
   const [savingStaff, setSavingStaff] = useState(false);
+
+  const [editStaffOpen, setEditStaffOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<PersonRow | null>(null);
+  const [editStaffName, setEditStaffName] = useState("");
+  const [editStaffCategory, setEditStaffCategory] = useState<"staff" | "stylist">("stylist");
+  const [editStaffPhone, setEditStaffPhone] = useState("");
+  const [savingEditStaff, setSavingEditStaff] = useState(false);
+
+  const [deleteStaffFor, setDeleteStaffFor] = useState<PersonRow | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState(false);
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [custName, setCustName] = useState("");
-  
   const [custPhone, setCustPhone] = useState("");
-  const [custPoints, setCustPoints] = useState("");
   const [custPassword, setCustPassword] = useState(genTempPassword());
   const [savingCust, setSavingCust] = useState(false);
-
 
   const [resetFor, setResetFor] = useState<PersonRow | null>(null);
   const [resetPwd, setResetPwd] = useState(genTempPassword());
   const [resetting, setResetting] = useState(false);
-
-  const [removeStaffFor, setRemoveStaffFor] = useState<PersonRow | null>(null);
 
   const [selfPwd, setSelfPwd] = useState("");
   const [selfSaving, setSelfSaving] = useState(false);
 
   const createAdmin = useServerFn(adminCreateAdmin);
   const createStaff = useServerFn(adminCreateStaff);
+  const updateStaff = useServerFn(adminUpdateStaff);
+  const deleteStaff = useServerFn(adminDeleteStaff);
   const createCustomer = useServerFn(adminCreateCustomer);
   const listAdmins = useServerFn(adminListAdmins);
   const listStaff = useServerFn(adminListStaff);
@@ -139,7 +163,9 @@ function AdminDash() {
     e.preventDefault();
     setSaving(true);
     try {
-      await createAdmin({ data: { email: email.trim(), password, name: name.trim() || undefined } });
+      await createAdmin({
+        data: { email: email.trim(), password, name: name.trim() || undefined },
+      });
       toast.success(`Admin created. Temp password: ${password}`, { duration: 10000 });
       setEmail("");
       setName("");
@@ -153,23 +179,84 @@ function AdminDash() {
     }
   }
 
-
   async function onCreateStaff(e: React.FormEvent) {
     e.preventDefault();
+    if (!staffName.trim()) {
+      return toast.error("Staff name is required");
+    }
     setSavingStaff(true);
     try {
-      await createStaff({ data: { email: staffEmail.trim(), password: staffPassword, name: staffName.trim() || undefined, category: staffCategory } });
-      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} created. Temp password: ${staffPassword}`, { duration: 10000 });
-      setStaffEmail("");
+      await createStaff({
+        data: {
+          name: staffName.trim(),
+          category: staffCategory,
+          phone: staffPhone.trim() || undefined,
+          email: staffEmail.trim() || undefined,
+        },
+      });
+      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} added successfully`);
       setStaffName("");
-      setStaffPassword(genTempPassword());
-      setStaffCategory("staff");
+      setStaffPhone("");
+      setStaffEmail("");
+      setStaffCategory("stylist");
       setAddStaffOpen(false);
       refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create staff");
+      toast.error(err instanceof Error ? err.message : "Failed to add staff");
     } finally {
       setSavingStaff(false);
+    }
+  }
+
+  function onOpenEditStaff(s: PersonRow) {
+    setEditingStaff(s);
+    setEditStaffName(s.name ?? "");
+    setEditStaffCategory(s.category ?? "stylist");
+    setEditStaffPhone(s.phone ?? "");
+    setEditStaffOpen(true);
+  }
+
+  async function onUpdateStaff(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingStaff) return;
+    if (!editStaffName.trim()) {
+      return toast.error("Staff name is required");
+    }
+    setSavingEditStaff(true);
+    try {
+      await updateStaff({
+        data: {
+          userId: editingStaff.id,
+          name: editStaffName.trim(),
+          category: editStaffCategory,
+          phone: editStaffPhone.trim() || undefined,
+        },
+      });
+      toast.success("Staff member updated");
+      setEditStaffOpen(false);
+      setEditingStaff(null);
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update staff");
+    } finally {
+      setSavingEditStaff(false);
+    }
+  }
+
+  async function onDeleteStaff() {
+    if (!deleteStaffFor) return;
+    setDeletingStaff(true);
+    try {
+      await deleteStaff({
+        data: { userId: deleteStaffFor.id },
+      });
+      toast.success("Staff member removed");
+      setDeleteStaffFor(null);
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove staff");
+    } finally {
+      setDeletingStaff(false);
     }
   }
 
@@ -185,7 +272,6 @@ function AdminDash() {
           phone: custPhone.trim(),
           name: custName.trim() || undefined,
           password: custPassword,
-          points: custPoints ? Number(custPoints) : undefined,
         },
       });
 
@@ -193,7 +279,6 @@ function AdminDash() {
       toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
       setCustName("");
       setCustPhone("");
-      setCustPoints("");
       setCustPassword(genTempPassword());
       setAddCustomerOpen(false);
       refresh();
@@ -203,9 +288,6 @@ function AdminDash() {
       setSavingCust(false);
     }
   }
-
-
-
 
   async function onReset(e: React.FormEvent) {
     e.preventDefault();
@@ -220,18 +302,6 @@ function AdminDash() {
       toast.error(err instanceof Error ? err.message : "Failed to reset password");
     } finally {
       setResetting(false);
-    }
-  }
-
-  async function onRemoveStaff() {
-    if (!removeStaffFor) return;
-    try {
-      await removeStaffRole({ data: { userId: removeStaffFor.id } });
-      toast.success("Staff role removed");
-      setRemoveStaffFor(null);
-      refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove");
     }
   }
 
@@ -297,22 +367,36 @@ function AdminDash() {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="cust-name">Name</Label>
-                      <Input id="cust-name" value={custName} onChange={(e) => setCustName(e.target.value)} placeholder="Full name" />
+                      <Input
+                        id="cust-name"
+                        value={custName}
+                        onChange={(e) => setCustName(e.target.value)}
+                        placeholder="Full name"
+                      />
                     </div>
                     <div className="space-y-2">
-
                       <Label htmlFor="cust-phone">Phone</Label>
-                      <Input id="cust-phone" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="+1234567890" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cust-points">Starting points</Label>
-                      <Input id="cust-points" type="number" min={0} value={custPoints} onChange={(e) => setCustPoints(e.target.value)} placeholder="0" />
+                      <Input
+                        id="cust-phone"
+                        value={custPhone}
+                        onChange={(e) => setCustPhone(e.target.value)}
+                        placeholder="+1234567890"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="cust-pass">Temporary password</Label>
                       <div className="flex gap-2">
-                        <Input id="cust-pass" required value={custPassword} onChange={(e) => setCustPassword(e.target.value)} />
-                        <Button type="button" variant="outline" onClick={() => setCustPassword(genTempPassword())}>
+                        <Input
+                          id="cust-pass"
+                          required
+                          value={custPassword}
+                          onChange={(e) => setCustPassword(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setCustPassword(genTempPassword())}
+                        >
                           New
                         </Button>
                       </div>
@@ -337,7 +421,7 @@ function AdminDash() {
                   <div className="font-medium truncate">{c.name ?? c.email ?? "—"}</div>
                   <div className="text-xs text-muted-foreground truncate">
                     {c.name ? `${c.email ?? ""} · ` : ""}
-                    {c.phone ?? "no phone"} · {c.points ?? 0} pts
+                    {c.phone ?? "no phone"}
                   </div>
                 </div>
                 <Button asChild size="sm" variant="outline">
@@ -348,7 +432,6 @@ function AdminDash() {
               </CardContent>
             </Card>
           ))}
-
         </TabsContent>
 
         <TabsContent value="admins" className="space-y-6 pt-4">
@@ -430,10 +513,9 @@ function AdminDash() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{a.name ?? a.email ?? "—"}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {a.name ? a.email ?? "" : a.id === me ? "You" : "Admin"}
+                      {a.name ? (a.email ?? "") : a.id === me ? "You" : "Admin"}
                       {a.name && a.id === me ? " · You" : ""}
                     </div>
-
                   </div>
                   {a.id !== me && (
                     <Button
@@ -479,9 +561,14 @@ function AdminDash() {
           {/* Staff section */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Staff
-              </h2>
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Staff & Stylists
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Salon team members available for service records and package sales.
+                </p>
+              </div>
               <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" variant="secondary">
@@ -492,46 +579,26 @@ function AdminDash() {
                 <DialogContent>
                   <form onSubmit={onCreateStaff}>
                     <DialogHeader>
-                      <DialogTitle>Add new staff member</DialogTitle>
+                      <DialogTitle>Add staff member</DialogTitle>
                       <DialogDescription>
-                        Creates a staff account with this temporary password. They can change it
-                        after signing in.
+                        Add a stylist or staff member to the salon roster. No password required.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="staff-name">Name</Label>
+                        <Label htmlFor="staff-name">Name *</Label>
                         <Input
                           id="staff-name"
+                          required
                           value={staffName}
                           onChange={(e) => setStaffName(e.target.value)}
-                          placeholder="Full name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="staff-email">Email</Label>
-                        <Input
-                          id="staff-email"
-                          type="email"
-                          required
-                          value={staffEmail}
-                          onChange={(e) => setStaffEmail(e.target.value)}
-                          placeholder="name@salon.com"
+                          placeholder="e.g. Maya"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Category</Label>
+                        <Label>Role / Category</Label>
                         <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant={staffCategory === "staff" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setStaffCategory("staff")}
-                            className="flex-1"
-                          >
-                            Staff
-                          </Button>
                           <Button
                             type="button"
                             variant={staffCategory === "stylist" ? "default" : "outline"}
@@ -541,31 +608,42 @@ function AdminDash() {
                           >
                             Stylist
                           </Button>
+                          <Button
+                            type="button"
+                            variant={staffCategory === "staff" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStaffCategory("staff")}
+                            className="flex-1"
+                          >
+                            Staff
+                          </Button>
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="staff-pass">Temporary password</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="staff-pass"
-                            required
-                            value={staffPassword}
-                            onChange={(e) => setStaffPassword(e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setStaffPassword(genTempPassword())}
-                          >
-                            New
-                          </Button>
-                        </div>
+                        <Label htmlFor="staff-phone">Phone (optional)</Label>
+                        <Input
+                          id="staff-phone"
+                          value={staffPhone}
+                          onChange={(e) => setStaffPhone(e.target.value)}
+                          placeholder="+95 9 123 456 789"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="staff-email">Email (optional)</Label>
+                        <Input
+                          id="staff-email"
+                          type="email"
+                          value={staffEmail}
+                          onChange={(e) => setStaffEmail(e.target.value)}
+                          placeholder="staff@salon.com"
+                        />
                       </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" disabled={savingStaff}>
-                        {savingStaff ? "Creating..." : "Create staff"}
+                        {savingStaff ? "Adding..." : "Add staff"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -574,7 +652,9 @@ function AdminDash() {
             </div>
 
             {staff.length === 0 && (
-              <p className="text-sm text-muted-foreground">No staff members yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No staff members yet. Click Add Staff above to get started.
+              </p>
             )}
 
             {(["stylist", "staff"] as const).map((cat) => {
@@ -592,8 +672,14 @@ function AdminDash() {
                         <CardContent className="p-4 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <div className="font-medium truncate">{s.name ?? s.email ?? "—"}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {s.name ? s.email ?? "" : ""}
+                            <div className="text-xs text-muted-foreground truncate flex items-center gap-2 mt-0.5">
+                              {s.phone && <span>{s.phone}</span>}
+                              {s.phone && s.email && !s.email.endsWith("@internal.local") && (
+                                <span>·</span>
+                              )}
+                              {s.email && !s.email.endsWith("@internal.local") && (
+                                <span>{s.email}</span>
+                              )}
                             </div>
                             <div className="mt-1">
                               <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium">
@@ -601,14 +687,20 @@ function AdminDash() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button size="sm" variant="outline" onClick={() => onOpenEditStaff(s)}>
+                              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="ghost"
                               onClick={async () => {
                                 try {
                                   await setStaffCat({ data: { userId: s.id, category: other } });
-                                  toast.success(`Moved to ${other}`);
+                                  toast.success(
+                                    `Moved to ${other === "stylist" ? "Stylist" : "Staff"}`,
+                                  );
                                   refresh();
                                 } catch (err) {
                                   toast.error(err instanceof Error ? err.message : "Failed");
@@ -619,12 +711,12 @@ function AdminDash() {
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => setRemoveStaffFor(s)}
-                              className="text-destructive"
+                              variant="ghost"
+                              onClick={() => setDeleteStaffFor(s)}
+                              className="text-destructive hover:text-destructive"
+                              title="Delete staff member"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Remove
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </CardContent>
@@ -644,8 +736,8 @@ function AdminDash() {
             <DialogHeader>
               <DialogTitle>Reset password</DialogTitle>
               <DialogDescription>
-                Set a temporary password for {resetFor?.name ?? resetFor?.email}. Share it securely — they can change
-                it after signing in.
+                Set a temporary password for {resetFor?.name ?? resetFor?.email}. Share it securely
+                — they can change it after signing in.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2 py-4">
@@ -675,18 +767,92 @@ function AdminDash() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!removeStaffFor} onOpenChange={(o) => !o && setRemoveStaffFor(null)}>
+      {/* Edit Staff Dialog */}
+      <Dialog open={editStaffOpen} onOpenChange={setEditStaffOpen}>
+        <DialogContent>
+          <form onSubmit={onUpdateStaff}>
+            <DialogHeader>
+              <DialogTitle>Edit staff member</DialogTitle>
+              <DialogDescription>
+                Update staff name, role category, or contact information.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-staff-name">Name *</Label>
+                <Input
+                  id="edit-staff-name"
+                  required
+                  value={editStaffName}
+                  onChange={(e) => setEditStaffName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role / Category</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={editStaffCategory === "stylist" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditStaffCategory("stylist")}
+                    className="flex-1"
+                  >
+                    Stylist
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={editStaffCategory === "staff" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditStaffCategory("staff")}
+                    className="flex-1"
+                  >
+                    Staff
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-staff-phone">Phone (optional)</Label>
+                <Input
+                  id="edit-staff-phone"
+                  value={editStaffPhone}
+                  onChange={(e) => setEditStaffPhone(e.target.value)}
+                  placeholder="+95 9 123 456 789"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditStaffOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingEditStaff}>
+                {savingEditStaff ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Staff Alert Dialog */}
+      <AlertDialog open={!!deleteStaffFor} onOpenChange={(o) => !o && setDeleteStaffFor(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove staff role?</AlertDialogTitle>
+            <AlertDialogTitle>Delete staff member?</AlertDialogTitle>
             <AlertDialogDescription>
-              {removeStaffFor?.name ?? removeStaffFor?.email} will no longer have access to the staff dashboard. Their
-              customer account stays intact.
+              Are you sure you want to remove {deleteStaffFor?.name || "this staff member"} from the
+              salon team? Historical service records will remain intact.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemoveStaff}>Remove</AlertDialogAction>
+            <AlertDialogAction
+              onClick={onDeleteStaff}
+              disabled={deletingStaff}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingStaff ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

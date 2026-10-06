@@ -6,6 +6,7 @@ import { useServerFn } from "@/lib/server-fn";
 import { customerListPendingRequests, respondSessionRequest } from "@/lib/admin.functions";
 import { Check, X, Clock, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/")({
   component: MyPackages,
@@ -18,7 +19,7 @@ type Row = {
   purchase_date: string;
   deposit_paid: boolean;
   deposit_sessions_paid: number;
-  packages: { name: string; description: string | null; points_awarded: number } | null;
+  packages: { name: string } | null;
 };
 
 type PendingReq = {
@@ -26,7 +27,6 @@ type PendingReq = {
   created_at: string;
   expires_at: string;
   package_name: string;
-  variant_label?: string | null;
   manual_price?: number | null;
   remaining: number;
   total: number;
@@ -35,7 +35,6 @@ type PendingReq = {
 
 function MyPackages() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<PendingReq[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -54,18 +53,14 @@ function MyPackages() {
   const loadPackages = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const [{ data: cp }, { data: p }] = await Promise.all([
-      supabase
-        .from("customer_packages")
-        .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name,description,points_awarded)",
-        )
-        .eq("customer_id", u.user.id)
-        .order("purchase_date", { ascending: false }),
-      supabase.from("profiles").select("points").eq("id", u.user.id).maybeSingle(),
-    ]);
+    const { data: cp } = await supabase
+      .from("customer_packages")
+      .select(
+        "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_sessions_paid,packages(name)",
+      )
+      .eq("customer_id", u.user.id)
+      .order("purchase_date", { ascending: false });
     setRows((cp ?? []) as any);
-    setPoints(p?.points ?? 0);
     setLoading(false);
   }, []);
 
@@ -142,45 +137,23 @@ function MyPackages() {
     <div className="mx-auto max-w-4xl space-y-10">
       {/* Header */}
       <header className="border-b border-foreground/25 pb-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p
-              className="text-xs uppercase text-primary"
-              style={{ letterSpacing: "0.28em" }}
-            >
-              Your collection
-            </p>
-            <h1
-              className="mt-3 font-serif text-4xl md:text-5xl italic"
-              style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
-            >
-              My packages
-            </h1>
-          </div>
-          <div className="text-right shrink-0">
-            <div
-              className="text-[10px] uppercase text-foreground/60"
-              style={{ letterSpacing: "0.22em" }}
-            >
-              Points
-            </div>
-            <div
-              className="mt-1 font-serif text-3xl text-primary"
-              style={{ letterSpacing: "0.04em" }}
-            >
-              {points}
-            </div>
-          </div>
+        <div>
+          <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
+            Your collection
+          </p>
+          <h1
+            className="mt-3 font-serif text-4xl md:text-5xl italic"
+            style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
+          >
+            My packages
+          </h1>
         </div>
       </header>
 
       {/* Pending */}
       {pending.length > 0 && (
         <section className="space-y-3">
-          <h2
-            className="text-xs uppercase text-foreground/70"
-            style={{ letterSpacing: "0.28em" }}
-          >
+          <h2 className="text-xs uppercase text-foreground/70" style={{ letterSpacing: "0.28em" }}>
             Awaiting your approval
           </h2>
           {pending.map((r) => {
@@ -193,15 +166,12 @@ function MyPackages() {
               .filter(Boolean)
               .join(", ");
             return (
-              <div
-                key={r.id}
-                className="border border-primary/60 bg-primary/5 p-5 space-y-4"
-              >
+              <div key={r.id} className="border border-primary/60 bg-primary/5 p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-serif text-lg">Approve your session?</div>
                     <div className="mt-1 text-sm text-foreground/70">
-                      {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""} · {r.remaining}/{r.total} left
+                      {r.package_name} · {r.remaining}/{r.total} left
                       {staffNames ? ` · with ${staffNames}` : ""}
                     </div>
                     {r.manual_price != null && (
@@ -292,11 +262,12 @@ function MyPackages() {
                           >
                             {r.packages?.name ?? "Package"}
                           </h3>
-                          {r.packages?.description && (
-                            <p className="mt-1 text-sm text-foreground/60 italic line-clamp-1">
-                              {r.packages.description}
-                            </p>
-                          )}
+                          <div
+                            className="mt-1 font-mono text-xs text-foreground/50 tracking-wider"
+                            title={r.id}
+                          >
+                            Purchase ID: {formatPurchaseId(r.id)}
+                          </div>
                         </div>
                         <div className="text-right shrink-0">
                           <div

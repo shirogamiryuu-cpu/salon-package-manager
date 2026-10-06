@@ -4,55 +4,90 @@
 import { callAdminApi } from "./admin-api";
 
 type Arg<T> = { data: T } | undefined;
-const payload = <T,>(a: Arg<T>): T => (a?.data ?? ({} as T));
+const payload = <T>(a: Arg<T>): T => a?.data ?? ({} as T);
 
-export const adminListCustomers = (_a?: Arg<undefined>) =>
-  callAdminApi("adminListCustomers");
+export const adminListCustomers = (_a?: Arg<undefined>) => callAdminApi("adminListCustomers");
 
 export const adminGetCustomer = (a: { data: { id: string } }) =>
   callAdminApi("adminGetCustomer", payload(a));
 
 export const assignPackage = (a: {
-  data: { customerId: string; packageId: string; variantId?: string | null; sessions?: number; depositAmount?: number; totalPrice?: number; warrantyYears?: number; purchaseDate?: string; warrantyExpiresAt?: string; soldByStaffIds?: string[] };
+  data: {
+    customerId: string;
+    packageId: string;
+    variantId?: string | null;
+    sessions?: number;
+    depositAmount?: number;
+    totalPrice?: number;
+    warrantyYears?: number;
+    purchaseDate?: string;
+    warrantyExpiresAt?: string;
+    soldByStaffIds?: string[];
+  };
 }) => callAdminApi("assignPackage", payload(a));
 
-export const deleteCustomerPackage = (a: {
-  data: { customerPackageId: string };
-}) => callAdminApi("deleteCustomerPackage", payload(a));
+export const deleteCustomerPackage = (a: { data: { customerPackageId: string } }) =>
+  callAdminApi("deleteCustomerPackage", payload(a));
 
 export const adminAddSessions = (a: {
-  data: { customerPackageId: string; sessions: number; depositAmount?: number; addedPrice?: number; warrantyYears?: number };
+  data: {
+    customerPackageId: string;
+    sessions: number;
+    depositAmount?: number;
+    addedPrice?: number;
+    warrantyYears?: number;
+  };
 }) => callAdminApi("adminAddSessions", payload(a));
 
-export const setDepositAmount = (a: {
-  data: { customerPackageId: string; amount: number };
-}) => callAdminApi("setDepositAmount", payload(a));
+export const setDepositAmount = (a: { data: { customerPackageId: string; amount: number } }) =>
+  callAdminApi("setDepositAmount", payload(a));
 
-export const addDepositAmount = (a: {
-  data: { customerPackageId: string; amount: number };
-}) => callAdminApi("addDepositAmount", payload(a));
+export const addDepositAmount = (a: { data: { customerPackageId: string; amount: number } }) =>
+  callAdminApi("addDepositAmount", payload(a));
 
 export const useSession = (a: {
-  data: { customerPackageId: string; staffIds?: string[]; variantId?: string | null; manualPrice?: number | null; skipApproval?: boolean };
+  data: {
+    customerPackageId: string;
+    staffIds?: string[];
+    variantId?: string | null;
+    manualPrice?: number | null;
+    skipApproval?: boolean;
+  };
 }) => callAdminApi("useSession", payload(a));
-
 
 export const customerListPendingRequests = (_a?: Arg<undefined>) =>
   callAdminApi("customerListPendingRequests");
 
-export const respondSessionRequest = (a: {
-  data: { requestId: string; approve: boolean };
-}) => callAdminApi("respondSessionRequest", payload(a));
+export const respondSessionRequest = (a: { data: { requestId: string; approve: boolean } }) =>
+  callAdminApi("respondSessionRequest", payload(a));
 
-export const adminListStaff = (_a?: Arg<undefined>) =>
-  callAdminApi("adminListStaff");
+export const adminListStaff = (_a?: Arg<undefined>) => callAdminApi("adminListStaff");
 
 export const adminCreateStaff = (a: {
-  data: { email: string; password: string; name?: string; category?: "staff" | "stylist" };
+  data: {
+    name: string;
+    category?: "staff" | "stylist";
+    phone?: string;
+    email?: string;
+    password?: string;
+  };
 }) => callAdminApi("adminCreateStaff", payload(a));
 
+export const adminUpdateStaff = (a: {
+  data: {
+    userId: string;
+    name?: string;
+    category?: "staff" | "stylist";
+    phone?: string;
+    email?: string;
+  };
+}) => callAdminApi("adminUpdateStaff", payload(a));
+
+export const adminDeleteStaff = (a: { data: { userId: string } }) =>
+  callAdminApi("adminDeleteStaff", payload(a));
+
 export const adminCreateCustomer = (a: {
-  data: { email?: string; phone?: string; name?: string; password?: string; points?: number };
+  data: { email?: string; phone?: string; name?: string; password?: string };
 }) => callAdminApi("adminCreateCustomer", payload(a));
 
 export const adminDeleteCustomer = (a: { data: { customerId: string } }) =>
@@ -68,23 +103,17 @@ export const adminSetStaffCategory = (a: {
   data: { userId: string; category: "staff" | "stylist" };
 }) => callAdminApi("adminSetStaffCategory", payload(a));
 
-export const staffListMySessions = (_a?: Arg<undefined>) =>
-  callAdminApi("staffListMySessions");
+export const staffListMySessions = (_a?: Arg<undefined>) => callAdminApi("staffListMySessions");
 
-export const staffDashboard = (_a?: Arg<undefined>) =>
-  callAdminApi("staffDashboard");
+export const staffDashboard = (_a?: Arg<undefined>) => callAdminApi("staffDashboard");
 
+export const adminCreateAdmin = (a: { data: { email: string; password: string; name?: string } }) =>
+  callAdminApi("adminCreateAdmin", payload(a));
 
-export const adminCreateAdmin = (a: {
-  data: { email: string; password: string; name?: string };
-}) => callAdminApi("adminCreateAdmin", payload(a));
+export const adminListAdmins = (_a?: Arg<undefined>) => callAdminApi("adminListAdmins");
 
-export const adminListAdmins = (_a?: Arg<undefined>) =>
-  callAdminApi("adminListAdmins");
-
-export const adminResetPassword = (a: {
-  data: { userId: string; password: string };
-}) => callAdminApi("adminResetPassword", payload(a));
+export const adminResetPassword = (a: { data: { userId: string; password: string } }) =>
+  callAdminApi("adminResetPassword", payload(a));
 
 export const adminListHistory = (a: {
   data: {
@@ -96,8 +125,6 @@ export const adminListHistory = (a: {
   };
 }) => callAdminApi("adminListHistory", payload(a));
 
-export const customerListMyHistory = (_a?: Arg<undefined>) =>
-  callAdminApi("customerListMyHistory");
+export const customerListMyHistory = (_a?: Arg<undefined>) => callAdminApi("customerListMyHistory");
 
-export const staffListMyHistory = (_a?: Arg<undefined>) =>
-  callAdminApi("staffListMyHistory");
+export const staffListMyHistory = (_a?: Arg<undefined>) => callAdminApi("staffListMyHistory");

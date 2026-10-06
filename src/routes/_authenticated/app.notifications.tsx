@@ -25,7 +25,10 @@ type Row = {
   } | null;
 };
 
-const META: Record<Row["status"], { label: string; icon: any; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+const META: Record<
+  Row["status"],
+  { label: string; icon: any; variant: "default" | "secondary" | "outline" | "destructive" }
+> = {
   pending: { label: "Awaiting your approval", icon: Clock, variant: "default" },
   approved: { label: "Approved", icon: Check, variant: "secondary" },
   rejected: { label: "Rejected", icon: X, variant: "outline" },
@@ -62,7 +65,12 @@ function Notifications() {
         .channel(`sdr-notifs-${u.user.id}-${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "session_deduction_requests", filter: `customer_id=eq.${u.user.id}` },
+          {
+            event: "*",
+            schema: "public",
+            table: "session_deduction_requests",
+            filter: `customer_id=eq.${u.user.id}`,
+          },
           () => load(),
         )
         .subscribe();
@@ -108,10 +116,30 @@ function Notifications() {
                     params={{ id: r.customer_package_id }}
                     className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-xl"
                   >
-                    <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} manualPrice={r.manual_price} />
+                    <NotifBody
+                      meta={meta}
+                      Icon={Icon}
+                      pkgName={pkgName}
+                      remaining={remaining}
+                      total={total}
+                      dt={dt}
+                      createdAt={new Date(r.created_at)}
+                      status={r.status}
+                      manualPrice={r.manual_price}
+                    />
                   </Link>
                 ) : (
-                  <NotifBody meta={meta} Icon={Icon} pkgName={pkgName} remaining={remaining} total={total} dt={dt} createdAt={new Date(r.created_at)} status={r.status} manualPrice={r.manual_price} />
+                  <NotifBody
+                    meta={meta}
+                    Icon={Icon}
+                    pkgName={pkgName}
+                    remaining={remaining}
+                    total={total}
+                    dt={dt}
+                    createdAt={new Date(r.created_at)}
+                    status={r.status}
+                    manualPrice={r.manual_price}
+                  />
                 )}
               </Card>
             );
@@ -155,12 +183,12 @@ function NotifBody({
         </div>
         <div className="text-sm text-muted-foreground truncate">
           Session deduction request
-          {typeof remaining === "number" && typeof total === "number" ? ` · ${remaining}/${total} left` : ""}
+          {typeof remaining === "number" && typeof total === "number"
+            ? ` · ${remaining}/${total} left`
+            : ""}
         </div>
         {typeof manualPrice === "number" && (
-          <div className="text-sm font-medium mt-1">
-            Charge: MMK {manualPrice.toFixed(0)}
-          </div>
+          <div className="text-sm font-medium mt-1">Charge: MMK {manualPrice.toFixed(0)}</div>
         )}
         <div className="text-xs text-muted-foreground mt-1">
           {status === "pending" ? "Requested" : "Updated"} {dt.toLocaleString()}

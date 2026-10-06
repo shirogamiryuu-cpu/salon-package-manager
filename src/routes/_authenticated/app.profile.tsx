@@ -58,7 +58,9 @@ function Profile() {
     <div className="max-w-xl space-y-6">
       <h1 className="text-2xl font-semibold">Profile</h1>
       <Card>
-        <CardHeader><CardTitle>Contact info</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Contact info</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
           <div>
             <Label>Name</Label>
@@ -72,12 +74,16 @@ function Profile() {
             <Label>Phone</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <Button onClick={saveProfile} disabled={saving}>Save</Button>
+          <Button onClick={saveProfile} disabled={saving}>
+            Save
+          </Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Change password</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Change password</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
           <div>
             <Label>New password</Label>

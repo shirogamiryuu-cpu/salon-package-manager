@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@/lib/server-fn";
 import { customerListMyHistory } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CalendarClock, Users, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
+import { PackageRecordingTable } from "@/components/package-recording-table";
+import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/mine/$id")({
   component: PackageDetail,
@@ -23,14 +25,12 @@ type CP = {
   total_price: number;
   warranty_years: number;
   warranty_expires_at: string | null;
-  variant_label?: string | null;
   package_name?: string | null;
   package_description?: string | null;
   packages: {
     name: string;
     description: string | null;
     price: number;
-    points_awarded: number;
   } | null;
 };
 
@@ -40,6 +40,7 @@ type HistoryRow = {
   customer_package_id: string;
   package_name: string;
   sessions_deducted: number;
+  price_applied?: number;
   staff: string[];
 };
 
@@ -54,7 +55,7 @@ function PackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,variant_label,package_name,package_description,packages(name,description,price,points_awarded)",
+          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,deposit_amount,total_price,warranty_years,warranty_expires_at,package_name,package_description,packages(name,description,price)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -98,21 +99,23 @@ function PackageDetail() {
 
       {/* Hero */}
       <header className="border-b border-foreground/25 pb-8">
-        <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
-          Your package
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
+            Your package
+          </p>
+          <span
+            className="font-mono text-xs uppercase tracking-wider text-foreground/60 bg-foreground/5 px-2.5 py-1 rounded border border-foreground/10"
+            title={cp.id}
+          >
+            Purchase ID: {formatPurchaseId(cp.id)}
+          </span>
+        </div>
         <h1
           className="mt-3 font-serif text-4xl md:text-5xl italic"
           style={{ letterSpacing: "0.04em", lineHeight: 1.15 }}
         >
           {cp.packages?.name ?? cp.package_name ?? "Package"}
-          {cp.variant_label ? ` · ${cp.variant_label}` : ""}
         </h1>
-        {(cp.packages?.description ?? cp.package_description) && (
-          <p className="mt-4 text-sm text-foreground/70 italic max-w-lg">
-            {cp.packages?.description ?? cp.package_description}
-          </p>
-        )}
       </header>
 
       {/* Progress */}
@@ -139,12 +142,7 @@ function PackageDetail() {
           className="text-[10px] uppercase text-foreground/50"
           style={{ letterSpacing: "0.22em" }}
         >
-          {used} used · Purchased{" "}
-          {new Date(cp.purchase_date).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
+          {used} used
         </div>
       </section>
 
@@ -157,17 +155,6 @@ function PackageDetail() {
 
       {/* Meta grid */}
       <section className="space-y-6">
-        {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
-          <div className="flex items-center gap-3 text-sm text-foreground/70">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span>
-              {cp.warranty_years > 0 ? `${cp.warranty_years}-year warranty` : "Warranty"}
-              {cp.warranty_expires_at
-                ? ` · valid until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
-                : ""}
-            </span>
-          </div>
-        )}
         <div className="flex items-center gap-3 text-sm text-foreground/70">
           <CalendarClock className="h-4 w-4 text-primary" />
           <span>
@@ -179,51 +166,37 @@ function PackageDetail() {
         </div>
       </section>
 
-      {/* History */}
+      {/* Package Recording */}
       <section className="space-y-4">
         <h2
           className="text-xs uppercase text-foreground/70 border-b border-foreground/25 pb-4"
           style={{ letterSpacing: "0.28em" }}
         >
-          Session history
+          Package recording
         </h2>
 
         {history === null ? (
           <p className="text-sm text-foreground/60 italic">Loading…</p>
-        ) : history.length === 0 ? (
-          <p className="py-8 text-center text-foreground/60 italic">No sessions used yet.</p>
         ) : (
-          <ul className="divide-y divide-foreground/15">
-            {history.map((r, i) => (
-              <li key={r.id} className="py-4 flex items-start justify-between gap-4">
-                <div>
-                  <div
-                    className="text-[10px] uppercase text-primary"
-                    style={{ letterSpacing: "0.22em" }}
-                  >
-                    Session {String(history.length - i).padStart(2, "0")}
-                  </div>
-                  <div className="mt-1 font-serif text-lg">
-                    {new Date(r.used_at).toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-xs text-foreground/60">
-                    <Users className="h-3 w-3" />
-                    {r.staff.length ? r.staff.join(", ") : "—"}
-                  </div>
-                </div>
-                <div
-                  className="text-[10px] uppercase text-foreground/60"
-                  style={{ letterSpacing: "0.22em" }}
-                >
-                  −{r.sessions_deducted}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <PackageRecordingTable
+            rows={history.map((r) => {
+              const sessionUnitValue =
+                cp.total_sessions > 0
+                  ? (Number(cp.total_price ?? 0) || Number(cp.packages?.price ?? 0)) /
+                    cp.total_sessions
+                  : 0;
+              return {
+                id: r.id,
+                purchase_id: r.customer_package_id || cp.id,
+                used_at: r.used_at,
+                service: cp.packages?.name ?? cp.package_name ?? r.package_name ?? "Treatment",
+                value: r.price_applied && r.price_applied > 0 ? r.price_applied : sessionUnitValue,
+                staff: r.staff,
+                branch: "YGN",
+              };
+            })}
+            emptyMessage="No sessions recorded yet."
+          />
         )}
       </section>
     </div>

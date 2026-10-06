@@ -3,12 +3,13 @@
 // option below — they route Supabase HTTP traffic through an optional same-origin
 // proxy (see src/integrations/supabase/endpoint.ts). Re-add them if this file is
 // regenerated.
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
-import { createProxyFetch } from './endpoint';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./types";
+import { createProxyFetch } from "./endpoint";
 
 const SUPABASE_URL = "https://elvvyhxdahaldpdfsksd.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsdnZ5aHhkYWhhbGRwZGZza3NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODM0NjIsImV4cCI6MjA5OTE1OTQ2Mn0.wOSVPCsdYZtWNqlZe-AJrk1ZY7P0KuLTguXsNktbDfQ";
+const SUPABASE_PUBLISHABLE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsdnZ5aHhkYWhhbGRwZGZza3NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODM0NjIsImV4cCI6MjA5OTE1OTQ2Mn0.wOSVPCsdYZtWNqlZe-AJrk1ZY7P0KuLTguXsNktbDfQ";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

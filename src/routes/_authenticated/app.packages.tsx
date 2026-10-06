@@ -10,8 +10,6 @@ type Pkg = {
   id: string;
   name: string;
   total_sessions: number;
-  points_awarded: number;
-  image_url: string | null;
   category_id: string | null;
 };
 
@@ -34,7 +32,7 @@ function Available() {
       // Fetch packages
       const { data } = await supabase
         .from("packages")
-        .select("id, name, total_sessions, points_awarded, image_url, category_id")
+        .select("id, name, total_sessions, category_id")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
@@ -54,16 +52,14 @@ function Available() {
   const parents = useMemo(() => cats.filter((c) => !c.parent_id), [cats]);
   const catById = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats]);
 
-  const parentIdForPackage = (p: Pkg): string => {
-    if (!p.category_id) return UNCAT_ID;
-    const c = catById.get(p.category_id);
-    if (!c) return UNCAT_ID;
-    return c.parent_id ?? c.id;
-  };
-
   const filteredPkgs = useMemo(() => {
     if (activeParent === "__all__") return pkgs;
-    return pkgs.filter((p) => parentIdForPackage(p) === activeParent);
+    return pkgs.filter((p) => {
+      if (!p.category_id) return activeParent === UNCAT_ID;
+      const c = catById.get(p.category_id);
+      const pid = c?.parent_id ?? c?.id ?? UNCAT_ID;
+      return pid === activeParent;
+    });
   }, [pkgs, activeParent, catById]);
 
   const grouped = useMemo(() => {
@@ -107,8 +103,8 @@ function Available() {
           Hair & Scalp Services
         </h1>
         <p className="mx-auto max-w-xl text-xs md:text-sm text-foreground/60 italic">
-          Explore our signature salon remedies and specialized hair care services.
-          Please consult our salon specialists to select your tailored regimen.
+          Explore our signature salon remedies and specialized hair care services. Please consult
+          our salon specialists to select your tailored regimen.
         </p>
       </header>
 
@@ -184,22 +180,6 @@ function Available() {
                         {pkg.name}
                       </h3>
                     </div>
-
-                    {/* 
-                      =====================================================
-                      POINTS & SESSIONS SECTION (COMMENTED OUT FOR LATER)
-                      =====================================================
-                      <div className="mt-4 pt-3 border-t border-foreground/10 flex flex-wrap items-center gap-2">
-                        {pkg.total_sessions > 1 && (
-                          <span className="inline-flex items-center border border-foreground/20 px-2.5 py-1 text-[10px] tracking-[0.18em] uppercase text-foreground/80">
-                            {pkg.total_sessions} Sessions
-                          </span>
-                        )}
-                        <span className="inline-flex items-center border border-primary/30 bg-primary/5 px-2.5 py-1 text-[10px] tracking-[0.18em] uppercase text-primary font-semibold">
-                          +{pkg.points_awarded} Points
-                        </span>
-                      </div>
-                    */}
                   </article>
                 ))}
               </div>

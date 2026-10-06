@@ -33,9 +33,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
         .eq("user_id", data.session.user.id);
 
       const isAdmin = roles?.some((r) => r.role === "admin");
-      const isStaff = roles?.some((r) => r.role === "staff");
 
-      const to = isAdmin ? "/admin" : isStaff ? "/staff" : "/app";
+      const to = isAdmin ? "/admin" : "/app";
 
       if (mounted) navigate({ to, replace: true });
     })();
@@ -62,11 +61,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-foreground/20 bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="EmpireCharme"
-              className="h-12 w-auto object-contain"
-            />
+            <img src={logo} alt="EmpireCharme" className="h-12 w-auto object-contain" />
           </Link>
 
           <nav className="hidden items-center gap-10 md:flex">
@@ -78,18 +73,14 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   key={n.to}
                   to={n.to}
                   className={`text-xs uppercase transition-colors ${
-                    active
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-foreground"
+                    active ? "text-primary" : "text-foreground/70 hover:text-foreground"
                   }`}
                   style={{ letterSpacing: "0.24em" }}
                 >
                   <span className="inline-flex flex-col items-center">
                     {n.label}
                     <span
-                      className={`mt-1 h-px w-full ${
-                        active ? "bg-primary" : "bg-transparent"
-                      }`}
+                      className={`mt-1 h-px w-full ${active ? "bg-primary" : "bg-transparent"}`}
                     />
                   </span>
                 </Link>
@@ -135,11 +126,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <footer className="mt-24 border-t border-foreground/20">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 md:grid-cols-4">
           <div>
-            <img
-              src={logo}
-              alt="EmpireCharme"
-              className="h-14 w-auto object-contain"
-            />
+            <img src={logo} alt="EmpireCharme" className="h-14 w-auto object-contain" />
 
             <p
               className="mt-4 text-xs uppercase text-foreground/60"
@@ -183,27 +170,16 @@ export function PublicShell({ children }: { children: ReactNode }) {
   );
 }
 
-function FooterCol({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function FooterCol({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <h4
-        className="text-[11px] uppercase text-primary"
-        style={{ letterSpacing: "0.28em" }}
-      >
+      <h4 className="text-[11px] uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
         {title}
       </h4>
 
       <div className="mt-4 h-px w-8 bg-primary" />
 
-      <p className="mt-4 text-sm leading-loose text-foreground/75">
-        {children}
-      </p>
+      <p className="mt-4 text-sm leading-loose text-foreground/75">{children}</p>
     </div>
   );
 }
@@ -213,11 +189,7 @@ export function SectionDivider() {
     <div className="mx-auto my-16 flex w-full max-w-6xl items-center gap-6 px-6">
       <div className="h-px flex-1 bg-foreground/25" />
 
-      <div
-        className="h-6 w-px bg-primary"
-        style={{ transform: "rotate(20deg)" }}
-        aria-hidden
-      />
+      <div className="h-6 w-px bg-primary" style={{ transform: "rotate(20deg)" }} aria-hidden />
 
       <div className="h-px flex-1 bg-foreground/25" />
     </div>

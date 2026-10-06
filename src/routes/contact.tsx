@@ -22,17 +22,11 @@ function Contact() {
   return (
     <PublicShell>
       <section className="mx-auto w-full max-w-4xl px-6 py-24 text-center">
-        <p
-          className="text-xs uppercase text-primary"
-          style={{ letterSpacing: "0.4em" }}
-        >
+        <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.4em" }}>
           Visit Us
         </p>
 
-        <h1
-          className="mt-6 font-serif text-4xl md:text-6xl"
-          style={{ letterSpacing: "0.18em" }}
-        >
+        <h1 className="mt-6 font-serif text-4xl md:text-6xl" style={{ letterSpacing: "0.18em" }}>
           WE LOOK
           <br />
           <em className="font-light text-primary">forward to welcoming you.</em>
@@ -41,9 +35,9 @@ function Contact() {
         <div className="mx-auto mt-10 h-px w-16 bg-primary" />
 
         <p className="mx-auto mt-10 max-w-2xl text-foreground/75 leading-loose">
-          Visit EmpireCharme for premium hair, scalp, nail and beauty services.
-          Our experienced team is ready to help you achieve healthy, beautiful
-          results in a relaxing and welcoming environment.
+          Visit EmpireCharme for premium hair, scalp, nail and beauty services. Our experienced team
+          is ready to help you achieve healthy, beautiful results in a relaxing and welcoming
+          environment.
         </p>
       </section>
 
@@ -98,10 +92,7 @@ function Contact() {
       <SectionDivider />
 
       <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 pb-16 text-center">
-        <h2
-          className="font-serif text-3xl md:text-4xl"
-          style={{ letterSpacing: "0.18em" }}
-        >
+        <h2 className="font-serif text-3xl md:text-4xl" style={{ letterSpacing: "0.18em" }}>
           ALREADY A GUEST?
         </h2>
 
@@ -145,16 +136,11 @@ function Row({
       </span>
 
       <div>
-        <p
-          className="text-[11px] uppercase text-foreground/60"
-          style={{ letterSpacing: "0.28em" }}
-        >
+        <p className="text-[11px] uppercase text-foreground/60" style={{ letterSpacing: "0.28em" }}>
           {title}
         </p>
 
-        <div className="mt-2 text-sm leading-loose text-foreground/85">
-          {children}
-        </div>
+        <div className="mt-2 text-sm leading-loose text-foreground/85">{children}</div>
       </div>
     </div>
   );

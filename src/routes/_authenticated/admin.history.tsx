@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@/lib/server-fn";
-import {
-  adminListHistory,
-  adminListCustomers,
-  adminListStaff,
-} from "@/lib/admin.functions";
+import { adminListHistory, adminListCustomers, adminListStaff } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { History } from "lucide-react";
 import { toast } from "sonner";
+import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/history")({
   component: AdminHistory,
@@ -103,11 +100,15 @@ function AdminHistory() {
           <div className="space-y-1">
             <Label className="text-xs">Customer</Label>
             <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {customers.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -115,11 +116,15 @@ function AdminHistory() {
           <div className="space-y-1">
             <Label className="text-xs">Staff</Label>
             <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {staff.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -127,11 +132,15 @@ function AdminHistory() {
           <div className="space-y-1">
             <Label className="text-xs">Package</Label>
             <Select value={packageId} onValueChange={setPackageId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {packages.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -179,22 +188,25 @@ function AdminHistory() {
               <Card key={r.id}>
                 <CardContent className="p-4 space-y-1">
                   <div className="font-medium">{r.customer_name ?? r.customer_email}</div>
-                  <div className="text-sm">
-                    {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
+                  <div className="text-sm">{r.package_name}</div>
+                  <div
+                    className="font-mono text-xs text-muted-foreground"
+                    title={(r as any).customer_package_id || r.package_id}
+                  >
+                    Purchase ID: {formatPurchaseId((r as any).customer_package_id || r.package_id)}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.used_at).toLocaleString()} · {r.sessions_deducted} session
                     {r.price_applied ? ` · MMK ${r.price_applied.toFixed(0)}` : ""}
                   </div>
                   <div className="text-xs">
-                    Staff: {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
+                    Staff:{" "}
+                    {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     By: {r.admin_name ?? r.admin_email ?? "—"}
                     {(r as any).approved_by_admin ? " · admin approved" : ""}
                   </div>
-
-
                 </CardContent>
               </Card>
             ))}
@@ -222,16 +234,27 @@ function AdminHistory() {
                       </TableCell>
                       <TableCell>{r.customer_name ?? r.customer_email}</TableCell>
                       <TableCell>
-                        {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""}
-                        {r.price_applied ? (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            MMK {r.price_applied.toFixed(0)}
-                          </span>
-                        ) : null}
+                        <div>
+                          <span>{r.package_name}</span>
+                          {r.price_applied ? (
+                            <span className="text-xs text-muted-foreground ml-2 font-normal">
+                              MMK {r.price_applied.toFixed(0)}
+                            </span>
+                          ) : null}
+                          <div
+                            className="font-mono text-xs text-muted-foreground font-normal"
+                            title={(r as any).customer_package_id || r.package_id}
+                          >
+                            Purchase ID:{" "}
+                            {formatPurchaseId((r as any).customer_package_id || r.package_id)}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">{r.sessions_deducted}</TableCell>
                       <TableCell>
-                        {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
+                        {r.staff.length
+                          ? r.staff.map((s: any) => s.name ?? s.email).join(", ")
+                          : "—"}
                       </TableCell>
                       <TableCell>
                         {r.admin_name ?? r.admin_email ?? "—"}
@@ -239,8 +262,6 @@ function AdminHistory() {
                           <span className="text-xs text-muted-foreground ml-2">admin approved</span>
                         ) : null}
                       </TableCell>
-
-
                     </TableRow>
                   ))}
                 </TableBody>

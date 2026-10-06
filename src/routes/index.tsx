@@ -34,16 +34,9 @@ function Home() {
         <BackgroundPattern />
 
         <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 py-28 text-center md:py-40">
-          <img
-            src={logo}
-            alt="EmpireCharme"
-            className="h-24 w-auto object-contain md:h-32"
-          />
+          <img src={logo} alt="EmpireCharme" className="h-24 w-auto object-contain md:h-32" />
 
-          <p
-            className="mt-10 text-xs uppercase text-primary"
-            style={{ letterSpacing: "0.4em" }}
-          >
+          <p className="mt-10 text-xs uppercase text-primary" style={{ letterSpacing: "0.4em" }}>
             Moe Kaung Road • Yangon
           </p>
 
@@ -53,17 +46,14 @@ function Home() {
           >
             BEAUTIFY
             <br />
-            <span className="font-light italic text-primary">
-              with confidence
-            </span>
+            <span className="font-light italic text-primary">with confidence</span>
           </h1>
 
           <div className="mt-10 h-px w-24 bg-primary" />
 
           <p className="mt-8 max-w-xl text-base text-foreground/75 md:text-lg">
-            Experience premium hair, scalp, nail and beauty services delivered
-            by experienced professionals who are passionate about helping you
-            look and feel your very best.
+            Experience premium hair, scalp, nail and beauty services delivered by experienced
+            professionals who are passionate about helping you look and feel your very best.
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -140,17 +130,11 @@ function Home() {
       {/* Manifesto */}
       <section className="mx-auto grid w-full max-w-5xl gap-14 px-6 py-16 md:grid-cols-2 md:items-center">
         <div>
-          <p
-            className="text-xs uppercase text-primary"
-            style={{ letterSpacing: "0.32em" }}
-          >
+          <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.32em" }}>
             About Us
           </p>
 
-          <h2
-            className="mt-4 font-serif text-4xl md:text-5xl"
-            style={{ letterSpacing: "0.14em" }}
-          >
+          <h2 className="mt-4 font-serif text-4xl md:text-5xl" style={{ letterSpacing: "0.14em" }}>
             Healthy hair.
             <br />
             <em className="font-light text-primary">Beautiful confidence.</em>
@@ -159,17 +143,15 @@ function Home() {
 
         <div className="space-y-5 text-foreground/75">
           <p>
-            Located on Moe Kaung Road in Yankin Township, EmpireCharme has
-            become a trusted destination for clients seeking healthier hair,
-            professional scalp treatments and premium beauty services in
-            Yangon.
+            Located on Moe Kaung Road in Yankin Township, EmpireCharme has become a trusted
+            destination for clients seeking healthier hair, professional scalp treatments and
+            premium beauty services in Yangon.
           </p>
 
           <p>
-            From signature scalp therapies and Korean-style wave perms to
-            precision haircuts, professional coloring, nail care and grooming
-            services, every treatment is thoughtfully tailored to help you
-            achieve beautiful, lasting results.
+            From signature scalp therapies and Korean-style wave perms to precision haircuts,
+            professional coloring, nail care and grooming services, every treatment is thoughtfully
+            tailored to help you achieve beautiful, lasting results.
           </p>
 
           <Link
@@ -187,10 +169,7 @@ function Home() {
 
 function BackgroundPattern() {
   return (
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.08]"
-    >
+    <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.08]">
       <defs>
         <pattern
           id="charme-dots"
@@ -202,14 +181,7 @@ function BackgroundPattern() {
           patternTransform="rotate(20)"
         >
           <circle cx="4" cy="4" r="1" fill="#B79A5C" />
-          <line
-            x1="18"
-            y1="10"
-            x2="26"
-            y2="18"
-            stroke="#B79A5C"
-            strokeWidth="0.6"
-          />
+          <line x1="18" y1="10" x2="26" y2="18" stroke="#B79A5C" strokeWidth="0.6" />
         </pattern>
       </defs>
 

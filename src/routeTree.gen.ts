@@ -15,14 +15,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff.index'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as AuthenticatedStaffHistoryRouteImport } from './routes/_authenticated/staff.history'
 import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/app.profile'
 import { Route as AuthenticatedAppPackagesRouteImport } from './routes/_authenticated/app.packages'
 import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/app.notifications'
@@ -66,11 +63,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -86,11 +78,6 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedStaffIndexRoute = AuthenticatedStaffIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedStaffRoute,
-} as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -101,12 +88,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const AuthenticatedStaffHistoryRoute =
-  AuthenticatedStaffHistoryRouteImport.update({
-    id: '/history',
-    path: '/history',
-    getParentRoute: () => AuthenticatedStaffRoute,
-  } as any)
 const AuthenticatedAppProfileRoute = AuthenticatedAppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -192,7 +173,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/home': typeof AuthenticatedHomeRoute
-  '/staff': typeof AuthenticatedStaffRouteWithChildren
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/contacts': typeof AuthenticatedAdminContactsRoute
   '/admin/history': typeof AuthenticatedAdminHistoryRoute
@@ -202,10 +182,8 @@ export interface FileRoutesByFullPath {
   '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
-  '/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
-  '/staff/': typeof AuthenticatedStaffIndexRoute
   '/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/admin/customers/': typeof AuthenticatedAdminCustomersIndexRoute
   '/admin/customers/$id/': typeof AuthenticatedAdminCustomersIdIndexRoute
@@ -227,10 +205,8 @@ export interface FileRoutesByTo {
   '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/packages': typeof AuthenticatedAppPackagesRoute
   '/app/profile': typeof AuthenticatedAppProfileRoute
-  '/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
-  '/staff': typeof AuthenticatedStaffIndexRoute
   '/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdIndexRoute
@@ -247,7 +223,6 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/staff': typeof AuthenticatedStaffRouteWithChildren
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/contacts': typeof AuthenticatedAdminContactsRoute
   '/_authenticated/admin/history': typeof AuthenticatedAdminHistoryRoute
@@ -257,10 +232,8 @@ export interface FileRoutesById {
   '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/_authenticated/app/packages': typeof AuthenticatedAppPackagesRoute
   '/_authenticated/app/profile': typeof AuthenticatedAppProfileRoute
-  '/_authenticated/staff/history': typeof AuthenticatedStaffHistoryRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
-  '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
   '/_authenticated/app/mine/$id': typeof AuthenticatedAppMineIdRoute
   '/_authenticated/admin/customers/': typeof AuthenticatedAdminCustomersIndexRoute
   '/_authenticated/admin/customers/$id/': typeof AuthenticatedAdminCustomersIdIndexRoute
@@ -277,7 +250,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/home'
-    | '/staff'
     | '/admin/categories'
     | '/admin/contacts'
     | '/admin/history'
@@ -287,10 +259,8 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/app/packages'
     | '/app/profile'
-    | '/staff/history'
     | '/admin/'
     | '/app/'
-    | '/staff/'
     | '/app/mine/$id'
     | '/admin/customers/'
     | '/admin/customers/$id/'
@@ -312,10 +282,8 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/app/packages'
     | '/app/profile'
-    | '/staff/history'
     | '/admin'
     | '/app'
-    | '/staff'
     | '/app/mine/$id'
     | '/admin/customers'
     | '/admin/customers/$id'
@@ -331,7 +299,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/app'
     | '/_authenticated/home'
-    | '/_authenticated/staff'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/contacts'
     | '/_authenticated/admin/history'
@@ -341,10 +308,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app/notifications'
     | '/_authenticated/app/packages'
     | '/_authenticated/app/profile'
-    | '/_authenticated/staff/history'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
-    | '/_authenticated/staff/'
     | '/_authenticated/app/mine/$id'
     | '/_authenticated/admin/customers/'
     | '/_authenticated/admin/customers/$id/'
@@ -404,13 +369,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/staff': {
-      id: '/_authenticated/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof AuthenticatedStaffRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
@@ -432,13 +390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/staff/': {
-      id: '/_authenticated/staff/'
-      path: '/'
-      fullPath: '/staff/'
-      preLoaderRoute: typeof AuthenticatedStaffIndexRouteImport
-      parentRoute: typeof AuthenticatedStaffRoute
-    }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
       path: '/'
@@ -452,13 +403,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/staff/history': {
-      id: '/_authenticated/staff/history'
-      path: '/history'
-      fullPath: '/staff/history'
-      preLoaderRoute: typeof AuthenticatedStaffHistoryRouteImport
-      parentRoute: typeof AuthenticatedStaffRoute
     }
     '/_authenticated/app/profile': {
       id: '/_authenticated/app/profile'
@@ -604,31 +548,16 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
 const AuthenticatedAppRouteWithChildren =
   AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
-interface AuthenticatedStaffRouteChildren {
-  AuthenticatedStaffHistoryRoute: typeof AuthenticatedStaffHistoryRoute
-  AuthenticatedStaffIndexRoute: typeof AuthenticatedStaffIndexRoute
-}
-
-const AuthenticatedStaffRouteChildren: AuthenticatedStaffRouteChildren = {
-  AuthenticatedStaffHistoryRoute: AuthenticatedStaffHistoryRoute,
-  AuthenticatedStaffIndexRoute: AuthenticatedStaffIndexRoute,
-}
-
-const AuthenticatedStaffRouteWithChildren =
-  AuthenticatedStaffRoute._addFileChildren(AuthenticatedStaffRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
-  AuthenticatedStaffRoute: typeof AuthenticatedStaffRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
-  AuthenticatedStaffRoute: AuthenticatedStaffRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =

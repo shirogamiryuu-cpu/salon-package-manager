@@ -27,7 +27,6 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [points, setPoints] = useState("");
   const [password, setPassword] = useState(genTempPassword());
   const [created, setCreated] = useState<{ phone: string; password: string; name?: string } | null>(
     null,
@@ -36,7 +35,6 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
   function reset() {
     setName("");
     setPhone("");
-    setPoints("");
     setPassword(genTempPassword());
     setCreated(null);
   }
@@ -51,7 +49,6 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
           phone: phone.trim(),
           name: name.trim() || undefined,
           password,
-          points: points ? Number(points) : undefined,
         },
       });
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? password;
@@ -147,8 +144,8 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
             <DialogHeader>
               <DialogTitle>Create customer account</DialogTitle>
               <DialogDescription>
-                Instantly create an account for a customer who can't sign up themselves. Only a phone
-                number is required.
+                Instantly create an account for a customer who can't sign up themselves. Only a
+                phone number is required.
               </DialogDescription>
             </DialogHeader>
 
@@ -172,17 +169,6 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="acd-points">Starting points</Label>
-                <Input
-                  id="acd-points"
-                  type="number"
-                  min={0}
-                  value={points}
-                  onChange={(e) => setPoints(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="acd-pass">Temporary password</Label>
                 <div className="flex gap-2">
                   <Input
@@ -191,7 +177,11 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <Button type="button" variant="outline" onClick={() => setPassword(genTempPassword())}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPassword(genTempPassword())}
+                  >
                     New
                   </Button>
                 </div>

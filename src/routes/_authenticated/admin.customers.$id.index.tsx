@@ -6,7 +6,6 @@ import {
   adminDeleteCustomer,
   adminGetCustomer,
   adminListStaff,
-  adminPromoteToStaff,
   assignPackage,
   addDepositAmount,
   deleteCustomerPackage,
@@ -27,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatPurchaseId } from "@/lib/utils";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -48,52 +48,63 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MinusCircle, Scissors, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowLeft, Coins, MinusCircle, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { applyPromotion, fetchActivePromoMap, formatDiscountLabel, type Promotion } from "@/lib/promotions";
+import {
+  applyPromotion,
+  fetchActivePromoMap,
+  formatDiscountLabel,
+  type Promotion,
+} from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/")({
   component: CustomerDetail,
 });
 
-type StaffOpt = { id: string; email: string | null; name: string | null; category: "staff" | "stylist" | null };
+type StaffOpt = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  category: "staff" | "stylist" | null;
+};
 
 function CustomerDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const get = useServerFn(adminGetCustomer);
   const assign = useServerFn(assignPackage);
-  const use = useServerFn(useSession);
+  const deductSessionFn = useServerFn(useSession);
   const listStaff = useServerFn(adminListStaff);
-  const promote = useServerFn(adminPromoteToStaff);
   const addDepositFn = useServerFn(addDepositAmount);
   const addSessionsFn = useServerFn(adminAddSessions);
   const deleteCpFn = useServerFn(deleteCustomerPackage);
   const deleteCustomerFn = useServerFn(adminDeleteCustomer);
 
   const [data, setData] = useState<any>(null);
-  const [packages, setPackages] = useState<{ id: string; name: string; total_sessions: number; price: number; category_id: string | null }[]>([]);
+  const [packages, setPackages] = useState<
+    {
+      id: string;
+      name: string;
+      total_sessions: number;
+      price: number;
+      category_id: string | null;
+    }[]
+  >([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [pkgSearch, setPkgSearch] = useState<string>("");
   const [pkgCategoryFilter, setPkgCategoryFilter] = useState<string>("all");
-  const [variantsByPkg, setVariantsByPkg] = useState<Record<string, { id: string; label: string; price: number }[]>>({});
   const [promoMap, setPromoMap] = useState<Map<string, Promotion>>(new Map());
   const [pickId, setPickId] = useState<string>("");
-  const [pickVariantId, setPickVariantId] = useState<string>("");
-  const [assignSessions, setAssignSessions] = useState<number>(1);
+  const [assignSessions, setAssignSessions] = useState<string>("1");
   const [assignDepositAmount, setAssignDepositAmount] = useState<string>("");
-  const [assignWarranty, setAssignWarranty] = useState<number>(0);
-  const [assignPurchaseDate, setAssignPurchaseDate] = useState<string>("");
-  const [assignWarrantyExpires, setAssignWarrantyExpires] = useState<string>("");
   const [assignManualPrice, setAssignManualPrice] = useState<string>("");
-  const [showAssignAdvanced, setShowAssignAdvanced] = useState(false);
   const [assignSoldBy, setAssignSoldBy] = useState<Set<string>>(new Set());
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
-  const [customerRoles, setCustomerRoles] = useState<string[]>([]);
-  const [depositDrafts, setDepositDrafts] = useState<Record<string, string>>({});
+  const [depositFor, setDepositFor] = useState<any | null>(null);
+  const [depositAmountInput, setDepositAmountInput] = useState<string>("");
+  const [savingDeposit, setSavingDeposit] = useState(false);
 
   const [deductFor, setDeductFor] = useState<any | null>(null);
-  const [deductVariantId, setDeductVariantId] = useState<string>("");
   const [deductManualPrice, setDeductManualPrice] = useState<string>("");
   const [deductSkipApproval, setDeductSkipApproval] = useState(false);
 
@@ -101,21 +112,15 @@ function CustomerDetail() {
   const [deducting, setDeducting] = useState(false);
 
   const [addFor, setAddFor] = useState<any | null>(null);
-  const [addSessions, setAddSessions] = useState<number>(1);
+  const [addSessions, setAddSessions] = useState<string>("1");
   const [addDeposit, setAddDeposit] = useState<string>("");
-  const [addWarranty, setAddWarranty] = useState<number>(0);
   const [addManualPrice, setAddManualPrice] = useState<string>("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [d, staffList, { data: roles }] = await Promise.all([
-      get({ data: { id } }),
-      listStaff(),
-      supabase.from("user_roles").select("role").eq("user_id", id),
-    ]);
+    const [d, staffList] = await Promise.all([get({ data: { id } }), listStaff()]);
     setData(d);
     setStaffOpts(staffList as StaffOpt[]);
-    setCustomerRoles((roles ?? []).map((r: any) => r.role));
   }, [get, id, listStaff]);
 
   useEffect(() => {
@@ -135,70 +140,49 @@ function CustomerDetail() {
       setPackages(list);
       setCategories((cats ?? []) as any[]);
       setPromoMap(await fetchActivePromoMap(list.map((p) => p.id)));
-      const { data: vs } = await supabase
-        .from("package_variants")
-        .select("id,package_id,label,price,sort_order")
-        .order("sort_order", { ascending: true });
-      const map: Record<string, any[]> = {};
-      for (const v of (vs ?? []) as any[]) {
-        (map[v.package_id] ||= []).push({
-          id: v.id, label: v.label,
-          price: Number(v.price),
-        });
-      }
-      setVariantsByPkg(map);
     })();
   }, [refresh]);
 
   const selectedPkg = packages.find((p) => p.id === pickId);
-  const availableVariants = pickId ? (variantsByPkg[pickId] ?? []) : [];
-  const selectedVariant = availableVariants.find((v) => v.id === pickVariantId) ?? null;
   const selectedPromo = selectedPkg ? promoMap.get(selectedPkg.id) : undefined;
-  const basePrice = selectedVariant ? selectedVariant.price : (selectedPkg ? Number(selectedPkg.price) : 0);
-  const selectedPricing = selectedPkg && selectedPromo && !selectedVariant
-    ? applyPromotion(basePrice, selectedPromo)
-    : null;
-  const selectedUnit = selectedVariant ? basePrice : (selectedPricing ? selectedPricing.final : basePrice);
+  const basePrice = selectedPkg ? Number(selectedPkg.price) : 0;
+  const selectedPricing =
+    selectedPkg && selectedPromo ? applyPromotion(basePrice, selectedPromo) : null;
+  const selectedUnit = selectedPricing ? selectedPricing.final : basePrice;
 
-  const computedTotal = selectedUnit * assignSessions;
+  const effectiveAssignSessions = Math.max(1, Number(assignSessions) || 1);
+  const computedTotal = selectedUnit * effectiveAssignSessions;
   const manualTotalNum = assignManualPrice === "" ? null : Number(assignManualPrice);
-  const manualTotalValid = manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
+  const manualTotalValid =
+    manualTotalNum != null && Number.isFinite(manualTotalNum) && manualTotalNum >= 0;
   const totalAmount = manualTotalValid ? manualTotalNum! : computedTotal;
-  const assignDepositNum = assignDepositAmount === "" ? 0 : Math.max(0, Math.min(totalAmount, Number(assignDepositAmount) || 0));
+  const assignDepositNum =
+    assignDepositAmount === ""
+      ? 0
+      : Math.max(0, Math.min(totalAmount, Number(assignDepositAmount) || 0));
   const outstandingAmount = Math.max(0, totalAmount - assignDepositNum);
-  const depositSessionsEq = selectedUnit > 0
-    ? Math.max(0, Math.min(assignSessions, Math.round(assignDepositNum / selectedUnit)))
-    : 0;
+  const depositSessionsEq =
+    selectedUnit > 0
+      ? Math.max(0, Math.min(effectiveAssignSessions, Math.round(assignDepositNum / selectedUnit)))
+      : 0;
 
   const doAssign = async () => {
     if (!pickId) return;
-    if (availableVariants.length > 0 && !pickVariantId) {
-      toast.error("Please choose a variant");
-      return;
-    }
     try {
       const res: any = await assign({
         data: {
           customerId: id,
           packageId: pickId,
-          variantId: pickVariantId || null,
-          sessions: assignSessions,
+          sessions: effectiveAssignSessions,
           depositAmount: assignDepositNum,
           totalPrice: totalAmount,
-          warrantyYears: assignWarranty,
-          purchaseDate: assignPurchaseDate || undefined,
-          warrantyExpiresAt: assignWarrantyExpires || undefined,
           soldByStaffIds: [...assignSoldBy],
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
       setPickId("");
-      setPickVariantId("");
-      setAssignSessions(1);
+      setAssignSessions("1");
       setAssignDepositAmount("");
-      setAssignWarranty(0);
-      setAssignPurchaseDate("");
-      setAssignWarrantyExpires("");
       setAssignManualPrice("");
       setAssignSoldBy(new Set());
       refresh();
@@ -217,11 +201,9 @@ function CustomerDetail() {
     }
   };
 
-
   const openAdd = (cp: any) => {
-    setAddSessions(1);
+    setAddSessions("1");
     setAddDeposit("");
-    setAddWarranty(0);
     setAddManualPrice("");
     setAddFor(cp);
   };
@@ -230,22 +212,21 @@ function CustomerDetail() {
     if (!addFor) return;
     setAdding(true);
     try {
-      const unit = addFor.total_sessions > 0
-        ? Number(addFor.total_price ?? 0) / addFor.total_sessions
-        : 0;
+      const unit =
+        addFor.total_sessions > 0 ? Number(addFor.total_price ?? 0) / addFor.total_sessions : 0;
       const manualNum = addManualPrice === "" ? null : Number(addManualPrice);
       const manualValid = manualNum != null && Number.isFinite(manualNum) && manualNum >= 0;
       const addDepositNum = addDeposit === "" ? 0 : Math.max(0, Number(addDeposit) || 0);
+      const effectiveAddSessions = Math.max(1, Number(addSessions) || 1);
       const addedPrice = manualValid
         ? Math.round(manualNum! * 100) / 100
-        : Math.round(unit * addSessions * 100) / 100;
+        : Math.round(unit * effectiveAddSessions * 100) / 100;
       await addSessionsFn({
         data: {
           customerPackageId: addFor.id,
-          sessions: addSessions,
+          sessions: effectiveAddSessions,
           depositAmount: addDepositNum,
           addedPrice,
-          warrantyYears: addWarranty,
         },
       });
       toast.success("Sessions added");
@@ -258,33 +239,38 @@ function CustomerDetail() {
     }
   };
 
-  const saveDeposit = async (cp: any) => {
-    const draft = depositDrafts[cp.id] ?? "";
-    const amount = draft === "" ? 0 : Math.max(0, Number(draft) || 0);
-    if (!amount || amount <= 0) return;
+  const openDeposit = (cp: any) => {
+    const totalPrice = Number(cp.total_price ?? 0);
+    const deposited = Number(cp.deposit_amount ?? 0);
+    const outstanding = Math.max(0, totalPrice - deposited);
+    setDepositAmountInput(outstanding > 0 ? String(outstanding) : "");
+    setDepositFor(cp);
+  };
+
+  const confirmDeposit = async () => {
+    if (!depositFor) return;
+    const amount = Number(depositAmountInput) || 0;
+    if (amount <= 0) {
+      toast.error("Please enter a valid deposit amount");
+      return;
+    }
+    setSavingDeposit(true);
     try {
-      await addDepositFn({ data: { customerPackageId: cp.id, amount } });
-      toast.success(`Added MMK ${amount.toFixed(0)} deposit`);
-      setDepositDrafts((d) => {
-        const n = { ...d };
-        delete n[cp.id];
-        return n;
-      });
+      await addDepositFn({ data: { customerPackageId: depositFor.id, amount } });
+      toast.success(`Added MMK ${amount.toLocaleString()} deposit`);
+      setDepositFor(null);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setSavingDeposit(false);
     }
   };
 
   const openDeduct = (cp: any) => {
     setSelectedStaff(new Set());
-    const vs = variantsByPkg[cp.package_id] ?? [];
-    // Default to the assigned variant if valid, else the first available variant.
-    const defaultVariant = vs.find((v) => v.id === cp.variant_id)?.id ?? vs[0]?.id ?? "";
-    setDeductVariantId(defaultVariant);
     setDeductManualPrice("");
     setDeductSkipApproval(false);
-
     setDeductFor(cp);
   };
 
@@ -299,11 +285,6 @@ function CustomerDetail() {
 
   const confirmDeduct = async () => {
     if (!deductFor) return;
-    const availableForDeduct = variantsByPkg[deductFor.package_id] ?? [];
-    if (availableForDeduct.length > 0 && !deductVariantId) {
-      toast.error("Please choose a variant");
-      return;
-    }
     let manualPrice: number | null = null;
     if (deductManualPrice !== "") {
       const n = Number(deductManualPrice);
@@ -315,11 +296,10 @@ function CustomerDetail() {
     }
     setDeducting(true);
     try {
-      await use({
+      await deductSessionFn({
         data: {
           customerPackageId: deductFor.id,
           staffIds: Array.from(selectedStaff),
-          variantId: deductVariantId || null,
           manualPrice,
           skipApproval: deductSkipApproval,
         },
@@ -338,17 +318,6 @@ function CustomerDetail() {
     }
   };
 
-
-  const doPromote = async () => {
-    try {
-      await promote({ data: { userId: id } });
-      toast.success("Promoted to staff");
-      refresh();
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  };
-
   const doDeleteCustomer = async () => {
     try {
       await deleteCustomerFn({ data: { customerId: id } });
@@ -361,7 +330,6 @@ function CustomerDetail() {
 
   if (!data) return <p className="text-muted-foreground">Loading...</p>;
   const { profile, customerPackages } = data;
-  const isStaff = customerRoles.includes("staff");
 
   return (
     <div className="space-y-6">
@@ -375,38 +343,12 @@ function CustomerDetail() {
         <div>
           <h1 className="text-2xl font-semibold">{profile?.name ?? profile?.email}</h1>
           <p className="text-sm text-muted-foreground">
-            {profile?.name ? `${profile?.email} · ` : ""}{profile?.phone ?? "No phone"}
+            {profile?.name ? `${profile?.email} · ` : ""}
+            {profile?.phone ?? "No phone"}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {isStaff && <Badge>Staff</Badge>}
-          <Badge variant="secondary" className="text-base">
-            ⭐ {profile?.points ?? 0} points
-          </Badge>
-          {!isStaff && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Scissors className="h-3.5 w-3.5 mr-1" /> Make Staff
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Promote to staff?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {profile?.name ?? profile?.email} will gain access to the staff dashboard and can be assigned to
-                    session deductions. Their customer account stays intact.
-
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={doPromote}>Promote</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button size="sm" variant="destructive">
@@ -436,16 +378,24 @@ function CustomerDetail() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>Assign a package</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Select a package or treatment to credit to this customer.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-4">
           {/* Step 1 — pick the package */}
           {(() => {
             const q = pkgSearch.trim().toLowerCase();
             const filtered = packages.filter((p) => {
               if (pkgCategoryFilter === "none" && p.category_id) return false;
-              if (pkgCategoryFilter !== "all" && pkgCategoryFilter !== "none" && p.category_id !== pkgCategoryFilter) return false;
+              if (
+                pkgCategoryFilter !== "all" &&
+                pkgCategoryFilter !== "none" &&
+                p.category_id !== pkgCategoryFilter
+              )
+                return false;
               if (q && !p.name.toLowerCase().includes(q)) return false;
               return true;
             });
@@ -468,67 +418,143 @@ function CustomerDetail() {
                         <SelectItem value="all">All categories</SelectItem>
                         <SelectItem value="none">Uncategorised</SelectItem>
                         {categories.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Select value={pickId} onValueChange={(v) => { setPickId(v); setPickVariantId(""); }}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={filtered.length === 0 ? "No packages match" : "Choose a package"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filtered.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">No packages match your filter.</div>
-                      ) : (
-                        filtered.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {availableVariants.length > 0 && (
-                    <Select value={pickVariantId} onValueChange={setPickVariantId}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Choose an option" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableVariants.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.label} — MMK {v.price.toFixed(0)}
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 </div>
+                <Select
+                  value={pickId}
+                  onValueChange={(v) => {
+                    setPickId(v);
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue
+                      placeholder={
+                        filtered.length === 0 ? "No packages match" : "Choose a package…"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {filtered.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No packages match your filter.
+                      </div>
+                    ) : (
+                      filtered.map((p) => {
+                        const promo = promoMap.get(p.id);
+                        const pr = promo
+                          ? applyPromotion(Number(p.price), promo).final
+                          : Number(p.price);
+                        return (
+                          <SelectItem key={p.id} value={p.id}>
+                            <span className="font-medium">{p.name}</span>
+                            <span className="text-muted-foreground text-xs ml-2">
+                              — MMK {pr.toLocaleString()} ({p.total_sessions} sess)
+                            </span>
+                          </SelectItem>
+                        );
+                      })
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             );
           })()}
 
           {selectedPkg && (
-            <>
-              {/* Step 2 — the essentials */}
-              <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-4 pt-1">
+              <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold text-sm">{selectedPkg.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Base rate: MMK {selectedUnit.toLocaleString()} / session ·{" "}
+                    {selectedPkg.total_sessions} sessions base
+                    {selectedPromo && (
+                      <span className="ml-1 text-primary font-medium">
+                        ({formatDiscountLabel(selectedPromo)} · {selectedPromo.name})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPickId("")}
+                  className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </Button>
+              </div>
+
+              {/* Essentials 3-col grid */}
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1">
-                  <label className="block text-muted-foreground">Sessions</label>
+                  <label className="text-xs font-semibold text-foreground">Sessions</label>
                   <Input
                     type="number"
                     min={1}
+                    placeholder="1"
                     value={assignSessions}
-                    onChange={(e) => setAssignSessions(Math.max(1, Number(e.target.value) || 1))}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        setAssignSessions("");
+                        return;
+                      }
+                      const val = parseInt(raw, 10);
+                      if (isNaN(val)) setAssignSessions("");
+                      else setAssignSessions(String(Math.max(1, val)));
+                    }}
+                    onBlur={() => {
+                      if (!assignSessions || Number(assignSessions) < 1) {
+                        setAssignSessions("1");
+                      }
+                    }}
                     className="h-9"
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    Sessions to credit to customer
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-muted-foreground">Deposit paid (MMK)</label>
+                  <label className="text-xs font-semibold text-foreground">Total Price (MMK)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="1000"
+                    placeholder={
+                      computedTotal > 0 ? `auto MMK ${computedTotal.toLocaleString()}` : "0"
+                    }
+                    value={assignManualPrice}
+                    onChange={(e) => setAssignManualPrice(e.target.value)}
+                    className="h-9"
+                  />
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {manualTotalValid ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-medium">
+                        Manual override
+                      </span>
+                    ) : (
+                      `Auto: MMK ${computedTotal.toLocaleString()}`
+                    )}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground">
+                    Deposit Paid (MMK)
+                  </label>
                   <Input
                     type="number"
                     min={0}
                     step="1000"
                     max={totalAmount || undefined}
+                    placeholder="0"
                     value={assignDepositAmount}
                     onChange={(e) => {
                       const raw = e.target.value;
@@ -538,26 +564,44 @@ function CustomerDetail() {
                     }}
                     className="h-9"
                   />
+                  <div className="flex items-center gap-2 pt-0.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setAssignDepositAmount(String(totalAmount))}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Full payment
+                    </button>
+                    <span className="text-muted-foreground">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setAssignDepositAmount("0")}
+                      className="text-muted-foreground hover:underline"
+                    >
+                      No deposit (0)
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Sold by */}
-              <div className="space-y-2">
-                <label className="block text-muted-foreground">
-                  Sold by <span className="text-xs">(who the customer bought with)</span>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  Sold by{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    (Staff / Stylists who made the sale)
+                  </span>
                 </label>
                 {staffOpts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No staff members yet.</p>
+                  <p className="text-xs text-muted-foreground">No staff members yet.</p>
                 ) : (
                   <div className="space-y-2">
                     <Select
                       value=""
-                      onValueChange={(id) =>
-                        setAssignSoldBy((prev) => new Set(prev).add(id))
-                      }
+                      onValueChange={(id) => setAssignSoldBy((prev) => new Set(prev).add(id))}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Add staff…" />
+                        <SelectValue placeholder="Add staff member…" />
                       </SelectTrigger>
                       <SelectContent>
                         {(() => {
@@ -598,7 +642,7 @@ function CustomerDetail() {
                         {[...assignSoldBy].map((id) => {
                           const s = staffOpts.find((o) => o.id === id);
                           return (
-                            <Badge key={id} variant="secondary" className="gap-1">
+                            <Badge key={id} variant="secondary" className="gap-1 text-xs">
                               {s?.name ?? s?.email ?? "Staff"}
                               <button
                                 type="button"
@@ -623,95 +667,44 @@ function CustomerDetail() {
                 )}
               </div>
 
-
-              {/* Summary */}
-              <div className="rounded-md border p-3 space-y-1 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {selectedPricing ? (
-                      <>
-                        <span className="line-through mr-1">MMK {selectedPricing.original.toFixed(0)}</span>
-                        <span className="text-foreground font-medium">MMK {selectedUnit.toFixed(0)}</span>
-                      </>
-                    ) : (
-                      <>MMK {selectedUnit.toFixed(0)}</>
-                    )}
-                    {" "}× {assignSessions} session{assignSessions === 1 ? "" : "s"}
-                  </span>
-                  <span className="font-semibold">Total MMK {totalAmount.toFixed(0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Deposit: MMK {assignDepositNum.toFixed(0)}</span>
-                  <span>Remaining Amount: MMK {outstandingAmount.toFixed(0)}</span>
-                </div>
-                {selectedPromo && (
-                  <div className="text-xs">
-                    <Badge className="bg-primary">{formatDiscountLabel(selectedPromo)} · {selectedPromo.name}</Badge>
+              {/* Summary and assign button */}
+              <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3 flex-wrap">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-semibold">
+                    Total: MMK {totalAmount.toLocaleString()}
                   </div>
-                )}
-                {manualTotalValid && (
-                  <div className="text-xs"><Badge variant="secondary">manual price override</Badge></div>
-                )}
-              </div>
-
-              {/* Advanced */}
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="px-0 text-muted-foreground"
-                  onClick={() => setShowAssignAdvanced((v) => !v)}
-                >
-                  {showAssignAdvanced ? "Hide" : "More"} options (dates, warranty, custom price)
+                  <div className="text-xs text-muted-foreground">
+                    Deposit: MMK {assignDepositNum.toLocaleString()} · Remaining due: MMK{" "}
+                    {outstandingAmount.toLocaleString()}
+                  </div>
+                </div>
+                <Button onClick={doAssign} className="h-9">
+                  Assign Package
                 </Button>
-                {showAssignAdvanced && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <label className="block text-muted-foreground">Purchase date</label>
-                      <Input type="date" value={assignPurchaseDate} onChange={(e) => setAssignPurchaseDate(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-muted-foreground">Warranty years</label>
-                      <Input type="number" min={0} value={assignWarranty} onChange={(e) => setAssignWarranty(Math.max(0, Number(e.target.value) || 0))} className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-muted-foreground">Warranty expires</label>
-                      <Input type="date" value={assignWarrantyExpires} onChange={(e) => setAssignWarrantyExpires(e.target.value)} className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-muted-foreground">Custom total price (MMK)</label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="1000"
-                        placeholder={`auto ${computedTotal.toFixed(0)}`}
-                        value={assignManualPrice}
-                        onChange={(e) => setAssignManualPrice(e.target.value)}
-                        className="h-9"
-                        title="Leave blank to use the calculated price."
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
-            </>
+            </div>
           )}
 
-          <Button
-            onClick={doAssign}
-            disabled={!pickId || (availableVariants.length > 0 && !pickVariantId)}
-            className="w-full sm:w-auto"
-          >
-            Assign package
-          </Button>
+          {!selectedPkg && (
+            <p className="text-xs text-muted-foreground">
+              Please choose a package above to configure sessions, pricing, and staff.
+            </p>
+          )}
         </CardContent>
-
       </Card>
 
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Owned packages</h2>
-        {customerPackages.length === 0 && <p className="text-muted-foreground">None yet.</p>}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Owned packages</h2>
+          <span className="text-xs text-muted-foreground">
+            {customerPackages.length} package{customerPackages.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        {customerPackages.length === 0 && (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            No packages owned by this customer yet. Assign one above.
+          </div>
+        )}
         <div className="grid gap-3 md:grid-cols-2">
           {[...customerPackages]
             .sort((a: any, b: any) => {
@@ -719,155 +712,221 @@ function CustomerDetail() {
               const bZero = (b.sessions_remaining ?? 0) === 0 ? 1 : 0;
               return aZero - bZero;
             })
-            .map((cp: any, idx: number) => {
-            const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
-            const depleted = (cp.sessions_remaining ?? 0) === 0;
-            return (
-              <Card key={cp.id} className={depleted ? "opacity-60 line-through" : ""}>
+            .map((cp: any) => {
+              const pct = (cp.sessions_remaining / cp.total_sessions) * 100;
+              const depleted = (cp.sessions_remaining ?? 0) === 0;
+              const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
+              const totalPrice = Number(cp.total_price ?? 0);
+              const deposited = Number(cp.deposit_amount ?? 0);
+              const outstanding = Math.max(0, totalPrice - deposited);
+              const unit = cp.total_sessions > 0 ? totalPrice / cp.total_sessions : 0;
+              const needed = unit * (used + 1);
+              const depositExhausted = deposited + 0.005 < needed;
 
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-base gap-2">
-                    <Link
-                      to="/admin/customers/$id/packages/$cpId"
-                      params={{ id, cpId: cp.id }}
-                      className="flex items-center gap-2 hover:underline min-w-0"
-                    >
-                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                        {idx + 1}
-                      </span>
-                      <span className="truncate">{cp.packages?.name}{cp.variant_label ? ` · ${cp.variant_label}` : ""}</span>
-                    </Link>
-                    <span className="text-sm text-muted-foreground shrink-0">
-                      {cp.sessions_remaining}/{cp.total_sessions}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Progress value={pct} />
-                  {Array.isArray(cp.sold_by_staff_ids) && cp.sold_by_staff_ids.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Sold by:{" "}
-                      {cp.sold_by_staff_ids
-                        .map((sid: string) => {
-                          const s = staffOpts.find((o) => o.id === sid);
-                          return s?.name ?? s?.email ?? "Unknown";
-                        })
-                        .join(", ")}
-                    </p>
-                  )}
-                  {(() => {
-                    const totalPrice = Number(cp.total_price ?? 0);
-                    const deposited = Number(cp.deposit_amount ?? 0);
-                    const outstanding = Math.max(0, totalPrice - deposited);
-                    const unit = cp.total_sessions > 0 ? totalPrice / cp.total_sessions : 0;
-                    const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-                    const needed = unit * (used + 1);
-                    const depositExhausted = deposited + 0.005 < needed;
-                    const draft = depositDrafts[cp.id] ?? 0;
-                    return (
-                      <div className="rounded-md border p-2 space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <div className="text-muted-foreground">Deposit</div>
-                            <div className="font-semibold text-sm">
-                              MMK {deposited.toFixed(0)} / MMK {totalPrice.toFixed(0)}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-muted-foreground">Remaining Amount</div>
-                            <div className="font-semibold text-sm">MMK {outstanding.toFixed(0)}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step="1000"
-                            max={outstanding || undefined}
-                            placeholder="Add deposit (MMK)"
-                            value={depositDrafts[cp.id] ?? ""}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const v = raw === "" ? "" : String(Math.max(0, Math.min(outstanding, Number(raw) || 0)));
-                              setDepositDrafts((d) => ({ ...d, [cp.id]: v }));
-                            }}
-                            className="h-8"
-                          />
-                          <Button
-                            size="sm"
-                            variant={depositDrafts[cp.id] ? "default" : "ghost"}
-                            disabled={!depositDrafts[cp.id] || outstanding <= 0}
-                            onClick={() => saveDeposit(cp)}
+              return (
+                <Card
+                  key={cp.id}
+                  className={
+                    depleted
+                      ? "opacity-60 bg-muted/15 border-dashed"
+                      : "shadow-xs border-border/80 hover:border-primary/40 transition-colors"
+                  }
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      {/* Left: Title & Purchase ID */}
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            to="/admin/customers/$id/packages/$cpId"
+                            params={{ id, cpId: cp.id }}
+                            className="text-base font-semibold hover:underline truncate"
                           >
-                            <Plus className="h-3 w-3 mr-1" /> Add
-                          </Button>
+                            {cp.packages?.name ?? "Package"}
+                          </Link>
+                          {depleted && (
+                            <Badge variant="secondary" className="text-xs">
+                              Completed
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                          <span
+                            className="font-mono bg-muted/70 px-2 py-0.5 rounded text-[11px] font-medium"
+                            title={cp.id}
+                          >
+                            Purchase ID: {formatPurchaseId(cp.id)}
+                          </span>
+                          {Array.isArray(cp.sold_by_staff_ids) &&
+                            cp.sold_by_staff_ids.length > 0 && (
+                              <span>
+                                · Sold by:{" "}
+                                {cp.sold_by_staff_ids
+                                  .map((sid: string) => {
+                                    const s = staffOpts.find((o) => o.id === sid);
+                                    return s?.name ?? s?.email ?? "Staff";
+                                  })
+                                  .join(", ")}
+                              </span>
+                            )}
                         </div>
                       </div>
-                    );
-                  })()}
-                  {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>
-                        {cp.warranty_years > 0 ? `${cp.warranty_years} yr warranty` : "Warranty"}
-                        {cp.warranty_expires_at
-                          ? ` · until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
-                          : ""}
-                      </span>
+
+                      {/* Right: Prominent High-Contrast Session Counter */}
+                      <div className="text-right shrink-0">
+                        <div
+                          className={
+                            depleted
+                              ? "inline-flex items-baseline gap-1 rounded-lg bg-muted px-3 py-1.5 text-muted-foreground border"
+                              : "inline-flex items-baseline gap-1.5 rounded-lg bg-primary/10 px-3.5 py-1.5 text-primary border border-primary/20"
+                          }
+                        >
+                          <span className="text-2xl font-bold leading-none tracking-tight">
+                            {cp.sessions_remaining}
+                          </span>
+                          <span className="text-xs font-semibold leading-none opacity-80">
+                            / {cp.total_sessions} {cp.total_sessions === 1 ? "session" : "sessions"}{" "}
+                            left
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground">
-                      Purchased {new Date(cp.purchase_date).toLocaleDateString()}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openAdd(cp)}>
-                        <Plus className="h-3 w-3 mr-1" /> Add sessions
-                      </Button>
-                      {(() => {
-                        const totalPrice = Number(cp.total_price ?? 0);
-                        const deposited = Number(cp.deposit_amount ?? 0);
-                        const unit = cp.total_sessions > 0 ? totalPrice / cp.total_sessions : 0;
-                        const used = (cp.total_sessions ?? 0) - (cp.sessions_remaining ?? 0);
-                        const needed = unit * (used + 1);
-                        const depositExhausted = deposited + 0.005 < needed;
-                        return (
+                  </CardHeader>
+
+                  <CardContent className="space-y-3.5 pt-0">
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
+                        <span>Session progress</span>
+                        <span>
+                          {used} of {cp.total_sessions} used
+                        </span>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+
+                    {/* Financial status bar */}
+                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Deposit Paid: </span>
+                        <span className="font-semibold text-foreground">
+                          MMK {deposited.toLocaleString()}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          / MMK {totalPrice.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        {outstanding > 0 ? (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 font-medium"
+                          >
+                            Remaining: MMK {outstanding.toLocaleString()}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-medium"
+                          >
+                            ✓ Fully Paid
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t">
+                      {/* Primary actions */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          disabled={depleted || depositExhausted}
+                          onClick={() => openDeduct(cp)}
+                          title={
+                            depositExhausted
+                              ? "Deposit exhausted — record payment first"
+                              : undefined
+                          }
+                          className="gap-1.5 font-medium"
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                          {depositExhausted ? "Deposit needed" : "Deduct session"}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAdd(cp)}
+                          className="gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Add sessions
+                        </Button>
+
+                        {outstanding > 0 && (
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={cp.sessions_remaining === 0 || depositExhausted}
-                            title={depositExhausted ? "Deposit exhausted — collect more deposit first" : undefined}
-                            onClick={() => openDeduct(cp)}
+                            onClick={() => openDeposit(cp)}
+                            className="gap-1.5"
                           >
-                            <MinusCircle className="h-3 w-3 mr-1" /> {depositExhausted ? "Deposit needed" : "Deduct"}
+                            <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /> Add
+                            deposit
                           </Button>
-                        );
-                      })()}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-3 w-3 mr-1" /> Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this package?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Removes {cp.packages?.name} from this customer along with its session history. This cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => doDelete(cp.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                        )}
+                      </div>
+
+                      {/* Secondary actions */}
+                      <div className="flex items-center gap-1 ml-auto">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          asChild
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <Link
+                            to="/admin/customers/$id/packages/$cpId"
+                            params={{ id, cpId: cp.id }}
+                          >
+                            History
+                          </Link>
+                        </Button>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                              title="Delete package"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this package?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Removes {cp.packages?.name} (Purchase ID: {formatPurchaseId(cp.id)})
+                                from this customer along with its session history. This cannot be
+                                undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => doDelete(cp.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
       </div>
 
@@ -876,8 +935,9 @@ function CustomerDetail() {
           <DialogHeader>
             <DialogTitle>Add sessions</DialogTitle>
             <DialogDescription>
-              {profile?.name ?? profile?.email} · {addFor?.packages?.name}. Extend this package with more
-              sessions, deposit, and/or warranty.
+              {profile?.name ?? profile?.email} · {addFor?.packages?.name} (Purchase ID:{" "}
+              {formatPurchaseId(addFor?.id)}). Extend this package with more sessions and/or
+              deposit.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-3 text-sm">
@@ -886,8 +946,23 @@ function CustomerDetail() {
               <Input
                 type="number"
                 min={1}
+                placeholder="1"
                 value={addSessions}
-                onChange={(e) => setAddSessions(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setAddSessions("");
+                    return;
+                  }
+                  const val = parseInt(raw, 10);
+                  if (isNaN(val)) setAddSessions("");
+                  else setAddSessions(String(Math.max(1, val)));
+                }}
+                onBlur={() => {
+                  if (!addSessions || Number(addSessions) < 1) {
+                    setAddSessions("1");
+                  }
+                }}
                 className="w-24 h-8"
               />
             </div>
@@ -907,24 +982,16 @@ function CustomerDetail() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Extra warranty years</span>
-              <Input
-                type="number"
-                min={0}
-                value={addWarranty}
-                onChange={(e) => setAddWarranty(Math.max(0, Number(e.target.value) || 0))}
-                className="w-24 h-8"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Manual added price (MMK)</span>
               <Input
                 type="number"
                 min={0}
                 step="1000"
-                placeholder={addFor && addFor.total_sessions > 0
-                  ? `auto ${(Number(addFor.total_price ?? 0) / addFor.total_sessions * addSessions).toFixed(0)}`
-                  : "auto"}
+                placeholder={
+                  addFor && addFor.total_sessions > 0
+                    ? `auto ${((Number(addFor.total_price ?? 0) / addFor.total_sessions) * (Number(addSessions) || 1)).toFixed(0)}`
+                    : "auto"
+                }
                 value={addManualPrice}
                 onChange={(e) => setAddManualPrice(e.target.value)}
                 className="w-32 h-8"
@@ -933,7 +1000,9 @@ function CustomerDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAddFor(null)}>
+              Cancel
+            </Button>
             <Button onClick={confirmAdd} disabled={adding}>
               {adding ? "Adding..." : "Add"}
             </Button>
@@ -946,37 +1015,14 @@ function CustomerDetail() {
           <DialogHeader>
             <DialogTitle>Deduct a session</DialogTitle>
             <DialogDescription>
-              {profile?.name ?? profile?.email} · {deductFor?.packages?.name}
+              {profile?.name ?? profile?.email} · {deductFor?.packages?.name} (Purchase ID:{" "}
+              {formatPurchaseId(deductFor?.id)})
             </DialogDescription>
           </DialogHeader>
           {(() => {
             if (!deductFor) return null;
-            const vs = variantsByPkg[deductFor.package_id] ?? [];
-            const sel = vs.find((v) => v.id === deductVariantId) ?? null;
-            const applied = sel ? sel.price : 0;
             return (
               <div className="py-2 space-y-3">
-                {vs.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Variant for this session</div>
-                    <Select value={deductVariantId} onValueChange={setDeductVariantId}>
-                      <SelectTrigger><SelectValue placeholder="Choose a variant" /></SelectTrigger>
-                      <SelectContent>
-                        {vs.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.label} — MMK {v.price.toFixed(0)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {sel && (
-                  <div className="rounded-md border p-2 text-sm flex items-center justify-between">
-                    <span className="text-muted-foreground">Price this session</span>
-                    <span className="font-semibold">MMK {applied.toFixed(0)}</span>
-                  </div>
-                )}
                 <div className="space-y-1">
                   <div className="text-xs text-muted-foreground">
                     Custom price for this session (optional, MMK)
@@ -985,7 +1031,7 @@ function CustomerDetail() {
                     type="number"
                     min={0}
                     step="1000"
-                    placeholder={sel ? `auto ${applied.toFixed(0)}` : "auto"}
+                    placeholder="auto"
                     value={deductManualPrice}
                     onChange={(e) => setDeductManualPrice(e.target.value)}
                     className="h-9"
@@ -1021,7 +1067,9 @@ function CustomerDetail() {
                       (groups[key] ??= []).push(s);
                     }
                     const order = ["stylist", "staff"];
-                    const sorted = Object.entries(groups).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+                    const sorted = Object.entries(groups).sort(
+                      (a, b) => order.indexOf(a[0]) - order.indexOf(b[0]),
+                    );
                     return sorted.map(([category, members]) => (
                       <div key={category} className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1055,7 +1103,74 @@ function CustomerDetail() {
             <Button onClick={confirmDeduct} disabled={deducting}>
               {deducting ? "Deducting..." : deductSkipApproval ? "Deduct now" : "Request approval"}
             </Button>
-
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!depositFor} onOpenChange={(o) => !o && setDepositFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add deposit</DialogTitle>
+            <DialogDescription>
+              {profile?.name ?? profile?.email} · {depositFor?.packages?.name} (Purchase ID:{" "}
+              {formatPurchaseId(depositFor?.id)})
+            </DialogDescription>
+          </DialogHeader>
+          {depositFor &&
+            (() => {
+              const totalPrice = Number(depositFor.total_price ?? 0);
+              const deposited = Number(depositFor.deposit_amount ?? 0);
+              const outstanding = Math.max(0, totalPrice - deposited);
+              return (
+                <div className="py-2 space-y-4 text-sm">
+                  <div className="grid grid-cols-2 gap-3 rounded-lg border p-3 bg-muted/30">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Already Paid</span>
+                      <span className="font-semibold text-foreground">
+                        MMK {deposited.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-muted-foreground block">Remaining Amount</span>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        MMK {outstanding.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">
+                      Deposit amount to add (MMK)
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      step="1000"
+                      placeholder={`e.g. ${outstanding}`}
+                      value={depositAmountInput}
+                      onChange={(e) => setDepositAmountInput(e.target.value)}
+                      className="h-9"
+                    />
+                    {outstanding > 0 && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setDepositAmountInput(String(outstanding))}
+                          className="text-xs text-primary hover:underline font-medium"
+                        >
+                          Pay full remaining amount (MMK {outstanding.toLocaleString()})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDepositFor(null)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmDeposit} disabled={savingDeposit || !depositAmountInput}>
+              {savingDeposit ? "Saving..." : "Add deposit"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CalendarClock, Users } from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
+import { PackageRecordingTable } from "@/components/package-recording-table";
+import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/packages/$cpId")({
   component: AdminPackageDetail,
@@ -18,17 +20,13 @@ type CP = {
   id: string;
   sessions_remaining: number;
   total_sessions: number;
-  purchase_date: string;
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_sessions_paid: number;
-  warranty_years: number;
-  warranty_expires_at: string | null;
   packages: {
     name: string;
     description: string | null;
     price: number;
-    points_awarded: number;
   } | null;
   profiles: { name: string | null; email: string | null } | null;
 };
@@ -39,6 +37,7 @@ type HistoryRow = {
   customer_package_id: string;
   package_name: string;
   sessions_deducted: number;
+  price_applied?: number;
   staff: {
     id?: string;
     name?: string | null;
@@ -61,7 +60,7 @@ function AdminPackageDetail() {
       const { data, error } = await supabase
         .from("customer_packages")
         .select(
-          "id,sessions_remaining,total_sessions,purchase_date,deposit_paid,deposit_paid_at,deposit_sessions_paid,warranty_years,warranty_expires_at,packages(name,description,price,points_awarded),profiles:customer_id(name,email)",
+          "id,sessions_remaining,total_sessions,deposit_paid,deposit_paid_at,deposit_sessions_paid,packages(name,description,price),profiles:customer_id(name,email)",
         )
         .eq("id", cpId)
         .maybeSingle();
@@ -96,7 +95,12 @@ function AdminPackageDetail() {
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "usage_logs", filter: `customer_package_id=eq.${cpId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "usage_logs",
+          filter: `customer_package_id=eq.${cpId}`,
+        },
         () => {
           loadCp();
           loadHistory();
@@ -104,7 +108,12 @@ function AdminPackageDetail() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "session_deduction_requests", filter: `customer_package_id=eq.${cpId}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "session_deduction_requests",
+          filter: `customer_package_id=eq.${cpId}`,
+        },
         () => {
           loadCp();
           loadHistory();
@@ -141,7 +150,15 @@ function AdminPackageDetail() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
-            <span>{cp.packages?.name ?? "Package"}</span>
+            <div>
+              <span>{cp.packages?.name ?? "Package"}</span>
+              <div
+                className="font-mono text-xs font-normal text-muted-foreground mt-0.5"
+                title={cp.id}
+              >
+                Purchase ID: {formatPurchaseId(cp.id)}
+              </div>
+            </div>
             <span className="text-sm font-normal text-muted-foreground">
               {cp.sessions_remaining}/{cp.total_sessions} left
             </span>
@@ -149,21 +166,8 @@ function AdminPackageDetail() {
           <p className="text-sm text-muted-foreground">{customerLabel}</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {cp.packages?.description && (
-            <p className="text-sm text-muted-foreground">{cp.packages.description}</p>
-          )}
           <Progress value={pct} />
-          <div className="text-xs text-muted-foreground">
-            {used} used · Purchased {new Date(cp.purchase_date).toLocaleDateString()}
-          </div>
-          {(cp.warranty_years > 0 || cp.warranty_expires_at) && (
-            <div className="text-xs text-muted-foreground">
-              🛡️ {cp.warranty_years > 0 ? `${cp.warranty_years} year warranty` : "Warranty"}
-              {cp.warranty_expires_at
-                ? ` · valid until ${new Date(cp.warranty_expires_at).toLocaleDateString()}`
-                : ""}
-            </div>
-          )}
+          <div className="text-xs text-muted-foreground">{used} used</div>
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="rounded-lg border p-3">
@@ -194,49 +198,29 @@ function AdminPackageDetail() {
       </Card>
 
       <div>
-        <h2 className="text-lg font-semibold mb-2">Session history</h2>
+        <h2 className="text-lg font-semibold mb-3">Package recording</h2>
         {history === null ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : history.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              No sessions used yet.
-            </CardContent>
-          </Card>
         ) : (
-          <div className="space-y-2">
-            {history.map((r, idx) => (
-              <Card key={r.id}>
-                <CardContent className="p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[11px] font-semibold">
-                        {history.length - idx}
-                      </span>
-                      {new Date(r.used_at).toLocaleString()}
-                    </div>
-
-                    <Badge variant="outline">
-                      −{r.sessions_deducted} {r.sessions_deducted === 1 ? "session" : "sessions"}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" />
-                    Staff attended:{" "}
-                    {r.staff?.length
-                      ? r.staff
-                          .map((s: any) => {
-                            if (typeof s === "string") return s;
-                            return s.name ?? s.full_name ?? s.email ?? "Unknown Staff";
-                          })
-                          .join(", ")
-                      : "—"}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <PackageRecordingTable
+            rows={history.map((r) => {
+              const staffNames = (r.staff ?? [])
+                .map((s: any) =>
+                  typeof s === "string" ? s : (s.name ?? s.full_name ?? s.email ?? ""),
+                )
+                .filter(Boolean);
+              return {
+                id: r.id,
+                purchase_id: r.customer_package_id || cpId,
+                used_at: r.used_at,
+                service: cp.packages?.name ?? r.package_name ?? "Treatment",
+                value: r.price_applied && r.price_applied > 0 ? r.price_applied : pricePer,
+                staff: staffNames,
+                branch: "YGN",
+              };
+            })}
+            emptyMessage="No sessions recorded yet."
+          />
         )}
       </div>
     </div>

@@ -55,10 +55,7 @@ export function usePushNotifications() {
             const platform = Capacitor.getPlatform() as "ios" | "android" | "web";
             await supabase
               .from("device_tokens")
-              .upsert(
-                { user_id: u.user.id, token: t.value, platform },
-                { onConflict: "token" },
-              );
+              .upsert({ user_id: u.user.id, token: t.value, platform }, { onConflict: "token" });
           } catch (e) {
             console.error("[push] failed to store token", e);
           }

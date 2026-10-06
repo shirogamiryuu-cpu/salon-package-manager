@@ -21,17 +21,13 @@ import {
   Clock,
 } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { PackageRecordingTable } from "@/components/package-recording-table";
+import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/home")({
   component: Home,
@@ -63,6 +59,7 @@ type HistoryRow = {
   customer_package_id: string;
   package_name: string;
   sessions_deducted: number;
+  price_applied?: number;
   staff: string[];
 };
 
@@ -71,7 +68,6 @@ type PendingReq = {
   created_at: string;
   expires_at: string;
   package_name: string;
-  variant_label?: string | null;
   manual_price?: number | null;
   remaining: number;
   total: number;
@@ -103,7 +99,7 @@ function Home() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // Load general data
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
@@ -126,7 +122,6 @@ function Home() {
         package_description,
         packages(name, description, price)
       `;
-
 
       const [latestPurchasedResult, historyRows] = await Promise.all([
         supabase
@@ -159,12 +154,10 @@ function Home() {
       setPkg(chosen as any);
       setHistory(h);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to load."
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to load.");
     }
     setLoading(false);
-  }
+  }, [historyFn]);
 
   // Load pending deduction requests
   const loadPending = useCallback(async () => {
@@ -188,14 +181,9 @@ function Home() {
         },
       });
 
-      toast.success(
-        approve ? "Session approved" : "Request rejected"
-      );
+      toast.success(approve ? "Session approved" : "Request rejected");
 
-      await Promise.all([
-        loadPending(),
-        load(),
-      ]);
+      await Promise.all([loadPending(), load()]);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -207,7 +195,7 @@ function Home() {
   useEffect(() => {
     load();
     loadPending();
-  }, [loadPending]);
+  }, [load, loadPending]);
 
   // Realtime subscription for pending requests
   useEffect(() => {
@@ -251,14 +239,10 @@ function Home() {
             const newStatus = payload.new?.status;
 
             if (newStatus && newStatus !== "pending") {
-              if (newStatus === "approved")
-                toast.success("Session approved");
-              else if (newStatus === "rejected")
-                toast("Request rejected");
-              else if (newStatus === "expired")
-                toast.warning("Request expired");
-              else if (newStatus === "cancelled")
-                toast("Request cancelled by salon");
+              if (newStatus === "approved") toast.success("Session approved");
+              else if (newStatus === "rejected") toast("Request rejected");
+              else if (newStatus === "expired") toast.warning("Request expired");
+              else if (newStatus === "cancelled") toast("Request cancelled by salon");
 
               loadPending();
               load();
@@ -275,14 +259,12 @@ function Home() {
         supabase.removeChannel(channel);
       }
     };
-  }, [loadPending]);
+  }, [load, loadPending]);
 
   if (loading) {
     return (
       <AppShell title="Home" nav={customerNav}>
-        <div className="py-20 text-center text-foreground/60 italic">
-          Loading your salon…
-        </div>
+        <div className="py-20 text-center text-foreground/60 italic">Loading your salon…</div>
       </AppShell>
     );
   }
@@ -294,10 +276,7 @@ function Home() {
       <div className="mx-auto max-w-4xl space-y-12">
         {/* Greeting — editorial masthead */}
         <section className="border-b border-foreground/25 pb-8">
-          <p
-            className="text-xs uppercase text-primary"
-            style={{ letterSpacing: "0.28em" }}
-          >
+          <p className="text-xs uppercase text-primary" style={{ letterSpacing: "0.28em" }}>
             Welcome
           </p>
           <h1
@@ -334,18 +313,18 @@ function Home() {
                 0,
                 Math.round((new Date(r.expires_at).getTime() - Date.now()) / 60000),
               );
-              const staffNames = r.staff.map((s) => s.name ?? s.email).filter(Boolean).join(", ");
+              const staffNames = r.staff
+                .map((s) => s.name ?? s.email)
+                .filter(Boolean)
+                .join(", ");
 
               return (
-                <div
-                  key={r.id}
-                  className="border border-primary/60 bg-primary/5 p-5 space-y-4"
-                >
+                <div key={r.id} className="border border-primary/60 bg-primary/5 p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-serif text-lg">Approve your session?</div>
                       <p className="mt-1 text-sm text-foreground/70">
-                        {r.package_name}{r.variant_label ? ` · ${r.variant_label}` : ""} · {r.remaining}/{r.total} left
+                        {r.package_name} · {r.remaining}/{r.total} left
                         {staffNames ? ` · with ${staffNames}` : ""}
                       </p>
                       {r.manual_price != null && (
@@ -393,23 +372,26 @@ function Home() {
             <div className="border border-foreground/25 p-6 md:p-10">
               <div className="flex flex-col-reverse items-start gap-8 md:flex-row md:items-center md:justify-between">
                 <div className="flex-1">
-                  <span
-                    className="text-[10px] uppercase text-primary"
-                    style={{ letterSpacing: "0.28em" }}
-                  >
-                    Active
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="text-[10px] uppercase text-primary"
+                      style={{ letterSpacing: "0.28em" }}
+                    >
+                      Active
+                    </span>
+                    <span
+                      className="font-mono text-[10px] uppercase text-foreground/60 bg-foreground/5 px-2 py-0.5 rounded border border-foreground/10 tracking-wider"
+                      title={pkg.id}
+                    >
+                      Purchase ID: {formatPurchaseId(pkg.id)}
+                    </span>
+                  </div>
                   <h2
                     className="mt-2 font-serif text-3xl md:text-4xl"
                     style={{ letterSpacing: "0.06em", lineHeight: 1.2 }}
                   >
                     {pkg.packages?.name ?? pkg.package_name}
                   </h2>
-                  {/* {(pkg.packages?.description ?? pkg.package_description) && (
-                    <p className="mt-4 max-w-md text-sm text-foreground/70 italic">
-                      {pkg.packages?.description ?? pkg.package_description}
-                    </p>
-                  )} */}
                 </div>
                 <CircleProgress value={used} total={pkg.total_sessions} />
               </div>
@@ -419,36 +401,11 @@ function Home() {
                 <Stat label="Used" value={used} />
                 <Stat label="Remaining" value={pkg.sessions_remaining} accent />
               </div>
-
-              <div className="mt-8 grid gap-6 border-t border-foreground/20 pt-8 md:grid-cols-2">
-                <MetaField
-                  label="Purchased"
-                  value={new Date(pkg.purchase_date).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                />
-                <MetaField
-                  label="Expires"
-                  value={
-                    pkg.warranty_expires_at
-                      ? new Date(pkg.warranty_expires_at).toLocaleDateString(undefined, {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : "No expiry"
-                  }
-                />
-              </div>
             </div>
           </section>
         ) : (
           <section className="border border-foreground/25 p-10 text-center">
-            <p className="font-serif italic text-lg text-foreground/80">
-              No active package yet.
-            </p>
+            <p className="font-serif italic text-lg text-foreground/80">No active package yet.</p>
             <p className="mt-2 text-sm text-foreground/60">
               Ask our staff to add a package to your account.
             </p>
@@ -476,48 +433,18 @@ function Home() {
             </Link>
           </div>
 
-          {history.length === 0 ? (
-            <div className="py-12 text-center text-foreground/60 italic">
-              Your journey begins with your first visit.
-            </div>
-          ) : (
-            <ul className="divide-y divide-foreground/15">
-              {history.slice(0, 5).map((item, index) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <div
-                      className="text-[10px] uppercase text-primary"
-                      style={{ letterSpacing: "0.22em" }}
-                    >
-                      Session {String(index + 1).padStart(2, "0")}
-                    </div>
-                    <div className="mt-1 font-serif text-lg">{item.package_name}</div>
-                    <div className="text-xs text-foreground/60">
-                      {item.staff.length ? item.staff.join(", ") : "—"}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-foreground/80">
-                      {new Date(item.used_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </div>
-                    <div
-                      className="text-[10px] uppercase text-foreground/50"
-                      style={{ letterSpacing: "0.18em" }}
-                    >
-                      −{item.sessions_deducted} session
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <PackageRecordingTable
+            rows={history.slice(0, 5).map((item) => ({
+              id: item.id,
+              purchase_id: item.customer_package_id,
+              used_at: item.used_at,
+              service: item.package_name,
+              value: item.price_applied,
+              staff: item.staff,
+              branch: "YGN",
+            }))}
+            emptyMessage="Your journey begins with your first visit."
+          />
         </section>
       </div>
     </AppShell>
@@ -526,10 +453,7 @@ function Home() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2
-      className="text-xs uppercase text-foreground/70"
-      style={{ letterSpacing: "0.28em" }}
-    >
+    <h2 className="text-xs uppercase text-foreground/70" style={{ letterSpacing: "0.28em" }}>
       {children}
     </h2>
   );
@@ -538,10 +462,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <div>
-      <div
-        className="text-[10px] uppercase text-foreground/60"
-        style={{ letterSpacing: "0.22em" }}
-      >
+      <div className="text-[10px] uppercase text-foreground/60" style={{ letterSpacing: "0.22em" }}>
         {label}
       </div>
       <div
@@ -550,20 +471,6 @@ function Stat({ label, value, accent }: { label: string; value: number; accent?:
       >
         {value}
       </div>
-    </div>
-  );
-}
-
-function MetaField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div
-        className="text-[10px] uppercase text-foreground/60"
-        style={{ letterSpacing: "0.22em" }}
-      >
-        {label}
-      </div>
-      <div className="mt-2 font-serif text-lg">{value}</div>
     </div>
   );
 }
@@ -583,16 +490,12 @@ function CircleProgress({ value, total }: CircleProgressProps) {
   const normalizedRadius = radius - stroke / 2 - 6;
 
   const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset =
-    circumference - (percentage / 100) * circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg
-          viewBox={`0 0 ${size} ${size}`}
-          className="absolute inset-0 w-full h-full -rotate-90"
-        >
+        <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full -rotate-90">
           <circle
             cx={radius}
             cy={radius}
@@ -617,10 +520,7 @@ function CircleProgress({ value, total }: CircleProgressProps) {
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div
-            className="font-serif text-4xl leading-none"
-            style={{ letterSpacing: "0.02em" }}
-          >
+          <div className="font-serif text-4xl leading-none" style={{ letterSpacing: "0.02em" }}>
             {total - value}
           </div>
           <div

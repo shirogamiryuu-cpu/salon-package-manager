@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
@@ -13,13 +12,18 @@ export default defineConfig({
       generatedRouteTree: "src/routeTree.gen.ts",
     }),
     react(),
-    tsconfigPaths(),
     tailwindcss(),
   ],
+  resolve: {
+    tsconfigPaths: true,
+  },
   server: {
     host: "::",
     port: 8080,
     strictPort: true,
+    watch: {
+      ignored: ["**/android/**", "**/ios/**", "**/src-tauri/**", "**/.gradle/**"],
+    },
   },
   preview: {
     host: "::",

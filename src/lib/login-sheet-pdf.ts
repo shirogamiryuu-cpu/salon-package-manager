@@ -35,11 +35,7 @@ export function generateLoginSheetPdf(data: LoginSheetData) {
   y += 46;
   doc.setTextColor(...TEXT);
   doc.setFontSize(12);
-  doc.text(
-    "Welcome! Use the details below to sign in to your account.",
-    M,
-    y,
-  );
+  doc.text("Welcome! Use the details below to sign in to your account.", M, y);
 
   y += 34;
   const boxTop = y;
@@ -82,11 +78,7 @@ export function generateLoginSheetPdf(data: LoginSheetData) {
 
   y += 18;
   doc.setFontSize(9);
-  doc.text(
-    `Issued ${new Date().toLocaleDateString()} — keep this sheet private.`,
-    M,
-    y,
-  );
+  doc.text(`Issued ${new Date().toLocaleDateString()} — keep this sheet private.`, M, y);
 
   const safePhone = data.phone.replace(/[^\w]+/g, "");
   doc.save(`charme-login-${safePhone || "customer"}.pdf`);
