@@ -2,6 +2,8 @@
 // Call shape matches the previous TanStack Start server-fn API
 // (`fn({ data: {...} })`) so route files don't need to change.
 import { callAdminApi } from "./admin-api";
+import { supabase } from "@/integrations/supabase/client";
+import { normalizeMyanmarPhone } from "./utils";
 
 type Arg<T> = { data: T } | undefined;
 const payload = <T>(a: Arg<T>): T => a?.data ?? ({} as T);
@@ -101,9 +103,54 @@ export const adminDeleteStaff = async (a: { data: { userId: string } }) => {
   }
 };
 
-export const adminCreateCustomer = (a: {
+export const adminCreateCustomer = async (a: {
   data: { email?: string; phone?: string; name?: string; password?: string };
-}) => callAdminApi("adminCreateCustomer", payload(a));
+}) => {
+  const d = { ...payload(a) };
+  const rawPhone = (d.phone ?? "").trim();
+  const cleanPhone = rawPhone ? normalizeMyanmarPhone(rawPhone) : null;
+  const digits = cleanPhone ? cleanPhone.replace(/[^0-9]/g, "") : "";
+
+  // Check duplicate phone locally before calling to give clear feedback
+  if (cleanPhone) {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id, phone")
+      .not("phone", "is", null);
+    const dup = (existing ?? []).some(
+      (p: any) => normalizeMyanmarPhone(p.phone) === cleanPhone,
+    );
+    if (dup) throw new Error("A customer with this phone number already exists");
+  }
+
+  // Synthesize internal email placeholder for GoTrue
+  const finalEmail =
+    d.email?.trim() ||
+    (digits ? `phone_${digits}@placeholder.local` : `cust_${Date.now()}@placeholder.local`);
+
+  // We deliberately omit `phone` from the payload sent to adminCreateCustomer action
+  // because the deployed edge function in the cloud passes phone to auth.admin.createUser(),
+  // which causes Supabase GoTrue to throw "Invalid phone number format (E.164 required)".
+  const res = await callAdminApi<{ ok: boolean; id: string; tempPassword?: string }>(
+    "adminCreateCustomer",
+    {
+      name: d.name?.trim() || undefined,
+      email: finalEmail,
+      password: d.password,
+    },
+  );
+
+  // Directly persist the local 09 phone format to the customer's profile
+  if (res?.id && cleanPhone) {
+    const { error: pErr } = await supabase
+      .from("profiles")
+      .update({ phone: cleanPhone })
+      .eq("id", res.id);
+    if (pErr) console.warn("Failed to patch profile phone:", pErr.message);
+  }
+
+  return res;
+};
 
 export const adminDeleteCustomer = (a: { data: { customerId: string } }) =>
   callAdminApi("adminDeleteCustomer", payload(a));
