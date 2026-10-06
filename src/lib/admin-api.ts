@@ -16,8 +16,21 @@ export async function callAdminApi<T = any>(action: string, payload: any = {}): 
     headers: { Authorization: `Bearer ${token}` },
   });
   if (error) {
-    const msg = (data as any)?.error ?? error.message ?? "Request failed";
-    throw new Error(msg);
+    let msg: string | undefined = (data as any)?.error;
+    if (!msg && "context" in error && error.context) {
+      try {
+        const body = await (error.context as Response).json();
+        msg = body?.error || body?.message;
+      } catch {
+        try {
+          const text = await (error.context as Response).text();
+          if (text) msg = text;
+        } catch {
+          // ignore
+        }
+      }
+    }
+    throw new Error(msg || error.message || "Request failed");
   }
   if (data && typeof data === "object" && "error" in data && (data as any).error) {
     throw new Error((data as any).error);

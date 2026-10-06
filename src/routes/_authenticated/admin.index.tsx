@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { normalizeMyanmarPhone } from "@/lib/utils";
 import {
   adminCreateAdmin,
   adminCreateCustomer,
@@ -115,7 +116,7 @@ function AdminDash() {
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [custName, setCustName] = useState("");
-  const [custPhone, setCustPhone] = useState("");
+  const [custPhone, setCustPhone] = useState("09");
   const [custPassword, setCustPassword] = useState(genTempPassword());
   const [savingCust, setSavingCust] = useState(false);
 
@@ -262,14 +263,15 @@ function AdminDash() {
 
   async function onCreateCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!custPhone.trim()) {
-      return toast.error("Phone is required");
+    const cleanPhone = normalizeMyanmarPhone(custPhone);
+    if (!cleanPhone || cleanPhone === "09" || cleanPhone.length < 5) {
+      return toast.error("Please enter a valid phone number (09...)");
     }
     setSavingCust(true);
     try {
       const res = await createCustomer({
         data: {
-          phone: custPhone.trim(),
+          phone: cleanPhone,
           name: custName.trim() || undefined,
           password: custPassword,
         },
@@ -278,7 +280,7 @@ function AdminDash() {
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? custPassword;
       toast.success(`Customer created. Temp password: ${tmp}`, { duration: 10000 });
       setCustName("");
-      setCustPhone("");
+      setCustPhone("09");
       setCustPassword(genTempPassword());
       setAddCustomerOpen(false);
       refresh();
@@ -380,7 +382,7 @@ function AdminDash() {
                         id="cust-phone"
                         value={custPhone}
                         onChange={(e) => setCustPhone(e.target.value)}
-                        placeholder="+1234567890"
+                        placeholder="09xxxxxxxxx"
                       />
                     </div>
                     <div className="space-y-2">

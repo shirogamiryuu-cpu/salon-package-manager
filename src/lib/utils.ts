@@ -14,3 +14,16 @@ export function formatPurchaseId(id?: string | null): string {
 export function formatPackageId(id?: string | null): string {
   return formatPurchaseId(id);
 }
+
+export function normalizeMyanmarPhone(input?: string | null): string {
+  if (!input) return "";
+  let p = input.trim().replace(/\s+/g, "").replace(/[-()]/g, "");
+  if (p.startsWith("+959")) {
+    p = "09" + p.slice(4);
+  } else if (p.startsWith("959")) {
+    p = "09" + p.slice(3);
+  } else if (p.startsWith("9") && !p.startsWith("09")) {
+    p = "0" + p;
+  }
+  return p;
+}

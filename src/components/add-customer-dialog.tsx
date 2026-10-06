@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Copy, Download, UserPlus } from "lucide-react";
 import { generateLoginSheetPdf } from "@/lib/login-sheet-pdf";
+import { normalizeMyanmarPhone } from "@/lib/utils";
 
 function genTempPassword() {
   return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6) + "!9";
@@ -26,7 +27,7 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("09");
   const [password, setPassword] = useState(genTempPassword());
   const [created, setCreated] = useState<{ phone: string; password: string; name?: string } | null>(
     null,
@@ -34,25 +35,28 @@ export function AddCustomerDialog({ onCreated }: { onCreated?: () => void }) {
 
   function reset() {
     setName("");
-    setPhone("");
+    setPhone("09");
     setPassword(genTempPassword());
     setCreated(null);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!phone.trim()) return toast.error("Phone is required");
+    const cleanPhone = normalizeMyanmarPhone(phone);
+    if (!cleanPhone || cleanPhone === "09" || cleanPhone.length < 5) {
+      return toast.error("Please enter a valid phone number (09...)");
+    }
     setSaving(true);
     try {
       const res = await createCustomer({
         data: {
-          phone: phone.trim(),
+          phone: cleanPhone,
           name: name.trim() || undefined,
           password,
         },
       });
       const tmp = (res as { tempPassword?: string })?.tempPassword ?? password;
-      setCreated({ phone: phone.trim(), password: tmp, name: name.trim() || undefined });
+      setCreated({ phone: cleanPhone, password: tmp, name: name.trim() || undefined });
       toast.success("Customer account created");
       onCreated?.();
     } catch (err) {

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "@/public/EmpireCharme.png";
+import { normalizeMyanmarPhone } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -57,12 +58,9 @@ function AuthPage() {
     try {
       let email = siIdentifier.trim();
 
+      // If user entered phone number, normalize and resolve via edge function (RLS-safe)
       if (!email.includes("@")) {
-        email = email.replace(/\s+/g, "");
-      }
-
-      // If user entered phone number, resolve via edge function (RLS-safe)
-      if (!email.includes("@")) {
+        email = normalizeMyanmarPhone(email);
         const { data: resolved, error: resolveError } = await supabase.functions.invoke(
           "resolve-login",
           { body: { phone: email } },
@@ -134,7 +132,7 @@ function AuthPage() {
       options: {
         emailRedirectTo: `${window.location.origin}/home`,
         data: {
-          phone: suPhone.trim() || null,
+          phone: suPhone.trim() ? normalizeMyanmarPhone(suPhone) : null,
           name: suName.trim(),
         },
       },
@@ -184,7 +182,7 @@ function AuthPage() {
                   <Input
                     id="si-identifier"
                     required
-                    placeholder="Enter email or phone number"
+                    placeholder="09xxxxxxxxx or email"
                     value={siIdentifier}
                     onChange={(e) => setSiIdentifier(e.target.value)}
                   />
@@ -254,6 +252,7 @@ function AuthPage() {
                   <Input
                     id="su-phone"
                     type="tel"
+                    placeholder="09xxxxxxxxx"
                     value={suPhone}
                     onChange={(e) => setSuPhone(e.target.value)}
                   />

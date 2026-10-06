@@ -918,7 +918,13 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const cleanEmail = (email ?? "").trim() || null;
-    const cleanPhone = (phone ?? "").trim().replace(/\s+/g, "") || null;
+    let cleanPhone = (phone ?? "").trim().replace(/\s+/g, "").replace(/[-()]/g, "") || null;
+    if (cleanPhone) {
+      if (cleanPhone.startsWith("+959")) cleanPhone = "09" + cleanPhone.slice(4);
+      else if (cleanPhone.startsWith("959")) cleanPhone = "09" + cleanPhone.slice(3);
+      else if (cleanPhone.startsWith("9") && !cleanPhone.startsWith("09"))
+        cleanPhone = "0" + cleanPhone;
+    }
     if (!cleanEmail && !cleanPhone) throw new Error("Email or phone is required");
     if (cleanPhone) {
       const digits = cleanPhone.replace(/[^0-9]/g, "");
@@ -940,22 +946,29 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       email: finalEmail,
       password: finalPassword,
       email_confirm: true,
-      phone: cleanPhone ?? undefined,
-      phone_confirm: cleanPhone ? true : undefined,
       user_metadata: {
-        ...(name ? { name } : {}),
+        ...(name ? { name: (name ?? "").trim() } : {}),
         ...(cleanPhone ? { phone: cleanPhone } : {}),
       },
     });
-    if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
+    if (error || !created?.user) throw new Error(error?.message ?? "Failed to create customer");
     const uid = created.user.id;
-    // handle_new_user trigger already inserts profile + customer role. Patch fields.
-    const patch: Record<string, unknown> = {};
-    if (name) patch.name = name;
+
+    // Ensure profile has correct phone, name, and email
+    const patch: Record<string, unknown> = {
+      id: uid,
+      email: cleanEmail ?? finalEmail,
+    };
+    if (name && (name ?? "").trim()) patch.name = (name ?? "").trim();
     if (cleanPhone) patch.phone = cleanPhone;
-    if (cleanEmail) patch.email = cleanEmail;
     if (Number.isFinite(Number(points))) patch.points = Math.max(0, Math.floor(Number(points)));
-    if (Object.keys(patch).length) await sb.from("profiles").update(patch).eq("id", uid);
+    await sb.from("profiles").upsert(patch, { onConflict: "id" });
+
+    // Ensure customer role is assigned
+    const { error: rErr } = await sb.from("user_roles").insert({ user_id: uid, role: "customer" });
+    if (rErr && !rErr.message.includes("duplicate")) {
+      console.warn("user_roles insert note:", rErr.message);
+    }
     return { ok: true, id: uid, tempPassword: finalPassword };
   },
 

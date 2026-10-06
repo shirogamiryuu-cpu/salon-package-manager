@@ -20,12 +20,16 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    // Normalize: strip spaces
-    const normalized = phone.replace(/\s+/g, "");
+    let normalized = phone.trim().replace(/\s+/g, "").replace(/[-()]/g, "");
+    if (normalized.startsWith("+959")) normalized = "09" + normalized.slice(4);
+    else if (normalized.startsWith("959")) normalized = "09" + normalized.slice(3);
+    else if (normalized.startsWith("9") && !normalized.startsWith("09"))
+      normalized = "0" + normalized;
+
     const { data, error } = await admin
       .from("profiles")
       .select("email")
-      .eq("phone", normalized)
+      .or(`phone.eq.${normalized},phone.eq.${phone.trim()}`)
       .maybeSingle();
     if (error) throw error;
     return new Response(JSON.stringify({ email: data?.email ?? null }), {
