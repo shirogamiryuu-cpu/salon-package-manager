@@ -806,7 +806,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     await assertAdmin(userId);
     const sb = admin();
     const cleanName = (name ?? "").trim();
-    if (!cleanName) throw new Error("Staff name is required");
+    if (!cleanName) throw new Error("Name is required");
 
     const cleanEmail =
       (email ?? "").trim() ||
@@ -819,7 +819,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       email_confirm: true,
       user_metadata: { name: cleanName, ...(phone ? { phone: phone.trim() } : {}) },
     });
-    if (error || !created.user) throw new Error(error?.message ?? "Failed to create staff member");
+    if (error || !created.user) throw new Error(error?.message ?? "Failed to create team member");
     const uid = created.user.id;
     await sb.from("user_roles").delete().eq("user_id", uid);
     const role = category === "stylist" ? "stylist" : "staff";
@@ -835,7 +835,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
 
   async adminUpdateStaff({ userId: targetId, name, category, phone, email }, { userId }) {
     await assertAdmin(userId);
-    if (!targetId) throw new Error("Staff ID is required");
+    if (!targetId) throw new Error("User ID is required");
     const sb = admin();
     const patch: any = {};
     if (name !== undefined) patch.name = (name ?? "").trim() || null;
@@ -856,7 +856,7 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
 
   async adminDeleteStaff({ userId: targetId }, { userId }) {
     await assertAdmin(userId);
-    if (!targetId) throw new Error("Staff ID is required");
+    if (!targetId) throw new Error("User ID is required");
     const sb = admin();
     const { error } = await sb.auth.admin.deleteUser(targetId);
     if (error) {

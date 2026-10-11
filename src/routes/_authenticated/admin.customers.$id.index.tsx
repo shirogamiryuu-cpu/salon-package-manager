@@ -589,11 +589,11 @@ function CustomerDetail() {
                 <label className="text-xs font-semibold text-foreground">
                   Sold by{" "}
                   <span className="text-xs font-normal text-muted-foreground">
-                    (Staff / Stylists who made the sale)
+                    (Stylists / Assistants who made the sale)
                   </span>
                 </label>
                 {staffOpts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No staff members yet.</p>
+                  <p className="text-xs text-muted-foreground">No stylists or assistants yet.</p>
                 ) : (
                   <div className="space-y-2">
                     <Select
@@ -601,7 +601,7 @@ function CustomerDetail() {
                       onValueChange={(id) => setAssignSoldBy((prev) => new Set(prev).add(id))}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Add staff member…" />
+                        <SelectValue placeholder="Add stylist or assistant…" />
                       </SelectTrigger>
                       <SelectContent>
                         {(() => {
@@ -624,7 +624,7 @@ function CustomerDetail() {
                           return sorted.map(([category, members]) => (
                             <SelectGroup key={category}>
                               <SelectLabel>
-                                {category === "stylist" ? "Stylists" : "Staff"}
+                                {category === "stylist" ? "Stylists" : "Assistants"}
                               </SelectLabel>
                               {members.map((s) => (
                                 <SelectItem key={s.id} value={s.id}>
@@ -643,7 +643,7 @@ function CustomerDetail() {
                           const s = staffOpts.find((o) => o.id === id);
                           return (
                             <Badge key={id} variant="secondary" className="gap-1 text-xs">
-                              {s?.name ?? s?.email ?? "Staff"}
+                              {s?.name ?? s?.email ?? "Assistant"}
                               <button
                                 type="button"
                                 aria-label="Remove"
@@ -687,7 +687,7 @@ function CustomerDetail() {
 
           {!selectedPkg && (
             <p className="text-xs text-muted-foreground">
-              Please choose a package above to configure sessions, pricing, and staff.
+              Please choose a package above to configure sessions, pricing, and assistants/stylists.
             </p>
           )}
         </CardContent>
@@ -764,7 +764,7 @@ function CustomerDetail() {
                                 {cp.sold_by_staff_ids
                                   .map((sid: string) => {
                                     const s = staffOpts.find((o) => o.id === sid);
-                                    return s?.name ?? s?.email ?? "Staff";
+                                    return s?.name ?? s?.email ?? "Assistant";
                                   })
                                   .join(", ")}
                               </span>
@@ -1053,12 +1053,12 @@ function CustomerDetail() {
                   </span>
                 </label>
                 <div className="text-xs text-muted-foreground">
-                  Select the staff who performed the service (optional).
+                  Select the stylist or assistant who performed the service (optional).
                 </div>
 
                 <div className="space-y-3 max-h-56 overflow-y-auto">
                   {staffOpts.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No staff members yet.</p>
+                    <p className="text-sm text-muted-foreground">No stylists or assistants yet.</p>
                   )}
                   {(() => {
                     const groups: Record<string, StaffOpt[]> = {};
@@ -1073,7 +1073,7 @@ function CustomerDetail() {
                     return sorted.map(([category, members]) => (
                       <div key={category} className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          {category === "stylist" ? "Stylists" : "Staff"}
+                          {category === "stylist" ? "Stylists" : "Assistants"}
                         </p>
                         <div className="space-y-2">
                           {members.map((s) => (

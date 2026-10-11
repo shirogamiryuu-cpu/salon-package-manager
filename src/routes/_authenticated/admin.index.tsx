@@ -180,7 +180,7 @@ function AdminDash() {
   async function onCreateStaff(e: React.FormEvent) {
     e.preventDefault();
     if (!staffName.trim()) {
-      return toast.error("Staff name is required");
+      return toast.error("Name is required");
     }
     setSavingStaff(true);
     try {
@@ -193,13 +193,13 @@ function AdminDash() {
           email: generatedEmail,
         },
       });
-      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Staff"} added successfully`);
+      toast.success(`${staffCategory === "stylist" ? "Stylist" : "Assistant"} added successfully`);
       setStaffName("");
       setStaffCategory("stylist");
       setAddStaffOpen(false);
       refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add staff");
+      toast.error(err instanceof Error ? err.message : "Failed to add assistant");
     } finally {
       setSavingStaff(false);
     }
@@ -216,7 +216,7 @@ function AdminDash() {
     e.preventDefault();
     if (!editingStaff) return;
     if (!editStaffName.trim()) {
-      return toast.error("Staff name is required");
+      return toast.error("Name is required");
     }
     setSavingEditStaff(true);
     try {
@@ -227,12 +227,12 @@ function AdminDash() {
           category: editStaffCategory,
         },
       });
-      toast.success("Staff member updated");
+      toast.success("Team member updated");
       setEditStaffOpen(false);
       setEditingStaff(null);
       refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update staff");
+      toast.error(err instanceof Error ? err.message : "Failed to update member");
     } finally {
       setSavingEditStaff(false);
     }
@@ -245,11 +245,11 @@ function AdminDash() {
       await deleteStaff({
         data: { userId: deleteStaffFor.id },
       });
-      toast.success("Staff member removed");
+      toast.success("Team member removed");
       setDeleteStaffFor(null);
       refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove staff");
+      toast.error(err instanceof Error ? err.message : "Failed to remove member");
     } finally {
       setDeletingStaff(false);
     }
@@ -339,7 +339,7 @@ function AdminDash() {
       <Tabs defaultValue="customers">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="staff">Staff</TabsTrigger>
+          <TabsTrigger value="staff">Assistants</TabsTrigger>
           <TabsTrigger value="admins">Admins</TabsTrigger>
         </TabsList>
 
@@ -559,7 +559,7 @@ function AdminDash() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  Staff & Stylists
+                  Stylists & Assistants
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Salon team members available for service records and package sales.
@@ -569,15 +569,15 @@ function AdminDash() {
                 <DialogTrigger asChild>
                   <Button size="sm" variant="secondary">
                     <Scissors className="mr-2 h-4 w-4" />
-                    Add Staff
+                    Add Assistant
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <form onSubmit={onCreateStaff}>
                     <DialogHeader>
-                      <DialogTitle>Add staff member</DialogTitle>
+                      <DialogTitle>Add team member</DialogTitle>
                       <DialogDescription>
-                        Add a stylist or staff member to the salon roster. No password required.
+                        Add a stylist or assistant to the salon roster. No password required.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
@@ -611,14 +611,14 @@ function AdminDash() {
                             onClick={() => setStaffCategory("staff")}
                             className="flex-1"
                           >
-                            Staff
+                            Assistant
                           </Button>
                         </div>
                       </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" disabled={savingStaff}>
-                        {savingStaff ? "Adding..." : "Add staff"}
+                        {savingStaff ? "Adding..." : "Add"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -628,7 +628,7 @@ function AdminDash() {
 
             {staff.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No staff members yet. Click Add Staff above to get started.
+                No stylists or assistants yet. Click Add Assistant above to get started.
               </p>
             )}
 
@@ -638,7 +638,7 @@ function AdminDash() {
               return (
                 <div key={cat} className="space-y-2">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {cat === "stylist" ? "Stylists" : "General staff"}
+                    {cat === "stylist" ? "Stylists" : "Assistants"}
                   </h3>
                   {rows.map((s) => {
                     const other = cat === "stylist" ? "staff" : "stylist";
@@ -658,7 +658,7 @@ function AdminDash() {
                             </div>
                             <div className="mt-1">
                               <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium">
-                                {cat === "stylist" ? "Stylist" : "Staff"}
+                                {cat === "stylist" ? "Stylist" : "Assistant"}
                               </span>
                             </div>
                           </div>
@@ -674,7 +674,7 @@ function AdminDash() {
                                 try {
                                   await setStaffCat({ data: { userId: s.id, category: other } });
                                   toast.success(
-                                    `Moved to ${other === "stylist" ? "Stylist" : "Staff"}`,
+                                    `Moved to ${other === "stylist" ? "Stylist" : "Assistant"}`,
                                   );
                                   refresh();
                                 } catch (err) {
@@ -682,14 +682,14 @@ function AdminDash() {
                                 }
                               }}
                             >
-                              Make {other === "stylist" ? "Stylist" : "Staff"}
+                              Make {other === "stylist" ? "Stylist" : "Assistant"}
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => setDeleteStaffFor(s)}
                               className="text-destructive hover:text-destructive"
-                              title="Delete staff member"
+                              title="Delete team member"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -747,9 +747,9 @@ function AdminDash() {
         <DialogContent>
           <form onSubmit={onUpdateStaff}>
             <DialogHeader>
-              <DialogTitle>Edit staff member</DialogTitle>
+              <DialogTitle>Edit team member</DialogTitle>
               <DialogDescription>
-                Update staff name, role category, or contact information.
+                Update name or role category.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -782,7 +782,7 @@ function AdminDash() {
                     onClick={() => setEditStaffCategory("staff")}
                     className="flex-1"
                   >
-                    Staff
+                    Assistant
                   </Button>
                 </div>
               </div>
@@ -803,9 +803,9 @@ function AdminDash() {
       <AlertDialog open={!!deleteStaffFor} onOpenChange={(o) => !o && setDeleteStaffFor(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete staff member?</AlertDialogTitle>
+            <AlertDialogTitle>Delete team member?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {deleteStaffFor?.name || "this staff member"} from the
+              Are you sure you want to remove {deleteStaffFor?.name || "this person"} from the
               salon team? Historical service records will remain intact.
             </AlertDialogDescription>
           </AlertDialogHeader>

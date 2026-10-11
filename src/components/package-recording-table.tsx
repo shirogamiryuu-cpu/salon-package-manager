@@ -70,7 +70,7 @@ export function PackageRecordingTable({
             {showPurchaseId && <th className="py-3 px-4 w-32 font-semibold">Purchase ID</th>}
             <th className="py-3 px-4 font-semibold">Service</th>
             <th className="py-3 px-4 w-28 font-semibold">Value</th>
-            <th className="py-3 px-4 font-semibold">Staff</th>
+            <th className="py-3 px-4 font-semibold">Stylist / Assistant</th>
             <th className="py-3 px-4 w-24 font-semibold">Branch</th>
           </tr>
         </thead>

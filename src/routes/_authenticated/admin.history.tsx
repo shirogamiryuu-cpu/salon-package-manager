@@ -114,7 +114,7 @@ function AdminHistory() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Staff</Label>
+            <Label className="text-xs">Assistant / Stylist</Label>
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger>
                 <SelectValue />
@@ -200,7 +200,7 @@ function AdminHistory() {
                     {r.price_applied ? ` · MMK ${r.price_applied.toFixed(0)}` : ""}
                   </div>
                   <div className="text-xs">
-                    Staff:{" "}
+                    Assistant / Stylist:{" "}
                     {r.staff.length ? r.staff.map((s: any) => s.name ?? s.email).join(", ") : "—"}
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -222,7 +222,7 @@ function AdminHistory() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Package</TableHead>
                     <TableHead className="text-center">Sessions</TableHead>
-                    <TableHead>Staff</TableHead>
+                    <TableHead>Assistant / Stylist</TableHead>
                     <TableHead>Deducted by</TableHead>
                   </TableRow>
                 </TableHeader>

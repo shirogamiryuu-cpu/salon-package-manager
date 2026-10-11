@@ -407,7 +407,7 @@ function Home() {
           <section className="border border-foreground/25 p-10 text-center">
             <p className="font-serif italic text-lg text-foreground/80">No active package yet.</p>
             <p className="mt-2 text-sm text-foreground/60">
-              Ask our staff to add a package to your account.
+              Ask our assistant or stylist to add a package to your account.
             </p>
             <Button
               asChild
