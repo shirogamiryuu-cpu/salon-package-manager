@@ -53,7 +53,7 @@ export function PackageCustomersDialog({
       .from("customer_packages")
       .select("id,customer_id,sessions_remaining,total_sessions,profiles:customer_id(name,email)")
       .eq("package_id", packageId)
-      .order("created_at", { ascending: false })
+      .order("purchase_date", { ascending: false })
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
         setOwners((data as unknown as PackageOwner[]) ?? []);
