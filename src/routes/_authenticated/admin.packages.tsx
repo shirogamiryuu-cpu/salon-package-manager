@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, X } from "lucide-react";
+import { PackageCustomersDialog } from "@/components/package-customers-dialog";
 import { toast } from "sonner";
 import {
   applyPromotion,
@@ -55,6 +56,7 @@ function PackagesAdmin() {
   const [cats, setCats] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
+  const [customersFor, setCustomersFor] = useState<Pkg | null>(null);
   const [form, setForm] = useState<any>(empty);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -307,6 +309,10 @@ function PackagesAdmin() {
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setCustomersFor(p)}>
+                      <Users className="h-3 w-3 mr-1" />
+                      Customers
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -314,6 +320,17 @@ function PackagesAdmin() {
           });
         })()}
       </div>
+      {customersFor && (
+        <PackageCustomersDialog
+          packageId={customersFor.id}
+          packageName={customersFor.name}
+          pricePerSession={Number(customersFor.price)}
+          open
+          onOpenChange={(o) => {
+            if (!o) setCustomersFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }
