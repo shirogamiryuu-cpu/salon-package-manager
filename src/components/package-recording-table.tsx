@@ -1,5 +1,8 @@
 import React from "react";
+import { CalendarDays } from "lucide-react";
 import { formatPurchaseId } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type RecordingRow = {
   id: string;
@@ -40,6 +43,51 @@ interface PackageRecordingTableProps {
   className?: string;
   defaultBranch?: string;
   showPurchaseId?: boolean;
+  onEditDate?: (row: RecordingRow, date: Date) => void;
+}
+
+function EditableDate({
+  row,
+  onEditDate,
+}: {
+  row: RecordingRow;
+  onEditDate: (row: RecordingRow, date: Date) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const current = new Date(row.used_at);
+
+  const pick = (day?: Date) => {
+    if (!day) return;
+    const next = new Date(day);
+    next.setHours(current.getHours(), current.getMinutes(), current.getSeconds(), 0);
+    setOpen(false);
+    onEditDate(row, next);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Change date"
+          className="inline-flex items-center gap-1.5 rounded px-1 -mx-1 hover:bg-foreground/[0.06] underline decoration-dotted underline-offset-4"
+        >
+          {formatRecordingDate(row.used_at)}
+          <CalendarDays className="h-3 w-3 text-foreground/50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={current}
+          defaultMonth={current}
+          captionLayout="dropdown"
+          disabled={{ after: new Date() }}
+          onSelect={pick}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function PackageRecordingTable({
@@ -48,6 +96,7 @@ export function PackageRecordingTable({
   className = "",
   defaultBranch = "YGN",
   showPurchaseId = false,
+  onEditDate,
 }: PackageRecordingTableProps) {
   // Sort chronologically ascending so #1 is the first session
   const sorted = [...rows].sort(
@@ -81,7 +130,11 @@ export function PackageRecordingTable({
               <tr key={row.id} className="hover:bg-foreground/[0.03] transition-colors">
                 <td className="py-3.5 px-4 font-mono text-xs text-foreground/70">{index + 1}</td>
                 <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap">
-                  {formatRecordingDate(row.used_at)}
+                  {onEditDate ? (
+                    <EditableDate row={row} onEditDate={onEditDate} />
+                  ) : (
+                    formatRecordingDate(row.used_at)
+                  )}
                 </td>
                 {showPurchaseId && (
                   <td

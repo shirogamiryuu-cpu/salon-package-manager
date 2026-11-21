@@ -187,6 +187,9 @@ export const adminListHistory = (a: {
   };
 }) => callAdminApi("adminListHistory", payload(a));
 
+export const adminUpdateSessionDate = (a: { data: { usageLogId: string; usedAt: string } }) =>
+  callAdminApi("adminUpdateSessionDate", payload(a));
+
 export const customerListMyHistory = (_a?: Arg<undefined>) => callAdminApi("customerListMyHistory");
 
 export const staffListMyHistory = (_a?: Arg<undefined>) => callAdminApi("staffListMyHistory");

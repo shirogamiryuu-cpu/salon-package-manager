@@ -1078,6 +1078,19 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
       .filter(Boolean);
   },
 
+  async adminUpdateSessionDate({ usageLogId, usedAt }, { userId }) {
+    await assertAdmin(userId);
+    if (!usageLogId) throw new Error("Session ID is required");
+    const date = new Date(usedAt);
+    if (!usedAt || isNaN(date.getTime())) throw new Error("A valid date is required");
+    const { error } = await admin()
+      .from("usage_logs")
+      .update({ used_at: date.toISOString() })
+      .eq("id", usageLogId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  },
+
   async adminListHistory(p, { userId }) {
     await assertAdmin(userId);
     const sb = admin();
