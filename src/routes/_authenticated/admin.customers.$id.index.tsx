@@ -48,7 +48,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Coins, MinusCircle, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, Coins, MinusCircle, Plus, Trash2, X } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   applyPromotion,
@@ -99,6 +102,8 @@ function CustomerDetail() {
   const [assignDepositAmount, setAssignDepositAmount] = useState<string>("");
   const [assignManualPrice, setAssignManualPrice] = useState<string>("");
   const [assignSoldBy, setAssignSoldBy] = useState<Set<string>>(new Set());
+  const [assignPurchaseDate, setAssignPurchaseDate] = useState<Date | undefined>(undefined);
+  const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
   const [staffOpts, setStaffOpts] = useState<StaffOpt[]>([]);
   const [depositFor, setDepositFor] = useState<any | null>(null);
   const [depositAmountInput, setDepositAmountInput] = useState<string>("");
@@ -177,6 +182,7 @@ function CustomerDetail() {
           depositAmount: assignDepositNum,
           totalPrice: totalAmount,
           soldByStaffIds: [...assignSoldBy],
+          purchaseDate: assignPurchaseDate?.toISOString(),
         },
       });
       toast.success(res?.merged ? "Added to existing package" : "Package assigned");
@@ -185,6 +191,7 @@ function CustomerDetail() {
       setAssignDepositAmount("");
       setAssignManualPrice("");
       setAssignSoldBy(new Set());
+      setAssignPurchaseDate(undefined);
       refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -493,7 +500,7 @@ function CustomerDetail() {
               </div>
 
               {/* Essentials 3-col grid */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-foreground">Sessions</label>
                   <Input
@@ -580,6 +587,47 @@ function CustomerDetail() {
                     >
                       No deposit (0)
                     </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground">Purchase Date</label>
+                  <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 w-full justify-start gap-2 font-normal"
+                      >
+                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                        {format(assignPurchaseDate ?? new Date(), "dd MMM yyyy")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={assignPurchaseDate ?? new Date()}
+                        defaultMonth={assignPurchaseDate ?? new Date()}
+                        captionLayout="dropdown"
+                        disabled={{ after: new Date() }}
+                        onSelect={(day) => {
+                          setAssignPurchaseDate(day);
+                          setPurchaseDateOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <div className="flex items-center gap-2 pt-0.5 text-[11px]">
+                    {assignPurchaseDate ? (
+                      <button
+                        type="button"
+                        onClick={() => setAssignPurchaseDate(undefined)}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Reset to today
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground">Today</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -757,6 +805,11 @@ function CustomerDetail() {
                           >
                             Purchase ID: {formatPurchaseId(cp.id)}
                           </span>
+                          {cp.purchase_date && (
+                            <span>
+                              · Purchased: {format(new Date(cp.purchase_date), "dd MMM yyyy")}
+                            </span>
+                          )}
                           {Array.isArray(cp.sold_by_staff_ids) &&
                             cp.sold_by_staff_ids.length > 0 && (
                               <span>
