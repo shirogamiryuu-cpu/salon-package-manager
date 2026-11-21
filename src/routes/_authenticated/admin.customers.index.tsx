@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { AddCustomerDialog } from "@/components/add-customer-dialog";
+import { EditCustomerDialog } from "@/components/edit-customer-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/")({
   component: Customers,
@@ -117,7 +118,8 @@ function Customers() {
 
                     <TableCell>{new Date(c.created_at).toLocaleDateString()}</TableCell>
 
-                    <TableCell className="text-right">
+                    <TableCell className="text-right whitespace-nowrap">
+                      <EditCustomerDialog customer={c} onSaved={refresh} />
                       <ChevronRight className="h-4 w-4 text-muted-foreground inline" />
                     </TableCell>
                   </TableRow>
@@ -155,7 +157,10 @@ function Customers() {
                     <p className="text-sm text-muted-foreground">{c.phone ?? "—"}</p>
                   </div>
 
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <EditCustomerDialog customer={c} onSaved={refresh} />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
               </div>
             ))}
