@@ -2,14 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@/lib/server-fn";
-import { adminListHistory, adminUpdateSessionDate } from "@/lib/admin.functions";
+import { adminListHistory } from "@/lib/admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
-import { PackageRecordingTable, type RecordingRow } from "@/components/package-recording-table";
+import { PackageRecordingTable } from "@/components/package-recording-table";
 import { formatPurchaseId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id/packages/$cpId")({
@@ -51,7 +51,6 @@ type HistoryRow = {
 function AdminPackageDetail() {
   const { id, cpId } = Route.useParams();
   const listHistory = useServerFn(adminListHistory);
-  const updateSessionDate = useServerFn(adminUpdateSessionDate);
   const [cp, setCp] = useState<CP | null>(null);
   const [history, setHistory] = useState<HistoryRow[] | null>(null);
 
@@ -127,19 +126,6 @@ function AdminPackageDetail() {
       supabase.removeChannel(channel);
     };
   }, [id, cpId, listHistory]);
-
-  const changeDate = async (row: RecordingRow, date: Date) => {
-    const usedAt = date.toISOString();
-    try {
-      await updateSessionDate({ data: { usageLogId: row.id, usedAt } });
-      setHistory((prev) =>
-        prev ? prev.map((h) => (h.id === row.id ? { ...h, used_at: usedAt } : h)) : prev,
-      );
-      toast.success("Session date updated");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update date");
-    }
-  };
 
   if (!cp) return <p className="text-muted-foreground">Loading…</p>;
 
@@ -234,7 +220,6 @@ function AdminPackageDetail() {
               };
             })}
             emptyMessage="No sessions recorded yet."
-            onEditDate={changeDate}
           />
         )}
       </div>
