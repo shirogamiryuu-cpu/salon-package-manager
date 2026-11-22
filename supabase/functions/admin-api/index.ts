@@ -220,7 +220,13 @@ async function assertStaff(userId: string) {
 // Shared deduction logic: turns a pending session_deduction_request into an
 // approved one (decrement sessions, write usage log + staff, flag approved).
 // Used both by the customer approval path and the admin skip-approval path.
-async function performApproval(sb: any, req: any, nowIso: string, byAdmin = false) {
+async function performApproval(
+  sb: any,
+  req: any,
+  nowIso: string,
+  byAdmin = false,
+  usedAt: string | null = null,
+) {
   const { data: cp, error: cpErr } = await sb
     .from("customer_packages")
     .select(
@@ -264,6 +270,7 @@ async function performApproval(sb: any, req: any, nowIso: string, byAdmin = fals
       variant_id: req.variant_id,
       variant_label: req.variant_label,
       price_applied: priceApplied,
+      ...(usedAt ? { used_at: usedAt } : {}),
     })
     .select("id")
     .single();
@@ -603,11 +610,19 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
   },
 
   async useSession(
-    { customerPackageId, staffIds, variantId, manualPrice, skipApproval },
+    { customerPackageId, staffIds, variantId, manualPrice, skipApproval, sessionDate },
     { userId },
   ) {
     await assertAdmin(userId);
     const sb = admin();
+    let usedAt: string | null = null;
+    if (sessionDate) {
+      const d = new Date(sessionDate);
+      if (isNaN(d.getTime())) throw new Error("Session date is invalid");
+      if (d.getTime() > Date.now() + 60_000)
+        throw new Error("Session date cannot be in the future");
+      usedAt = d.toISOString();
+    }
     const { data: cp, error } = await sb
       .from("customer_packages")
       .select(
@@ -673,8 +688,8 @@ const actions: Record<string, (payload: any, ctx: { userId: string }) => Promise
     if (rErr || !reqRow) throw new Error(rErr?.message ?? "Failed to create request");
 
     // Admin-side deduction: approve immediately, no customer confirmation, no push.
-    if (skipApproval === true) {
-      const res = await performApproval(sb, reqRow, new Date().toISOString(), true);
+    if (skipApproval === true || usedAt) {
+      const res = await performApproval(sb, reqRow, new Date().toISOString(), true, usedAt);
       return {
         ok: true,
         pending: false,

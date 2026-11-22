@@ -54,6 +54,7 @@ export const useSession = (a: {
     variantId?: string | null;
     manualPrice?: number | null;
     skipApproval?: boolean;
+    sessionDate?: string;
   };
 }) => callAdminApi("useSession", payload(a));
 
@@ -117,9 +118,7 @@ export const adminCreateCustomer = async (a: {
       .from("profiles")
       .select("id, phone")
       .not("phone", "is", null);
-    const dup = (existing ?? []).some(
-      (p: any) => normalizeMyanmarPhone(p.phone) === cleanPhone,
-    );
+    const dup = (existing ?? []).some((p: any) => normalizeMyanmarPhone(p.phone) === cleanPhone);
     if (dup) throw new Error("A customer with this phone number already exists");
   }
 

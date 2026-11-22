@@ -112,6 +112,11 @@ function CustomerDetail() {
   const [deductFor, setDeductFor] = useState<any | null>(null);
   const [deductManualPrice, setDeductManualPrice] = useState<string>("");
   const [deductSkipApproval, setDeductSkipApproval] = useState(false);
+  const [deductDate, setDeductDate] = useState<Date | undefined>(undefined);
+  const [deductDateOpen, setDeductDateOpen] = useState(false);
+  const deductBackdated =
+    deductDate !== undefined && deductDate.toDateString() !== new Date().toDateString();
+  const deductImmediately = deductSkipApproval || deductBackdated;
 
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [deducting, setDeducting] = useState(false);
@@ -278,6 +283,8 @@ function CustomerDetail() {
     setSelectedStaff(new Set());
     setDeductManualPrice("");
     setDeductSkipApproval(false);
+    setDeductDate(undefined);
+    setDeductDateOpen(false);
     setDeductFor(cp);
   };
 
@@ -301,6 +308,13 @@ function CustomerDetail() {
       }
       manualPrice = Math.round(n * 100) / 100;
     }
+    let sessionDate: string | undefined;
+    if (deductBackdated && deductDate) {
+      const now = new Date();
+      const d = new Date(deductDate);
+      d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+      sessionDate = d.toISOString();
+    }
     setDeducting(true);
     try {
       await deductSessionFn({
@@ -308,11 +322,12 @@ function CustomerDetail() {
           customerPackageId: deductFor.id,
           staffIds: Array.from(selectedStaff),
           manualPrice,
-          skipApproval: deductSkipApproval,
+          skipApproval: deductImmediately,
+          sessionDate,
         },
       });
       toast.success(
-        deductSkipApproval
+        deductImmediately
           ? "Session deducted (admin approved)"
           : "Approval request sent to customer (expires in 15 min)",
       );
@@ -1064,7 +1079,7 @@ function CustomerDetail() {
       </Dialog>
 
       <Dialog open={!!deductFor} onOpenChange={(o) => !o && setDeductFor(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Deduct a session</DialogTitle>
             <DialogDescription>
@@ -1093,18 +1108,68 @@ function CustomerDetail() {
                     Leave blank to charge the normal rate.
                   </p>
                 </div>
-                <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50">
-                  <Checkbox
-                    checked={deductSkipApproval}
-                    onCheckedChange={(v) => setDeductSkipApproval(v === true)}
-                  />
-                  <span className="text-sm">
-                    Deduct now without customer approval
-                    <span className="block text-[11px] text-muted-foreground">
-                      Use only when the customer has no phone or app. Recorded as admin approved.
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Session date</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 w-full justify-start gap-2 font-normal"
+                    onClick={() => setDeductDateOpen((o) => !o)}
+                  >
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    {format(deductDate ?? new Date(), "dd MMM yyyy")}
+                  </Button>
+                  {deductDateOpen && (
+                    <div className="flex justify-center rounded-md border">
+                      <Calendar
+                        mode="single"
+                        selected={deductDate ?? new Date()}
+                        defaultMonth={deductDate ?? new Date()}
+                        captionLayout="dropdown"
+                        disabled={{ after: new Date() }}
+                        onSelect={(day) => {
+                          if (day) setDeductDate(day);
+                          setDeductDateOpen(false);
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-[11px]">
+                    {deductBackdated ? (
+                      <>
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                          Past session, recorded now as admin approved
+                        </span>
+                        <span className="text-muted-foreground">·</span>
+                        <button
+                          type="button"
+                          onClick={() => setDeductDate(undefined)}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          Today
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Today. Pick an earlier date to add an old session.
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {!deductBackdated && (
+                  <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-muted/50">
+                    <Checkbox
+                      checked={deductSkipApproval}
+                      onCheckedChange={(v) => setDeductSkipApproval(v === true)}
+                    />
+                    <span className="text-sm">
+                      Deduct now without customer approval
+                      <span className="block text-[11px] text-muted-foreground">
+                        Use only when the customer has no phone or app. Recorded as admin approved.
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+                )}
                 <div className="text-xs text-muted-foreground">
                   Select the stylist or assistant who performed the service (optional).
                 </div>
@@ -1154,7 +1219,7 @@ function CustomerDetail() {
               Cancel
             </Button>
             <Button onClick={confirmDeduct} disabled={deducting}>
-              {deducting ? "Deducting..." : deductSkipApproval ? "Deduct now" : "Request approval"}
+              {deducting ? "Deducting..." : deductImmediately ? "Deduct now" : "Request approval"}
             </Button>
           </DialogFooter>
         </DialogContent>
